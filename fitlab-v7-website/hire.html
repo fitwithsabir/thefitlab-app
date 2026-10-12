@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Hire a coach — The Fit Lab Academy</title>
+<link rel="icon" href="assets/favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="assets/theme.js"></script>
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+  .layout{display:grid;grid-template-columns:250px 1fr;gap:22px;margin-top:24px}
+  @media(max-width:800px){.layout{grid-template-columns:1fr}}
+  .filters{border:1px solid var(--line);border-radius:12px;padding:16px;align-self:start;position:sticky;top:16px}
+  .filters .field{margin-bottom:12px}
+  .filters label{font-size:10px}
+  .fgroup{border-top:1px solid var(--line-2);padding-top:12px;margin-top:12px}
+  .coach{border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:12px}
+  .coach h3{margin:0 0 3px;font-size:17px}
+  .coach .idl{font-family:var(--mono);font-size:11px;color:var(--lime)}
+  .tags{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+  .selbar{position:sticky;bottom:0;background:rgba(5,6,5,.95);backdrop-filter:blur(8px);
+    border-top:1px solid var(--line);padding:12px 0;margin-top:18px;display:none}
+  .selbar.on{display:block}
+  .cnt{font-family:var(--mono);font-size:12px;color:var(--ash)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="nav"></div>
+  <div style="margin-top:26px">
+    <div class="eyebrow">Hire a coach</div>
+    <h1 class="display" style="font-size:clamp(32px,5vw,52px);margin:6px 0 6px">Certified Fit Lab coaches</h1>
+    <p class="ash" style="max-width:600px">Every coach here has completed and passed a Fit Lab Academy course. Contact details are never shown — select the coaches you're interested in and we'll pass your request on.</p>
+  </div>
+
+  <div class="layout">
+    <aside class="filters">
+      <div class="eyebrow" style="margin-bottom:12px">Filter</div>
+      <div class="field"><label for="fSearch">Name or ID</label><input id="fSearch" placeholder="Search"></div>
+      <div class="field"><label for="fCourse">Course</label><select id="fCourse"><option value="">Any course</option></select></div>
+      <div class="field"><label for="fLevel">Trainer or coach</label>
+        <select id="fLevel"><option value="">Any</option><option value="trainer">Trainer</option><option value="coach">Coach (3+ yrs)</option></select></div>
+      <div class="field"><label for="fStars">Minimum rating</label>
+        <select id="fStars"><option value="">Any rating</option><option value="1">★ 1+</option><option value="2">★★ 2+</option>
+          <option value="3">★★★ 3+</option><option value="4">★★★★ 4+</option><option value="5">★★★★★ 5</option></select></div>
+
+      <div class="fgroup">
+        <div class="field"><label for="fGender">Gender</label>
+          <select id="fGender"><option value="">Any</option><option value="male">Male</option><option value="female">Female</option></select></div>
+        <div class="field"><label for="fExp">Experience</label>
+          <select id="fExp"><option value="">Any</option><option value="beginner">Beginner</option>
+            <option value="1-3 years">1–3 years</option><option value="3+ years">3+ years</option></select></div>
+        <div class="grid grid-2" style="gap:8px">
+          <div class="field"><label for="fAgeMin">Age from</label><input id="fAgeMin" type="number" min="16" max="90" placeholder="18"></div>
+          <div class="field"><label for="fAgeMax">to</label><input id="fAgeMax" type="number" min="16" max="90" placeholder="60"></div>
+        </div>
+      </div>
+
+      <div class="fgroup">
+        <div class="field"><label for="fCity">City</label><input id="fCity" list="dlCity" placeholder="Any city"><datalist id="dlCity"></datalist></div>
+        <div class="field"><label for="fDistrict">District</label><input id="fDistrict" list="dlDist" placeholder="Any district"><datalist id="dlDist"></datalist></div>
+        <div class="field"><label for="fCountry">Country</label><input id="fCountry" list="dlCountry" placeholder="Any country"><datalist id="dlCountry"></datalist></div>
+      </div>
+
+      <div class="btn-row" style="margin-top:6px">
+        <button class="btn btn-primary" id="btnApply" style="flex:1">Apply</button>
+        <button class="btn btn-ghost" id="btnClear">Clear</button>
+      </div>
+    </aside>
+
+    <main>
+      <div class="cnt" id="count">Loading…</div>
+      <div id="list" style="margin-top:12px"><div class="skeleton" style="height:130px"></div></div>
+    </main>
+  </div>
+
+  <div class="selbar" id="selbar"><div class="in" style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+    <span class="cnt"><b id="selN">0</b> coach(es) selected</span>
+    <button class="btn btn-primary" id="btnRequest">Request an introduction</button>
+  </div></div>
+
+  <!-- REQUEST FORM -->
+  <div class="fl-modal" id="reqModal">
+    <div class="card hud" style="max-width:520px"><span class="c1"></span><span class="c2"></span>
+      <div class="eyebrow">Request an introduction</div>
+      <h2 style="margin:8px 0 6px">Tell us about your studio</h2>
+      <p class="ash small" id="reqWho" style="margin-bottom:16px"></p>
+      <div class="grid grid-2">
+        <div class="field"><label for="rGym">Studio / gym name</label><input id="rGym"></div>
+        <div class="field"><label for="rName">Your name</label><input id="rName"></div>
+        <div class="field"><label for="rEmail">Email</label><input id="rEmail" type="email"></div>
+        <div class="field"><label for="rPhone">Phone</label><input id="rPhone"></div>
+      </div>
+      <div class="field"><label for="rMsg">What are you looking for?</label><textarea id="rMsg" placeholder="Role, location, schedule, anything relevant…"></textarea></div>
+      <div id="rErr" class="err hidden" style="margin-bottom:10px"></div>
+      <div class="btn-row" style="justify-content:flex-end">
+        <button class="btn btn-ghost" data-close>Cancel</button>
+        <button class="btn btn-primary" id="rSend">Send request</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">© <span id="yr"></span> The Fit Lab Academy · Contact details are never published here</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(async () => {
+  const $ = (id) => document.getElementById(id);
+  $('yr').textContent = new Date().getFullYear();
+  let me = null; try { me = await FL.getProfile(); } catch (_) {}
+  FL.renderHeader(me);
+
+  const selected = new Map();
+  const fmtMonth = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { month:'short', year:'numeric' }) : 'Present';
+
+  // populate filter dropdowns from live data
+  try {
+    const { data: opts } = await sb.rpc('coach_filter_options');
+    if (opts) {
+      $('fCourse').innerHTML = '<option value="">Any course</option>' +
+        (opts.courses || []).map((c) => `<option value="${c.id}">${FL.esc(c.title)}</option>`).join('');
+      const fill = (el, arr) => { $(el).innerHTML = (arr || []).filter(Boolean).map((v) => `<option value="${FL.esc(v)}">`).join(''); };
+      fill('dlCity', opts.cities); fill('dlDist', opts.districts); fill('dlCountry', opts.countries);
+    }
+  } catch (_) {}
+
+  function filters() {
+    const n = (id) => { const v = $(id).value.trim(); return v === '' ? null : v; };
+    const num = (id) => { const v = parseInt($(id).value, 10); return isNaN(v) ? null : v; };
+    return {
+      p_course_id: n('fCourse'), p_gender: n('fGender'), p_city: n('fCity'), p_district: n('fDistrict'),
+      p_country: n('fCountry'), p_experience: n('fExp'), p_min_stars: num('fStars'),
+      p_level: n('fLevel'), p_age_min: num('fAgeMin'), p_age_max: num('fAgeMax'), p_search: n('fSearch'),
+    };
+  }
+
+  async function load() {
+    $('list').innerHTML = '<div class="skeleton" style="height:130px"></div>';
+    const { data, error } = await sb.rpc('search_coaches', filters());
+    if (error) { $('list').innerHTML = `<div class="card ash">${FL.esc(FL.friendly(error))}</div>`; $('count').textContent = ''; return; }
+    const rows = data || [];
+    $('count').textContent = `${rows.length} coach${rows.length === 1 ? '' : 'es'} match your filters`;
+    $('list').innerHTML = rows.length ? rows.map((c) => `
+      <div class="coach">
+        <div style="display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap">
+          <div style="display:flex;gap:14px;min-width:200px">
+            ${c.photo_url ? `<img src="${FL.esc(c.photo_url)}" alt="" style="width:56px;height:56px;border-radius:12px;object-fit:cover;flex:none;border:1px solid var(--line)">` : `<span class="avatar" style="width:56px;height:56px;font-size:18px;flex:none">${FL.esc(FL.initials(c.full_name))}</span>`}
+            <div>
+              <h3>${FL.esc(c.full_name)}</h3>
+              ${c.headline ? `<div class="small" style="margin:2px 0 4px">${FL.esc(c.headline)}</div>` : ''}
+              <div class="idl">${FL.esc(c.unique_id)} · @${FL.esc(c.username || '')}</div>
+              ${c.open_to_work ? `<span class="otw" style="margin-top:6px">Open to coaching roles</span>` : ''}
+            </div>
+          </div>
+          <label class="check" style="flex:none"><input type="checkbox" data-pick="${FL.esc(c.unique_id)}"
+            data-name="${FL.esc(c.full_name)}" ${selected.has(c.unique_id) ? 'checked' : ''}><span>Select</span></label>
+        </div>
+        <div class="tags">
+          ${FL.starBadge(c.star_count, c.star_tier)}
+          <span class="chip">${FL.esc((c.level || '').toUpperCase())}</span>
+          ${c.age ? `<span class="chip">${c.age} yrs</span>` : ''}
+          ${c.gender ? `<span class="chip">${FL.esc(c.gender)}</span>` : ''}
+          ${c.experience_level ? `<span class="chip">${FL.esc(c.experience_level)}</span>` : ''}
+          ${[c.city, c.district, c.country].filter(Boolean).length
+            ? `<span class="chip">${FL.esc([c.city, c.district, c.country].filter(Boolean).join(' · '))}</span>` : ''}
+        </div>
+        ${c.occupation ? `<div class="small" style="margin-bottom:6px">${FL.esc(c.occupation)}</div>` : ''}
+        ${c.bio ? `<p class="small" style="color:var(--ash);margin:0 0 10px">${FL.esc(c.bio)}</p>` : ''}
+        ${(c.skills || []).length ? `<div class="tags" style="margin-bottom:8px">${c.skills.slice(0, 8).map((k) => `<span class="chip acc">${FL.esc(k)}</span>`).join('')}</div>` : ''}
+        ${(c.certifications || []).length ? `<div class="small" style="margin-bottom:6px">
+          <b style="color:var(--lime)">Certified:</b> ${c.certifications.map((x) => FL.esc(x.course)).join(' · ')}</div>` : ''}
+        ${(c.experience || []).length ? `<div class="small ash">
+          <b>Experience:</b> ${c.experience.slice(0,3).map((w) =>
+            `${FL.esc(w.title)} at ${FL.esc(w.organization)} (${fmtMonth(w.start_date)}–${fmtMonth(w.end_date)})`).join(' · ')}</div>` : ''}
+      </div>`).join('') : `<div class="card ash">No coaches match these filters yet. Try widening your search.</div>`;
+  }
+
+  $('list').addEventListener('change', (e) => {
+    const cb = e.target.closest('[data-pick]'); if (!cb) return;
+    if (cb.checked) selected.set(cb.dataset.pick, cb.dataset.name); else selected.delete(cb.dataset.pick);
+    $('selN').textContent = selected.size;
+    $('selbar').classList.toggle('on', selected.size > 0);
+  });
+
+  $('btnApply').onclick = load;
+  $('btnClear').onclick = () => {
+    ['fSearch','fCourse','fLevel','fStars','fGender','fExp','fAgeMin','fAgeMax','fCity','fDistrict','fCountry']
+      .forEach((id) => $(id).value = '');
+    load();
+  };
+  ['fCourse','fLevel','fStars','fGender','fExp'].forEach((id) => $(id).onchange = load);
+  $('fSearch').addEventListener('keydown', (e) => { if (e.key === 'Enter') load(); });
+
+  $('btnRequest').onclick = () => {
+    $('reqWho').textContent = `Requesting: ${[...selected.values()].join(', ')}`;
+    $('reqModal').classList.add('on');
+  };
+  $('reqModal').addEventListener('click', (e) => {
+    if (e.target === $('reqModal') || e.target.closest('[data-close]')) $('reqModal').classList.remove('on');
+  });
+
+  $('rSend').onclick = async () => {
+    const err = $('rErr'); err.classList.add('hidden');
+    const gym = $('rGym').value.trim(), name = $('rName').value.trim(), email = $('rEmail').value.trim();
+    if (!gym || !name || !email) { err.textContent = 'Studio name, your name and email are required.'; return err.classList.remove('hidden'); }
+    const btn = $('rSend'); FL.busy(btn, true, 'Sending…');
+    const { error } = await sb.from('hire_requests').insert({
+      gym_name: gym, contact_name: name, contact_email: email,
+      phone: $('rPhone').value.trim() || null, message: $('rMsg').value.trim() || null,
+      member_ids: [...selected.keys()],
+    });
+    FL.busy(btn, false);
+    if (error) { err.textContent = FL.friendly(error); return err.classList.remove('hidden'); }
+    $('reqModal').classList.remove('on');
+    FL.toast('Request sent — we will be in touch shortly', 'ok');
+    selected.clear(); $('selbar').classList.remove('on'); load();
+  };
+
+  load();
+})();
+</script>
+</body>
+</html>

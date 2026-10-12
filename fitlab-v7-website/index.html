@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>The Fit Lab Academy — Coaching Education</title>
+<meta name="description" content="The Fit Lab Academy: progressive coaching education for male & female fitness trainers. Learn. Understand. Apply. Coach.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="icon" href="assets/favicon.png">
+<script src="assets/theme.js"></script>
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+  .hero{padding:56px 0 30px}
+  .hero p.lead{font-size:18px;color:var(--ash);max-width:520px;margin:18px 0 26px}
+  .flow{display:flex;flex-wrap:wrap;gap:8px 4px;align-items:center;font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--ash);text-transform:uppercase}
+  .flow b{color:var(--lime);font-weight:700}
+  .flow i{color:var(--line-2);font-style:normal;margin:0 6px}
+  .auth{max-width:440px;margin:0 auto}
+  .courses{margin-top:56px}
+  .course{display:grid;gap:8px}
+  .course .meta{display:flex;gap:8px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="nav"></div>
+
+  <section class="hero grid grid-hero">
+    <div>
+      <div class="eyebrow">The professional network for fitness coaches</div>
+      <h1 class="display" style="margin-top:14px">Don't just know<br>exercises.<br><span class="lime">Make coaching<br>decisions.</span></h1>
+      <p class="lead">Learn with structured, evidence-based courses. Earn QR-verified certificates. Build a professional profile, connect with other coaches, and get found by gyms — all in one place.</p>
+      <div class="flow">
+        <b>Assess</b><i>→</i><b>Identify</b><i>→</i><b>Plan</b><i>→</i><b>Coach</b><i>→</i><b>Monitor</b><i>→</i><b>Progress</b><i>→</i><b>Modify</b><i>→</i><b>Refer</b>
+      </div>
+    </div>
+
+    <div class="auth">
+      <div class="card glow hud"><span class="c1"></span><span class="c2"></span>
+        <div class="tabs" id="tabs">
+          <button class="active" data-tab="login">Log in</button>
+          <button data-tab="signup">Create account</button>
+        </div>
+
+        <form id="formLogin" novalidate>
+          <div class="field"><label for="liEmail">Email or username</label><input id="liEmail" type="text" autocomplete="username" required placeholder="you@example.com or your username"></div>
+          <div class="field"><label for="liPass">Password</label><input id="liPass" type="password" autocomplete="current-password" required placeholder="••••••••"></div>
+          <button class="btn btn-primary btn-block" type="submit">Enter the Academy</button>
+          <p class="help" style="margin:12px 0 0;text-align:center"><a href="#" id="linkForgot">Forgot password?</a></p>
+        </form>
+
+        <form id="formSignup" class="hidden" novalidate>
+          <div class="field"><label for="suName">Full name</label><input id="suName" autocomplete="name" required placeholder="As it should appear on your certificate"></div>
+          <div class="field"><label for="suEmail">Email</label><input id="suEmail" type="email" autocomplete="email" required placeholder="you@example.com"></div>
+          <div class="field"><label for="suPass">Password</label><input id="suPass" type="password" autocomplete="new-password" required minlength="8" placeholder="At least 8 characters"></div>
+          <button class="btn btn-primary btn-block" type="submit">Create my account</button>
+          <p class="help" style="margin:12px 0 0">Free for the current cohort. After signup you'll complete your member profile and receive your Fit Lab Unique ID.</p>
+        </form>
+
+        <form id="formForgot" class="hidden" novalidate>
+          <p class="small ash" style="margin:0 0 14px">Enter your email and we'll send a reset link.</p>
+          <div class="field"><label for="fgEmail">Email</label><input id="fgEmail" type="email" required placeholder="you@example.com"></div>
+          <button class="btn btn-primary btn-block" type="submit">Send reset link</button>
+          <p class="help" style="margin:12px 0 0;text-align:center"><a href="#" id="linkBack">Back to log in</a></p>
+        </form>
+
+        <form id="formRecover" class="hidden" novalidate>
+          <div class="eyebrow" style="margin-bottom:10px">Set a new password</div>
+          <div class="field"><label for="rcPass">New password</label><input id="rcPass" type="password" autocomplete="new-password" required minlength="8"></div>
+          <button class="btn btn-primary btn-block" type="submit">Save password</button>
+        </form>
+
+        <div id="msg" class="hidden" style="margin-top:14px"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="courses">
+    <div class="eyebrow">Courses</div>
+    <h2 class="display">What you can study</h2>
+    <div class="grid grid-2" id="courseList"><div class="skeleton" style="height:120px"></div></div>
+  </section>
+
+  <section style="margin-top:20px">
+    <a class="btn" href="hire.html">Hiring? Browse certified coaches →</a>
+  </section>
+
+  <div class="footer">
+    <div class="pillars" style="justify-content:center;margin-bottom:18px"><span>Human body</span><span>Training science</span><span>Programming</span><span>Conditioning</span><span>Special populations</span><span>Coaching</span></div>
+    © <span id="yr"></span> The Fit Lab · Education ≠ medical practice · <a href="mailto:fitwithsabir@gmail.com">fitwithsabir@gmail.com</a>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(async function () {
+  document.getElementById('yr').textContent = new Date().getFullYear();
+  FL.renderHeader(null);
+
+  const $ = (id) => document.getElementById(id);
+  const forms = { login: $('formLogin'), signup: $('formSignup'), forgot: $('formForgot'), recover: $('formRecover') };
+  const msg = $('msg');
+  const say = (html, ok) => { msg.className = 'banner'; msg.style.borderColor = ok ? 'rgba(163,230,53,.5)' : ''; msg.style.color = ok ? 'var(--bone)' : ''; msg.style.background = ok ? 'rgba(163,230,53,.06)' : ''; msg.innerHTML = html; };
+  const clear = () => { msg.className = 'hidden'; msg.innerHTML = ''; };
+  const show = (name) => { Object.entries(forms).forEach(([k, f]) => f.classList.toggle('hidden', k !== name)); $('tabs').classList.toggle('hidden', name === 'recover'); clear(); };
+
+  $('tabs').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-tab]'); if (!b) return;
+    document.querySelectorAll('#tabs button').forEach((x) => x.classList.toggle('active', x === b));
+    show(b.dataset.tab);
+  });
+  $('linkForgot').onclick = (e) => { e.preventDefault(); show('forgot'); };
+  $('linkBack').onclick = (e) => { e.preventDefault(); show('login'); };
+
+  // Where to go after login: profile incomplete → register, otherwise dashboard
+  async function goInside() {
+    try {
+      const p = await FL.getProfile();
+      location.replace(p && p.profile_completed ? (new URLSearchParams(location.search).get('next') || 'feed.html') : 'register.html');
+    } catch (e) { location.replace('register.html'); }
+  }
+
+  // Password-recovery links land here with a token; Supabase fires this event
+  let recovering = false;
+  sb.auth.onAuthStateChange((event) => {
+    if (event === 'PASSWORD_RECOVERY') { recovering = true; show('recover'); }
+  });
+
+  // Already signed in? Skip the landing (unless we're mid-recovery)
+  const session = await FL.session();
+  if (session && !recovering && !location.hash.includes('type=recovery')) { await goInside(); return; }
+
+  // Published courses strip (public)
+  try {
+    const { data, error } = await sb.from('courses').select('title,subtitle,description,total_days,level').eq('is_published', true).order('sort_order');
+    if (error) throw error;
+    const { data: stats } = await sb.from('course_stats').select('*');
+    const statFor = (id) => (stats || []).find((s) => s.course_id === id) || {};
+    $('courseList').innerHTML = (data && data.length ? data : []).map((c) => {
+      const s = statFor(c.id);
+      return `
+      <div class="card course hud"><span class="c1"></span><span class="c2"></span>
+        <div class="meta"><span class="badge ok">${c.total_days} days</span><span class="badge">${FL.esc(c.level || '')}</span></div>
+        <h3 class="display" style="font-size:30px;margin:6px 0 0">${FL.esc(c.title)}</h3>
+        <div class="ash small">${FL.esc(c.subtitle || '')}</div>
+        <p class="small" style="margin:6px 0 0">${FL.esc(c.description || '')}</p>
+        ${s.enrolled_count != null ? `<div class="btn-row" style="margin-top:12px"><span class="badge">${s.enrolled_count} enrolled</span><span class="badge ok">${s.completed_count} completed</span><span class="badge warn">${s.in_progress_count} in progress</span></div>` : ''}
+      </div>`;
+    }).join('') || '<div class="card ash">Courses will appear here once published.</div>';
+  } catch (e) {
+    $('courseList').innerHTML = '<div class="card ash">Could not load courses yet. Check config.js.</div>';
+  }
+
+  forms.login.onsubmit = async (e) => {
+    e.preventDefault(); clear();
+    const btn = e.submitter; FL.busy(btn, true, 'Signing in…');
+    let handle = $('liEmail').value.trim();
+    const password = $('liPass').value;
+    if (!handle.includes('@')) {
+      // username login: the email is only released together with the right password
+      const { data: r } = await sb.rpc('email_for_login', { p_handle: handle, p_password: password });
+      if (!r || !r.ok) {
+        FL.busy(btn, false);
+        return say(r && r.throttled ? 'Too many attempts. Please wait 15 minutes, or sign in with your email.'
+                                    : 'Username or password is incorrect.');
+      }
+      handle = r.email;
+    }
+    const { error } = await sb.auth.signInWithPassword({ email: handle, password });
+    if (error) { FL.busy(btn, false); return say(FL.friendly(error)); }
+    await goInside();
+  };
+
+  forms.signup.onsubmit = async (e) => {
+    e.preventDefault(); clear();
+    const name = $('suName').value.trim(), email = $('suEmail').value.trim(), pass = $('suPass').value;
+    if (name.length < 2) return say('Enter your full name.');
+    if (pass.length < 8) return say('Password must be at least 8 characters.');
+    const btn = e.submitter; FL.busy(btn, true, 'Creating…');
+    const { data, error } = await sb.auth.signUp({ email, password: pass, options: { data: { full_name: name }, emailRedirectTo: location.href.split('#')[0] } });
+    FL.busy(btn, false);
+    if (error) return say(FL.friendly(error));
+    if (data.session) return goInside();
+    say(`<strong>Almost there.</strong> We sent a confirmation link to <b>${FL.esc(email)}</b>. Open it, then log in here to complete your member profile.`, true);
+    document.querySelector('#tabs button[data-tab="login"]').click();
+    $('liEmail').value = email;
+  };
+
+  forms.forgot.onsubmit = async (e) => {
+    e.preventDefault(); clear();
+    const btn = e.submitter; FL.busy(btn, true, 'Sending…');
+    const { error } = await sb.auth.resetPasswordForEmail($('fgEmail').value.trim(), { redirectTo: location.href.split('#')[0] });
+    FL.busy(btn, false);
+    if (error) return say(FL.friendly(error));
+    say('Reset link sent. Check your inbox (and spam) and follow the link.', true);
+  };
+
+  forms.recover.onsubmit = async (e) => {
+    e.preventDefault(); clear();
+    const btn = e.submitter; FL.busy(btn, true, 'Saving…');
+    const { error } = await sb.auth.updateUser({ password: $('rcPass').value });
+    FL.busy(btn, false);
+    if (error) return say(FL.friendly(error));
+    FL.toast('Password updated', 'ok');
+    await goInside();
+  };
+})();
+</script>
+</body>
+</html>

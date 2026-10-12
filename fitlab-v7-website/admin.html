@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Admin — The Fit Lab Academy</title>
+<link rel="icon" href="assets/favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="assets/theme.js"></script>
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0 18px;border-bottom:1px solid var(--line);padding-bottom:12px}
+  .tab{padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;letter-spacing:.04em;
+       text-transform:uppercase;background:transparent;border:1px solid var(--line);color:var(--ash)}
+  .tab.on{background:var(--lime);color:#050605;border-color:var(--lime)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+     color:var(--ash);padding:10px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+  td{padding:11px 8px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+  tr:hover td{background:rgba(163,230,53,.03)}
+  .tblwrap{overflow-x:auto;margin-top:4px}
+  .star{font-size:11px;font-family:var(--mono);padding:2px 7px;border-radius:99px;white-space:nowrap}
+  .s-diamond{background:rgba(56,189,248,.15);color:#7dd3fc} .s-platinum{background:rgba(226,232,240,.15);color:#e2e8f0}
+  .s-gold{background:rgba(250,204,21,.15);color:#facc15}    .s-silver{background:rgba(148,163,184,.15);color:#cbd5e1}
+  .s-bronze{background:rgba(180,83,9,.2);color:#fdba74}      .s-none{background:rgba(120,120,120,.12);color:var(--ash)}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;
+         z-index:60;padding:20px}
+  .modal.on{display:flex}
+  .modal .card{max-width:620px;width:100%;max-height:88vh;overflow-y:auto}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:600px){.row2{grid-template-columns:1fr}}
+  .danger{border-color:rgba(248,113,113,.4)!important;color:#f87171!important}
+  .chipbar{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 14px}
+  .chipbtn{padding:6px 12px;border-radius:99px;border:1px solid var(--line);background:transparent;color:var(--ash);
+           font:600 11px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+  .chipbtn.on{border-color:var(--lime);color:var(--lime);background:rgba(163,230,53,.07)}
+  .st{font:700 10px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;padding:4px 8px;border-radius:6px;white-space:nowrap}
+  .st-pending{background:rgba(250,204,21,.12);color:#facc15} .st-approved,.st-auto_approved{background:rgba(163,230,53,.12);color:var(--lime)}
+  .st-rejected{background:rgba(251,146,60,.12);color:#fb923c} .st-revoked{background:rgba(248,113,113,.12);color:#f87171}
+  .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+  .mcourse{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;
+           border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="nav"></div>
+
+  <div id="denied" class="card hud hidden" style="margin-top:40px;text-align:center;padding:50px 20px">
+    <span class="c1"></span><span class="c2"></span>
+    <div class="eyebrow" style="color:#f87171">Restricted</div>
+    <h2 style="margin:10px 0">Admin access only</h2>
+    <p class="ash">This area is limited to Fit Lab Academy administrators.</p>
+    <a class="btn btn-ghost" href="feed.html" style="margin-top:14px">Back to home</a>
+  </div>
+
+  <div id="panel" class="hidden">
+    <div style="margin-top:28px">
+      <div class="eyebrow">Administration</div>
+      <h1 class="display" style="font-size:clamp(30px,5vw,48px);margin:6px 0 4px">Control room</h1>
+      <p class="ash" id="sub">Loading…</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab on" data-tab="members">Members</button>
+      <button class="tab" data-tab="certs">Certificates</button>
+      <button class="tab" data-tab="broadcast">Announcements</button>
+      <button class="tab" data-tab="moderation">Moderation <span class="cnt" id="modCnt" style="position:static;margin-left:6px;box-shadow:none"></span></button>
+      <button class="tab" data-tab="conduct">Conduct rules</button>
+      <button class="tab hidden" data-tab="admins" id="tabAdmins">Administrators</button>
+    </div>
+
+    <!-- MEMBERS -->
+    <section id="t-members">
+      <form class="searchbar" id="msearch" style="display:flex;gap:10px;max-width:440px;margin-bottom:14px">
+        <input id="mq" placeholder="Search name, email, username or Unique ID">
+        <button class="btn btn-primary" type="submit">Search</button>
+      </form>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Member</th><th>Unique ID</th><th>Username</th><th>Stars</th>
+          <th>Progress</th><th>Last active</th><th></th></tr></thead>
+        <tbody id="mbody"><tr><td colspan="7" class="ash">Loading…</td></tr></tbody>
+      </table></div>
+    </section>
+
+    <!-- CERTIFICATES -->
+    <section id="t-certs" class="hidden">
+      <p class="ash small" style="margin-bottom:12px">Approving generates and emails the certificate automatically. A certificate can only be approved for a member who has passed the final exam — the database refuses anything else.</p>
+      <div class="chipbar" id="cfilter">
+        <button class="chipbtn on" data-f="pending">Awaiting review</button>
+        <button class="chipbtn" data-f="approved">Issued</button>
+        <button class="chipbtn" data-f="rejected">Changes requested</button>
+        <button class="chipbtn" data-f="revoked">Revoked</button>
+        <button class="chipbtn" data-f="all">All</button>
+      </div>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Member</th><th>Unique ID</th><th>Course</th><th>Best score</th><th>Status</th><th>Date</th><th></th></tr></thead>
+        <tbody id="cbody"><tr><td colspan="7" class="ash">Loading…</td></tr></tbody>
+      </table></div>
+    </section>
+
+    <!-- BROADCAST -->
+    <section id="t-broadcast" class="hidden">
+      <div class="card hud" style="max-width:620px"><span class="c1"></span><span class="c2"></span>
+        <div class="eyebrow">Send an announcement</div>
+        <p class="ash small" style="margin:8px 0 16px">Appears as a popup for every member next time they open the site.</p>
+        <div class="field"><label for="bTitle">Title</label><input id="bTitle" placeholder="New course launching Monday"></div>
+        <div class="field"><label for="bBody">Message</label><textarea id="bBody" placeholder="Details…"></textarea></div>
+        <div class="row2">
+          <div class="field"><label for="bKind">Type</label>
+            <select id="bKind"><option value="info">Info</option><option value="launch">Course launch</option>
+              <option value="motivation">Motivation</option></select></div>
+          <div class="field"><label for="bLink">Link (optional)</label><input id="bLink" placeholder="courses.html"></div>
+        </div>
+        <button class="btn btn-primary" id="bSend">Send to everyone</button>
+      </div>
+    </section>
+
+    <!-- ADMINISTRATORS (owner only) -->
+    <section id="t-admins" class="hidden">
+      <p class="ash small" style="margin-bottom:14px">Grant specific rights to other members. Only you, as the owner, can do this — and your own rights can never be removed.</p>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Member</th><th>Role</th><th>Rights</th><th></th></tr></thead>
+        <tbody id="abody"><tr><td colspan="4" class="ash">Loading…</td></tr></tbody>
+      </table></div>
+    </section>
+
+    <!-- MODERATION -->
+    <section id="t-moderation" class="hidden">
+      <div class="card" style="padding:18px 20px;margin-bottom:16px;display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+        <div style="max-width:640px"><b>AI second check</b>
+          <p class="ash small" style="margin:4px 0 0">Every message, post and comment is already checked against the conduct rules before it's sent (abuse, sexual, dating-style and contact-sharing text in English, Hindi, Telugu and Tamil — including disguised spellings). Switch this on to also send new content to the <span class="mono">ai-moderate</span> function, which uses Supabase's built-in AI model to catch harmful meaning that word lists miss. Anything it flags is hidden and appears here.</p></div>
+        <label class="check" style="font-size:14px;color:var(--bone)"><input type="checkbox" id="aiToggle"><span>On</span></label>
+      </div>
+      <div class="chipbar" id="mfilter">
+        <button class="chipbtn on" data-f="open">Needs review</button>
+        <button class="chipbtn" data-f="logged">Auto-blocked log</button>
+        <button class="chipbtn" data-f="resolved">Resolved</button>
+        <button class="chipbtn" data-f="dismissed">Dismissed</button>
+        <button class="chipbtn" data-f="restricted">Paused &amp; removed members</button>
+      </div>
+      <div id="mlist"><p class="ash">Loading…</p></div>
+    </section>
+
+    <!-- CONDUCT -->
+    <section id="t-conduct" class="hidden">
+      <p class="ash small" style="margin-bottom:12px">Words and phrases blocked in messages, posts, comments, invitations and profiles. A plain word or phrase matches whole words (and disguised spellings like “f u c k” or “s3xy”). Use <span class="mono">%</span> for a partial match — e.g. <span class="mono">%telegram%</span>.
+        <b>High</b> pauses the member's community access immediately; <b>medium</b> blocks the text and counts a strike (3 in 30 days pauses access); <b>low</b> just blocks it with a friendly explanation.</p>
+      <form id="addRule" style="display:flex;gap:10px;max-width:720px;margin-bottom:16px;flex-wrap:wrap">
+        <input id="rPattern" placeholder="word, phrase or %partial%" style="flex:1;min-width:180px">
+        <select id="rCat" style="width:140px"><option value="profanity">Profanity</option><option value="dating">Dating / romance</option><option value="sexual">Sexual</option><option value="slur">Slur / abuse</option><option value="threat">Threat</option><option value="contact">Contact sharing</option></select>
+        <select id="rSev" style="width:120px"><option value="medium">Medium</option><option value="high">High</option><option value="low">Low</option></select>
+        <button class="btn btn-primary" type="submit">Add</button>
+      </form>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Pattern</th><th>Category</th><th>Severity</th><th>Note</th><th></th></tr></thead>
+        <tbody id="rbody"><tr><td colspan="5" class="ash">Loading…</td></tr></tbody>
+      </table></div>
+    </section>
+  </div>
+
+  <div class="footer">© <span id="yr"></span> The Fit Lab Academy · Administration</div>
+</div>
+
+<!-- ADMIN RIGHTS MODAL -->
+<div class="modal" id="rightsModal">
+  <div class="card hud" style="max-width:440px"><span class="c1"></span><span class="c2"></span>
+    <div class="eyebrow">Administrator rights</div>
+    <h2 id="raName" style="margin:8px 0 14px">—</h2>
+    <label class="check" style="margin-bottom:14px"><input type="checkbox" id="raIsAdmin"><span><b>Is an administrator</b></span></label>
+    <div id="raRights" style="display:grid;gap:9px;padding-left:4px">
+      <label class="check"><input type="checkbox" data-right="members"><span>Members — view, edit and delete member accounts</span></label>
+      <label class="check"><input type="checkbox" data-right="certificates"><span>Certificates — approve and issue certificates</span></label>
+      <label class="check"><input type="checkbox" data-right="announcements"><span>Announcements — send site-wide notices</span></label>
+      <label class="check"><input type="checkbox" data-right="moderation"><span>Moderation — manage chat conduct rules</span></label>
+      <label class="check"><input type="checkbox" data-right="content"><span>Content — manage courses and lessons</span></label>
+    </div>
+    <div id="raErr" class="err hidden" style="margin-top:12px"></div>
+    <div class="btn-row" style="margin-top:18px;justify-content:flex-end">
+      <button class="btn btn-ghost" id="raCancel">Cancel</button>
+      <button class="btn btn-primary" id="raSave">Save rights</button>
+    </div>
+  </div>
+</div>
+
+<!-- NOTE MODAL (reject / revoke) -->
+<div class="modal" id="noteModal">
+  <div class="card hud" style="max-width:460px"><span class="c1"></span><span class="c2"></span>
+    <div class="eyebrow" id="nmEyebrow">Certificate</div>
+    <h2 id="nmTitle" style="margin:8px 0 6px">—</h2>
+    <p class="ash small" id="nmHelp" style="margin:0 0 12px"></p>
+    <div class="field"><label for="nmNote">Note to the member</label>
+      <textarea id="nmNote" maxlength="600" placeholder="e.g. Assignments for Days 4–6 are missing — please complete them and we'll review again."></textarea></div>
+    <div class="btn-row" style="justify-content:flex-end">
+      <button class="btn btn-ghost" id="nmCancel">Cancel</button>
+      <button class="btn btn-primary" id="nmOk">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MEMBER MODAL -->
+<div class="modal" id="editModal">
+  <div class="card hud"><span class="c1"></span><span class="c2"></span>
+    <div class="eyebrow">Edit member</div>
+    <h2 id="eName" style="margin:8px 0 16px">—</h2>
+    <div class="row2">
+      <div class="field"><label for="eFullName">Full name</label><input id="eFullName"></div>
+      <div class="field"><label for="eUsername">Username</label><input id="eUsername"></div>
+      <div class="field"><label for="eEmail">Email</label><input id="eEmail" type="email"></div>
+      <div class="field"><label for="ePhone">Mobile</label><input id="ePhone"></div>
+      <div class="field"><label for="eGender">Gender</label>
+        <select id="eGender"><option value="male">Male</option><option value="female">Female</option></select></div>
+      <div class="field"><label for="eDob">Date of birth</label><input id="eDob" type="date"></div>
+      <div class="field"><label for="eCity">City</label><input id="eCity"></div>
+      <div class="field"><label for="eDistrict">District</label><input id="eDistrict"></div>
+      <div class="field"><label for="eCountry">Country</label><input id="eCountry"></div>
+      <div class="field"><label for="eExp">Experience</label>
+        <select id="eExp"><option value="">—</option><option value="beginner">Beginner</option>
+          <option value="1-3 years">1–3 years</option><option value="3+ years">3+ years</option></select></div>
+    </div>
+    <div class="field"><label for="eOcc">Current role</label><input id="eOcc"></div>
+    <div class="field"><label for="eBio">Bio</label><textarea id="eBio" maxlength="280"></textarea></div>
+    <label class="check"><input type="checkbox" id="eConsent"><span>Visible in directory &amp; hire portal</span></label>
+    <div class="eyebrow" style="margin-top:18px">Courses</div>
+    <div id="eCourses"><p class="ash small">Loading…</p></div>
+    <p class="ash small" style="margin-top:8px">Administrator rights are managed on the Administrators tab.</p>
+    <div id="eErr" class="err hidden" style="margin-top:12px"></div>
+    <div class="btn-row" style="margin-top:18px;justify-content:space-between">
+      <button class="btn btn-ghost danger" id="eDelete">Delete member</button>
+      <span style="display:flex;gap:10px">
+        <button class="btn btn-ghost" id="eCancel">Cancel</button>
+        <button class="btn btn-primary" id="eSave">Save changes</button>
+      </span>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(async () => {
+  const $ = (id) => document.getElementById(id);
+  $('yr').textContent = new Date().getFullYear();
+
+  const session = await FL.requireAuth(); if (!session) return;
+  let profile = null; try { profile = await FL.getProfile(); } catch (_) {}
+  FL.renderHeader(profile);
+
+  let rights = { is_admin: false };
+  try { const r = await sb.rpc('my_admin_rights'); rights = r.data || rights; } catch (_) {}
+  if (!rights.is_admin) { $('denied').classList.remove('hidden'); return; }
+  $('panel').classList.remove('hidden');
+
+  // ---- tabs (only the ones this admin holds a right for) ----
+  const tabRight = { members:'members', certs:'certificates', broadcast:'announcements', moderation:'moderation',
+                     conduct:'moderation', admins:'admins' };
+  const sections = Object.keys(tabRight);
+  document.querySelectorAll('.tab').forEach((t) => {
+    t.classList.toggle('hidden', !rights[tabRight[t.dataset.tab]]);
+    t.onclick = () => {
+      document.querySelectorAll('.tab').forEach((x) => x.classList.toggle('on', x === t));
+      sections.forEach((s) => $('t-' + s).classList.toggle('hidden', s !== t.dataset.tab));
+      try { sessionStorage.setItem('fl:admintab', t.dataset.tab); } catch (_) {}
+    };
+  });
+  let savedTab = null; try { savedTab = sessionStorage.getItem('fl:admintab'); } catch (_) {}
+  const firstTab = document.querySelector(`.tab[data-tab="${savedTab}"]:not(.hidden)`) || document.querySelector('.tab:not(.hidden)');
+  if (firstTab) firstTab.click();
+  else { sections.forEach((s) => $('t-' + s).classList.add('hidden')); $('sub').textContent = 'You are an administrator, but no areas have been assigned to you yet.'; }
+
+  const starHtml = (n, tier) => `<span class="star s-${tier}">${n > 0 ? '★'.repeat(n) : '—'}</span>`;
+  const fmt = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'2-digit' }) : '—';
+
+  // ---- members ----
+  let members = [];
+  async function loadMembers(q) {
+    const { data, error } = await sb.rpc('admin_list_members', { p_search: q || null });
+    if (error) { $('mbody').innerHTML = `<tr><td colspan="7" class="ash">${FL.esc(FL.friendly(error))}</td></tr>`; return; }
+    members = data || [];
+    $('sub').textContent = `${members.length} member${members.length === 1 ? '' : 's'} registered`;
+    $('mbody').innerHTML = members.length ? members.map((m) => `
+      <tr>
+        <td><strong>${FL.esc(m.full_name || '—')}</strong>${m.is_admin ? ' <span class="chip" style="font-size:9px">ADMIN</span>' : ''}
+            <div class="ash" style="font-size:11px">${FL.esc(m.email || '')}</div></td>
+        <td class="mono" style="font-size:11px;color:var(--lime)">${FL.esc(m.unique_id || '—')}</td>
+        <td class="mono" style="font-size:11px">@${FL.esc(m.username || '—')}</td>
+        <td>${starHtml(m.star_count, m.star_tier)}</td>
+        <td class="mono" style="font-size:11px">${m.days_done} days · ${m.enrolled} course${m.enrolled === 1 ? '' : 's'}</td>
+        <td class="ash" style="font-size:11px">${fmt(m.last_activity_at)}</td>
+        <td><button class="btn btn-ghost small" data-edit="${m.id}">Edit</button></td>
+      </tr>`).join('') : '<tr><td colspan="7" class="ash">No members found.</td></tr>';
+  }
+  $('msearch').onsubmit = (e) => { e.preventDefault(); loadMembers($('mq').value.trim()); };
+
+  // ---- edit modal ----
+  let editing = null;
+  $('mbody').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-edit]'); if (!b) return;
+    editing = members.find((m) => m.id === b.dataset.edit); if (!editing) return;
+    $('eName').textContent = editing.full_name || 'Member';
+    $('eFullName').value = editing.full_name || ''; $('eUsername').value = editing.username || '';
+    $('eEmail').value = editing.email || '';        $('ePhone').value = editing.phone || '';
+    $('eGender').value = editing.gender || 'male';  $('eCity').value = editing.city || '';
+    $('eCountry').value = editing.country || '';    $('eExp').value = editing.experience_level || '';
+
+    $('eDob').value = editing.date_of_birth || '';
+    $('eDistrict').value = editing.district || '';
+    $('eOcc').value = editing.occupation || '';
+    $('eBio').value = editing.bio || '';
+    $('eConsent').checked = !!editing.display_consent;
+    $('eErr').classList.add('hidden');
+    $('editModal').classList.add('on');
+    loadMemberCourses(editing.id);
+  });
+
+  async function loadMemberCourses(userId) {
+    const host = $('eCourses'); host.innerHTML = '<p class="ash small">Loading…</p>';
+    const { data, error } = await sb.rpc('admin_member_courses', { p_user_id: userId });
+    if (error) { host.innerHTML = `<p class="ash small">${FL.esc(FL.friendly(error))}</p>`; return; }
+    host.innerHTML = (data || []).length ? data.map((c) => `
+      <div class="mcourse">
+        <div><b>${FL.esc(c.course_title)}</b>
+          <div class="mono ash" style="font-size:11px;margin-top:3px">${c.days_done}/${c.total_days} days · exam ${c.best_score != null ? Math.round(c.best_score) + '%' : '—'} · attempts ${c.attempts_used}/${c.max_attempts}${c.certificate_status ? ' · certificate ' + FL.esc(stLabel[c.certificate_status] || c.certificate_status) : ''}</div></div>
+        <button class="btn btn-ghost small danger" data-reset="${c.course_id}" data-title="${FL.esc(c.course_title)}">Reset progress</button>
+      </div>`).join('') : '<p class="ash small">Not enrolled in any course.</p>';
+  }
+  $('eCourses').addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-reset]'); if (!b || !editing) return;
+    if (!confirm(`Reset ${editing.full_name}'s progress in "${b.dataset.title}"? Completed days and assignments are cleared; exam attempts and certificates are kept.`)) return;
+    FL.busy(b, true, 'Resetting…');
+    const { error } = await sb.rpc('admin_reset_member_progress', { p_user_id: editing.id, p_course_id: b.dataset.reset });
+    FL.busy(b, false);
+    if (error) return FL.toast(FL.friendly(error), 'err');
+    FL.toast('Progress reset', 'ok'); loadMemberCourses(editing.id); loadMembers($('mq').value.trim());
+  });
+  $('eCancel').onclick = () => $('editModal').classList.remove('on');
+  $('editModal').onclick = (e) => { if (e.target === $('editModal')) $('editModal').classList.remove('on'); };
+
+  $('eSave').onclick = async () => {
+    const changes = {
+      full_name: $('eFullName').value.trim(), username: $('eUsername').value.trim().toLowerCase(),
+      email: $('eEmail').value.trim(), phone: $('ePhone').value.trim() || null,
+      gender: $('eGender').value, city: $('eCity').value.trim() || null,
+      district: $('eDistrict').value.trim() || null, country: $('eCountry').value.trim() || null,
+      occupation: $('eOcc').value.trim() || null, bio: $('eBio').value.trim() || null,
+      experience_level: $('eExp').value || null, display_consent: $('eConsent').checked,
+    };
+    if ($('eDob').value) changes.date_of_birth = $('eDob').value;
+    const btn = $('eSave'); FL.busy(btn, true, 'Saving…');
+    const { error } = await sb.rpc('admin_update_member', { p_user_id: editing.id, p_changes: changes });
+    FL.busy(btn, false);
+    if (error) { $('eErr').textContent = FL.friendly(error); $('eErr').classList.remove('hidden'); return; }
+    FL.toast('Member updated', 'ok'); $('editModal').classList.remove('on'); loadMembers($('mq').value.trim());
+  };
+
+  $('eDelete').onclick = async () => {
+    if (!confirm(`Permanently delete ${editing.full_name}? This removes their profile, progress, certificates and messages. This cannot be undone.`)) return;
+    const { error } = await sb.rpc('admin_delete_member', { p_user_id: editing.id });
+    if (error) { $('eErr').textContent = FL.friendly(error); $('eErr').classList.remove('hidden'); return; }
+    FL.toast('Member deleted', 'ok'); $('editModal').classList.remove('on'); loadMembers($('mq').value.trim());
+  };
+
+  // ---- certificates ----
+  let cFilter = 'pending', certRows = [];
+  const stLabel = { pending:'Awaiting review', approved:'Issued', auto_approved:'Issued', rejected:'Changes requested', revoked:'Revoked' };
+  async function loadCerts() {
+    if (!rights.certificates) return;
+    $('cbody').innerHTML = '<tr><td colspan="7" class="ash">Loading…</td></tr>';
+    const { data, error } = await sb.rpc('admin_list_certificates', { p_filter: cFilter });
+    if (error) { $('cbody').innerHTML = `<tr><td colspan="7" class="ash">${FL.esc(FL.friendly(error))}</td></tr>`; return; }
+    certRows = data || [];
+    const key = (c) => `data-u="${c.user_id}" data-c="${c.course_id}"`;
+    $('cbody').innerHTML = certRows.length ? certRows.map((c) => {
+      const acts = [];
+      if (c.status === 'pending' || c.status === 'rejected')
+        acts.push(c.eligible ? `<button class="btn btn-primary small" data-act="approve" ${key(c)}>Approve</button>`
+                             : `<span class="ash small" title="No passed exam on record">Not eligible</span>`);
+      if (c.status === 'pending') acts.push(`<button class="btn btn-ghost small" data-act="reject" ${key(c)}>Request changes</button>`);
+      if (c.status === 'approved' || c.status === 'auto_approved') {
+        if (c.certificate_url) acts.push(`<a class="btn btn-ghost small" href="${FL.esc(c.certificate_url)}" target="_blank" rel="noopener">View</a>`);
+        acts.push(`<button class="btn btn-ghost small danger" data-act="revoke" ${key(c)}>Revoke</button>`);
+      }
+      if (c.status === 'revoked' && c.eligible) acts.push(`<button class="btn btn-ghost small" data-act="restore" ${key(c)}>Restore</button>`);
+      return `<tr>
+        <td><strong>${FL.esc(c.full_name)}</strong><div class="ash" style="font-size:11px">${FL.esc(c.email || '')}</div>
+            ${c.review_note ? `<div class="ash" style="font-size:11px;margin-top:3px;max-width:260px">“${FL.esc(c.review_note)}”</div>` : ''}</td>
+        <td class="mono" style="font-size:11px;color:var(--lime)">${FL.esc(c.unique_id)}</td>
+        <td>${FL.esc(c.course_title)}</td>
+        <td class="mono">${c.percentage != null ? Math.round(c.percentage) + '%' : '—'}</td>
+        <td><span class="st st-${c.status}">${stLabel[c.status] || FL.esc(c.status)}</span></td>
+        <td class="ash" style="font-size:11px">${fmt(c.revoked_at || c.reviewed_at || c.issued_at)}</td>
+        <td><div class="acts">${acts.join('')}</div></td>
+      </tr>`;
+    }).join('') : `<tr><td colspan="7" class="ash">${cFilter === 'pending' ? 'No certificates awaiting review.' : 'Nothing here.'}</td></tr>`;
+  }
+  $('cfilter').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-f]'); if (!b) return;
+    cFilter = b.dataset.f;
+    document.querySelectorAll('#cfilter .chipbtn').forEach((x) => x.classList.toggle('on', x === b));
+    loadCerts();
+  });
+
+  // small note dialog used by reject / revoke
+  function askNote({ eyebrow, title, help, okLabel, danger }) {
+    return new Promise((resolve) => {
+      $('nmEyebrow').textContent = eyebrow; $('nmTitle').textContent = title; $('nmHelp').textContent = help;
+      $('nmNote').value = ''; $('nmOk').textContent = okLabel;
+      $('nmOk').classList.toggle('danger', !!danger);
+      const close = (v) => { $('noteModal').classList.remove('on'); $('nmOk').onclick = $('nmCancel').onclick = null; resolve(v); };
+      $('nmOk').onclick = () => close({ note: $('nmNote').value.trim() });
+      $('nmCancel').onclick = () => close(null);
+      $('noteModal').classList.add('on'); setTimeout(() => $('nmNote').focus(), 50);
+    });
+  }
+
+  $('cbody').addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-act]'); if (!b) return;
+    const row = certRows.find((c) => c.user_id === b.dataset.u && c.course_id === b.dataset.c); if (!row) return;
+    const ids = { p_user_id: row.user_id, p_course_id: row.course_id };
+    let rpc, args, done;
+    if (b.dataset.act === 'approve') {
+      rpc = 'approve_certificate'; args = { ...ids, p_certificate_url: null };
+      done = 'Approved — the certificate is being generated and emailed';
+    } else if (b.dataset.act === 'reject') {
+      const r = await askNote({ eyebrow: 'Request changes', title: row.full_name,
+        help: 'The member is notified with your note and can be approved later.', okLabel: 'Send back' });
+      if (!r) return;
+      rpc = 'reject_certificate'; args = { ...ids, p_note: r.note }; done = 'Sent back to the member';
+    } else if (b.dataset.act === 'revoke') {
+      const r = await askNote({ eyebrow: 'Revoke certificate', title: row.full_name,
+        help: 'The certificate disappears from the public verification page and the hire portal. You can restore it later.',
+        okLabel: 'Revoke', danger: true });
+      if (!r) return;
+      rpc = 'revoke_certificate'; args = { ...ids, p_note: r.note }; done = 'Certificate revoked';
+    } else if (b.dataset.act === 'restore') {
+      rpc = 'restore_certificate'; args = ids; done = 'Certificate restored';
+    }
+    FL.busy(b, true, '…');
+    const { error } = await sb.rpc(rpc, args);
+    FL.busy(b, false);
+    if (error) return FL.toast(FL.friendly(error), 'err');
+    FL.toast(done, 'ok'); loadCerts();
+  });
+
+  // ---- broadcast ----
+  $('bSend').onclick = async () => {
+    const title = $('bTitle').value.trim(); if (!title) return FL.toast('Give the announcement a title', 'err');
+    const btn = $('bSend'); FL.busy(btn, true, 'Sending…');
+    const { error } = await sb.rpc('admin_broadcast', {
+      p_title: title, p_body: $('bBody').value.trim() || null,
+      p_kind: $('bKind').value, p_link: $('bLink').value.trim() || null, p_expires: null });
+    FL.busy(btn, false);
+    if (error) return FL.toast(FL.friendly(error), 'err');
+    FL.toast('Announcement sent to all members', 'ok');
+    $('bTitle').value = ''; $('bBody').value = ''; $('bLink').value = '';
+  };
+
+  // ---- conduct rules ----
+  async function loadRules() {
+    const { data, error } = await sb.from('moderation_blocklist').select('*').order('category').order('pattern');
+    if (error) { $('rbody').innerHTML = `<tr><td colspan="4" class="ash">${FL.esc(FL.friendly(error))}</td></tr>`; return; }
+    const sevOrder = { high: 0, medium: 1, low: 2 };
+    $('rbody').innerHTML = (data || []).sort((a, b) => (sevOrder[a.severity] - sevOrder[b.severity]) || a.category.localeCompare(b.category) || a.pattern.localeCompare(b.pattern)).map((r) => `
+      <tr><td class="mono" style="font-size:12px">${FL.esc(r.pattern)}${r.builtin ? ' <span class="ash" style="font-size:10px">built-in</span>' : ''}</td>
+          <td><span class="chip" style="font-size:10px">${FL.esc(r.category)}</span></td>
+          <td><span class="st st-${r.severity === 'high' ? 'revoked' : r.severity === 'medium' ? 'rejected' : 'pending'}">${FL.esc(r.severity || 'medium')}</span></td>
+          <td class="ash" style="font-size:11px">${FL.esc(r.note || '')}</td>
+          <td><button class="btn btn-ghost small danger" data-del="${r.id}">Remove</button></td></tr>`).join('')
+      || '<tr><td colspan="5" class="ash">No rules configured.</td></tr>';
+  }
+  $('addRule').onsubmit = async (e) => {
+    e.preventDefault();
+    const pattern = $('rPattern').value.trim().toLowerCase().replace(/\s+/g, ' '); if (!pattern) return;
+    const kind = pattern.includes('%') ? 'like' : 'word';
+    if (kind === 'word' && !/^[a-z0-9 ]+$/.test(pattern)) return FL.toast('Use letters, numbers and spaces only (or % for a partial match).', 'err');
+    const { error } = await sb.from('moderation_blocklist').insert({ pattern, category: $('rCat').value, severity: $('rSev').value, kind, note: 'Added by admin' });
+    if (error) return FL.toast(FL.friendly(error), 'err');
+    $('rPattern').value = ''; FL.toast('Rule added', 'ok'); loadRules();
+  };
+  $('rbody').addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-del]'); if (!b) return;
+    const { error } = await sb.from('moderation_blocklist').delete().eq('id', b.dataset.del);
+    if (error) return FL.toast(FL.friendly(error), 'err');
+    FL.toast('Rule removed', 'ok'); loadRules();
+  });
+
+  // ---- moderation ----
+  let mFilter = 'open', cases = [];
+  const srcLabel = { auto: 'Automatic block', report: 'Member report', ai: 'AI check' };
+  async function loadCases() {
+    if (!rights.moderation) return;
+    $('mlist').innerHTML = '<p class="ash">Loading…</p>';
+    if (mFilter === 'restricted') {
+      const { data, error } = await sb.rpc('admin_list_restricted');
+      if (error) { $('mlist').innerHTML = `<p class="ash">${FL.esc(FL.friendly(error))}</p>`; return; }
+      $('mlist').innerHTML = (data || []).length ? `<div class="tblwrap"><table><thead><tr><th>Member</th><th>Status</th><th>Since</th><th>Reason</th><th></th></tr></thead><tbody>
+        ${data.map((m) => `<tr><td><a href="profile.html?u=${encodeURIComponent(m.username)}"><strong>${FL.esc(m.full_name)}</strong></a><div class="ash" style="font-size:11px">@${FL.esc(m.username)} · ${FL.esc(m.unique_id || '')}</div></td>
+          <td><span class="st st-${m.community_status === 'banned' ? 'revoked' : 'rejected'}">${m.community_status === 'banned' ? 'Removed' : 'Paused'}</span></td>
+          <td class="ash" style="font-size:11px">${fmt(m.suspended_at)}</td><td class="ash" style="font-size:12px">${FL.esc(m.suspended_reason || '')}</td>
+          <td><div class="acts"><button class="btn btn-primary small" data-ms="${m.user_id}" data-st="active">Restore access</button>
+            ${m.community_status !== 'banned' ? `<button class="btn btn-ghost small danger" data-ms="${m.user_id}" data-st="banned">Remove access</button>` : ''}</div></td></tr>`).join('')}</tbody></table></div>`
+        : '<p class="ash">No paused or removed members.</p>';
+      return;
+    }
+    const { data, error } = await sb.rpc('admin_list_cases', { p_status: mFilter });
+    if (error) { $('mlist').innerHTML = `<p class="ash">${FL.esc(FL.friendly(error))}</p>`; return; }
+    cases = data || [];
+    if (mFilter === 'open') { const n = cases.length; $('modCnt').textContent = n || ''; $('modCnt').dataset.n = n; }
+    $('mlist').innerHTML = cases.length ? cases.map((c) => {
+      const s = c.subject || {};
+      const sev = c.severity ? `<span class="st st-${c.severity === 'high' ? 'revoked' : c.severity === 'medium' ? 'rejected' : 'pending'}">${FL.esc(c.severity)}</span>` : '';
+      return `<div class="card" style="padding:16px 18px;margin-bottom:12px" data-case="${c.id}">
+        <div style="display:flex;gap:12px;justify-content:space-between;flex-wrap:wrap;align-items:flex-start">
+          <div style="display:flex;gap:12px;align-items:center">${FL.avatarHtml(s, 'avatar')}<div>
+            <a href="profile.html?u=${encodeURIComponent(s.username || '')}"><strong>${FL.esc(s.full_name || 'Member')}</strong></a>
+            <div class="ash" style="font-size:11px">@${FL.esc(s.username || '')} · ${FL.esc(s.unique_id || '')} ·
+              <b style="color:${s.community_status === 'active' ? 'var(--lime)' : 'var(--warn)'}">${s.community_status === 'active' ? 'active' : s.community_status === 'banned' ? 'removed' : 'paused'}</b></div></div></div>
+          <div style="text-align:right"><div style="display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap"><span class="chip" style="font-size:10px">${srcLabel[c.source] || c.source}</span>
+            <span class="chip" style="font-size:10px">${FL.esc(c.target_type.replace('_', ' '))}</span>${c.category ? `<span class="chip" style="font-size:10px">${FL.esc(c.category)}</span>` : ''}${sev}</div>
+            <div class="ash" style="font-size:11px;margin-top:4px">${fmt(c.created_at)}${c.report_count > 1 ? ` · ${c.report_count} reports` : ''}${c.score ? ` · AI score ${Number(c.score).toFixed(2)}` : ''}</div></div></div>
+        ${c.content ? `<blockquote style="margin:12px 0 0;padding:10px 14px;border-left:3px solid var(--line-2);background:var(--panel-2);border-radius:0 8px 8px 0;font-size:14px;white-space:pre-wrap;word-wrap:break-word">${FL.esc(c.content)}</blockquote>` : ''}
+        ${c.reason ? `<div class="ash" style="font-size:12px;margin-top:8px">${FL.esc(c.reason)}</div>` : ''}
+        ${c.reporter ? `<div class="ash" style="font-size:12px;margin-top:4px">Reported by <a href="profile.html?u=${encodeURIComponent(c.reporter.username)}">${FL.esc(c.reporter.full_name)}</a></div>` : ''}
+        ${c.resolution_note ? `<div class="ash" style="font-size:12px;margin-top:4px">Note: ${FL.esc(c.resolution_note)}</div>` : ''}
+        ${c.status === 'open' || c.status === 'logged' ? `<div class="acts" style="justify-content:flex-start;margin-top:12px">
+          <button class="btn btn-ghost small" data-res="dismiss">Dismiss${s.community_status === 'suspended' ? ' &amp; restore access' : ''}</button>
+          ${['post', 'comment', 'message'].includes(c.target_type) && c.target_id ? `<button class="btn btn-ghost small" data-res="remove">Remove content</button>` : ''}
+          ${s.community_status === 'suspended' ? `<button class="btn btn-ghost small" data-res="keep" style="border-color:var(--lime);color:var(--lime)">Keep paused</button>` : `<button class="btn btn-ghost small" data-res="suspend">Pause access</button>`}
+          <button class="btn btn-ghost small danger" data-res="ban">Remove access</button></div>` : ''}
+      </div>`;
+    }).join('') : `<p class="ash">${mFilter === 'open' ? 'Nothing needs review. 🎉' : 'Nothing here.'}</p>`;
+  }
+  if ($('mfilter')) $('mfilter').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-f]'); if (!b) return;
+    mFilter = b.dataset.f;
+    document.querySelectorAll('#mfilter .chipbtn').forEach((x) => x.classList.toggle('on', x === b));
+    loadCases();
+  });
+  if ($('mlist')) $('mlist').addEventListener('click', async (e) => {
+    const ms = e.target.closest('[data-ms]');
+    if (ms) {
+      const r = await askNote({ eyebrow: 'Community access', title: ms.dataset.st === 'active' ? 'Restore access' : 'Remove access',
+        help: ms.dataset.st === 'active' ? 'The member is notified that messaging, posting and connecting are open again.' : 'The member can still study and keep certificates, but can no longer use community features.',
+        okLabel: 'Confirm', danger: ms.dataset.st !== 'active' });
+      if (!r) return;
+      const { error } = await sb.rpc('admin_set_community_status', { p_user: ms.dataset.ms, p_status: ms.dataset.st, p_note: r.note || null });
+      if (error) return FL.toast(FL.friendly(error), 'err');
+      FL.toast('Updated', 'ok'); return loadCases();
+    }
+    const b = e.target.closest('[data-res]'); if (!b) return;
+    const card = b.closest('[data-case]'); const c = cases.find((x) => x.id === card.dataset.case); if (!c) return;
+    const act = b.dataset.res;
+    const map = {
+      dismiss: { decision: 'dismiss', member: c.subject && c.subject.community_status === 'suspended' ? 'lift' : 'none', remove: false },
+      remove: { decision: 'resolve', member: 'none', remove: true },
+      keep: { decision: 'resolve', member: 'suspend', remove: true },
+      suspend: { decision: 'resolve', member: 'suspend', remove: true },
+      ban: { decision: 'resolve', member: 'ban', remove: true },
+    }[act];
+    let note = null;
+    if (act !== 'dismiss') {
+      const r = await askNote({ eyebrow: 'Moderation', title: c.subject ? c.subject.full_name : 'Case', help: 'Optional note — kept with the case for your records.',
+        okLabel: { remove: 'Remove content', keep: 'Keep paused', suspend: 'Pause access', ban: 'Remove access' }[act], danger: act === 'ban' });
+      if (!r) return; note = r.note || null;
+    }
+    FL.busy(b, true, '…');
+    const { error } = await sb.rpc('admin_resolve_case', { p_case: c.id, p_decision: map.decision, p_member_action: map.member, p_remove_content: map.remove, p_note: note });
+    FL.busy(b, false);
+    if (error) return FL.toast(FL.friendly(error), 'err');
+    FL.toast('Done', 'ok'); loadCases();
+  });
+  async function loadAiSetting() {
+    if (!rights.moderation || !$('aiToggle')) return;
+    const { data } = await sb.rpc('admin_moderation_settings', { p_ai: null });
+    $('aiToggle').checked = !!(data && data.ai_moderation);
+    $('aiToggle').onchange = async (e) => {
+      const { data: d, error } = await sb.rpc('admin_moderation_settings', { p_ai: e.target.checked ? 'on' : 'off' });
+      if (error) { e.target.checked = !e.target.checked; return FL.toast(FL.friendly(error), 'err'); }
+      FL.toast(d.ai_moderation ? 'AI second check is on' : 'AI second check is off', 'ok');
+    };
+  }
+
+  // ---- administrators (owner only) ----
+  let raTarget = null;
+  async function loadAdmins() {
+    if (!rights.admins) return;
+    const { data, error } = await sb.rpc('admin_list_members', { p_search: null });
+    if (error) { $('abody').innerHTML = `<tr><td colspan="4" class="ash">${FL.esc(FL.friendly(error))}</td></tr>`; return; }
+    const rows = (data || []).filter((m) => m.is_admin || m.is_owner);
+    const others = (data || []).filter((m) => !m.is_admin && !m.is_owner);
+    const rightList = (m) => m.is_owner ? '<span class="chip">ALL RIGHTS</span>'
+      : Object.entries(m.admin_rights || {}).filter(([, v]) => v)
+          .map(([k]) => `<span class="chip" style="font-size:9px">${FL.esc(k)}</span>`).join(' ') || '<span class="ash">none</span>';
+    $('abody').innerHTML = rows.map((m) => `
+      <tr><td><strong>${FL.esc(m.full_name)}</strong><div class="ash" style="font-size:11px">${FL.esc(m.email || '')}</div></td>
+        <td>${m.is_owner ? '<span class="chip" style="border-color:var(--lime);color:var(--lime)">OWNER</span>' : '<span class="chip">ADMIN</span>'}</td>
+        <td>${rightList(m)}</td>
+        <td>${m.is_owner ? '' : `<button class="btn btn-ghost small" data-rights="${m.id}">Edit rights</button>`}</td></tr>`).join('')
+      + `<tr><td colspan="4" style="padding-top:18px">
+           <div class="eyebrow" style="margin-bottom:8px">Promote a member</div>
+           <div style="display:flex;gap:9px;flex-wrap:wrap">
+             <select id="promoteSel" style="flex:1;min-width:200px">
+               <option value="">Choose a member…</option>
+               ${others.map((m) => `<option value="${m.id}">${FL.esc(m.full_name)} (@${FL.esc(m.username || '')})</option>`).join('')}
+             </select>
+             <button class="btn btn-primary small" id="btnPromote">Grant rights</button>
+           </div></td></tr>`;
+    window.__adminRows = data || [];
+  }
+
+  document.body.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-rights]');
+    const p = e.target.closest('#btnPromote');
+    let id = b ? b.dataset.rights : null;
+    if (p) { id = document.getElementById('promoteSel').value; if (!id) return FL.toast('Choose a member first', 'err'); }
+    if (!id) return;
+    raTarget = (window.__adminRows || []).find((m) => m.id === id); if (!raTarget) return;
+    $('raName').textContent = raTarget.full_name;
+    $('raIsAdmin').checked = !!raTarget.is_admin;
+    document.querySelectorAll('#raRights [data-right]').forEach((cb) => {
+      cb.checked = !!(raTarget.admin_rights || {})[cb.dataset.right];
+    });
+    $('raErr').classList.add('hidden');
+    $('rightsModal').classList.add('on');
+  });
+  $('raCancel').onclick = () => $('rightsModal').classList.remove('on');
+  $('rightsModal').onclick = (e) => { if (e.target === $('rightsModal')) $('rightsModal').classList.remove('on'); };
+  $('raSave').onclick = async () => {
+    const r = {};
+    document.querySelectorAll('#raRights [data-right]').forEach((cb) => { if (cb.checked) r[cb.dataset.right] = true; });
+    const btn = $('raSave'); FL.busy(btn, true, 'Saving…');
+    const { error } = await sb.rpc('set_admin_rights',
+      { p_user_id: raTarget.id, p_is_admin: $('raIsAdmin').checked, p_rights: r });
+    FL.busy(btn, false);
+    if (error) { $('raErr').textContent = FL.friendly(error); return $('raErr').classList.remove('hidden'); }
+    FL.toast('Rights updated', 'ok'); $('rightsModal').classList.remove('on'); loadAdmins(); loadMembers();
+  };
+
+  if (rights.members) loadMembers(); else if (document.querySelector('.tab:not(.hidden)')) $('sub').textContent = 'Signed in as administrator';
+  if (rights.certificates) loadCerts();
+  if (rights.moderation) { loadRules(); loadCases(); loadAiSetting(); }
+  if (rights.admins) loadAdmins();
+  $('noteModal').onclick = (e) => { if (e.target === $('noteModal')) $('nmCancel').click(); };
+})();
+</script>
+</body>
+</html>

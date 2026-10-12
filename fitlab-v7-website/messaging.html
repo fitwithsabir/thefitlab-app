@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Messaging — The Fit Lab</title>
+<script src="assets/theme.js"></script>
+<link rel="icon" href="assets/favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+  .page.msg{padding-top:18px;padding-bottom:18px}
+  @media (max-width:767px){ .page.msg{padding:0} .page.msg .box{border-radius:0;border:0} }
+  .msg-guard{font-size:11.5px;color:var(--ash);padding:6px 14px 0;display:flex;gap:6px;align-items:center}
+</style>
+</head>
+<body data-page="messages">
+<main class="page msg">
+  <div class="box">
+    <div class="msg-shell" id="shell">
+      <div class="msg-list">
+        <div class="box-head" style="padding:12px 14px 8px"><h2 style="font-size:17px">Messaging</h2></div>
+        <div class="search"><input id="q" type="search" placeholder="Search connections" aria-label="Search connections"></div>
+        <div class="convs" id="convs"><div class="skeleton" style="height:60px;margin:12px"></div></div>
+      </div>
+      <div class="thread" id="thread">
+        <div class="thread-empty"><div><div style="color:var(--lime)" id="emptyIc"></div><b style="display:block;color:var(--bone);margin:10px 0 4px">Your messages</b>
+          Choose a connection to start a conversation. Messaging is for accepted connections only.</div></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(async () => {
+  const $ = (id) => document.getElementById(id);
+  const esc = FL.esc, I = FL.icon;
+  const session = await FL.requireAuth(); if (!session) return;
+  let me; try { me = await FL.getProfile(); } catch (e) { return FL.toast(FL.friendly(e), 'err'); }
+  if (!me.profile_completed) return location.replace('register.html');
+  FL.renderHeader(me);
+  $('emptyIc').innerHTML = I('messages', 44);
+
+  let convs = [], active = null, poll = null, lastSig = '';
+
+  async function loadConvs() {
+    const { data, error } = await sb.rpc('list_conversations');
+    if (error) { $('convs').innerHTML = `<p class="t-sm muted" style="padding:14px">${esc(FL.friendly(error))}</p>`; return; }
+    convs = data || [];
+    drawConvs();
+  }
+  function drawConvs() {
+    const q = $('q').value.trim().toLowerCase();
+    const list = convs.filter((c) => !q || (c.full_name || '').toLowerCase().includes(q) || (c.username || '').includes(q));
+    $('convs').innerHTML = list.length ? list.map((c) => `<div class="conv ${active && active.user_id === c.user_id ? 'on' : ''} ${c.unread ? 'unread' : ''}" data-u="${c.user_id}" tabindex="0" role="button">
+        ${FL.avatarHtml(c, 'avatar')}<div class="meta"><div class="top"><b>${esc(c.full_name)}</b><span>${c.last_at ? FL.timeAgo(c.last_at) : ''}</span></div>
+        <div class="prev">${c.last_body ? (c.last_mine ? 'You: ' : '') + esc(c.last_body) : `<span style="font-style:italic">${esc(c.headline || 'Say hello')}</span>`}</div></div>
+        ${c.unread ? '<span class="dot" aria-label="unread"></span>' : ''}</div>`).join('')
+      : `<div class="empty">${convs.length ? 'No matches.' : '<b>No connections yet</b>Connect with coaches on <a href="network.html">My Network</a> to message them.'}</div>`;
+  }
+
+  async function open(userId) {
+    active = convs.find((c) => c.user_id === userId); if (!active) return;
+    $('shell').classList.add('open');
+    drawConvs();
+    history.replaceState(null, '', 'messaging.html?u=' + encodeURIComponent(active.username));
+    $('thread').innerHTML = `
+      <div class="thread-head"><button class="icon-btn" id="back" aria-label="Back to conversations" style="${window.innerWidth < 768 ? '' : 'display:none'}">${I('back', 20)}</button>
+        <a href="profile.html?u=${encodeURIComponent(active.username)}">${FL.avatarHtml(active, 'avatar')}</a>
+        <div class="meta"><a href="profile.html?u=${encodeURIComponent(active.username)}" style="color:var(--bone)"><b>${esc(active.full_name)}</b></a><span>${esc(active.headline || '')}</span></div>
+        <div style="position:relative"><button class="icon-btn" id="tmore" aria-label="Conversation options">${I('more', 20)}</button></div></div>
+      <div class="msgs" id="msgs" aria-live="polite"><div class="skeleton" style="height:40px;width:60%"></div></div>
+      <div class="msg-guard">${I('shield', 13)}Professional conversations only. Contact details and inappropriate messages are blocked automatically.</div>
+      <form class="composebar" id="comp"><textarea id="body" maxlength="2000" placeholder="Write a message…" aria-label="Message" rows="1"></textarea>
+        <button class="pill solid" id="send" disabled>Send</button></form>`;
+    $('back').onclick = () => { $('shell').classList.remove('open'); active = null; drawConvs(); clearInterval(poll); history.replaceState(null, '', 'messaging.html'); };
+    const ta = $('body'), btn = $('send');
+    ta.addEventListener('input', () => { btn.disabled = !ta.value.trim(); ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 160) + 'px'; });
+    ta.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && window.innerWidth >= 768) { e.preventDefault(); if (!btn.disabled) $('comp').requestSubmit(); } });
+    $('comp').onsubmit = async (e) => {
+      e.preventDefault();
+      const body = ta.value.trim(); if (!body) return;
+      FL.busy(btn, true, '');
+      const r = await FL.call('send_message', { p_recipient: active.user_id, p_body: body });
+      FL.busy(btn, false); btn.disabled = !ta.value.trim();
+      if (!r) return;
+      ta.value = ''; ta.style.height = ''; btn.disabled = true;
+      await loadMsgs(true); loadConvs();
+    };
+    $('tmore').onclick = (e) => {
+      e.stopPropagation();
+      const old = $('thread').querySelector('.menu-pop'); if (old) return old.remove();
+      const pop = document.createElement('div'); pop.className = 'menu-pop'; pop.style.top = '40px'; pop.style.right = '0';
+      pop.innerHTML = `<a href="profile.html?u=${encodeURIComponent(active.username)}">${I('eye', 18)}View profile</a>
+        <button data-m="report">${I('flag', 18)}Report ${esc(active.full_name.split(' ')[0])}</button>
+        <button data-m="block" class="danger">${I('block', 18)}Block</button>`;
+      $('tmore').parentElement.appendChild(pop);
+      pop.onclick = async (ev) => {
+        const b = ev.target.closest('[data-m]'); if (!b) return; pop.remove();
+        if (b.dataset.m === 'report') FL.report('profile', active.user_id, { userId: active.user_id, name: active.full_name, onDone: () => location.reload() });
+        if (b.dataset.m === 'block' && await FL.confirm(`Block ${active.full_name}?`, 'You\'ll stop seeing each other\'s profiles and posts, and the connection is removed. They aren\'t told.', 'Block', true)) {
+          const r = await FL.call('block_member', { p_user_id: active.user_id }); if (r) location.href = 'messaging.html';
+        }
+      };
+    };
+    lastSig = '';
+    await loadMsgs(true);
+    clearInterval(poll); poll = setInterval(() => { if (document.visibilityState === 'visible') loadMsgs(false); }, 5000);
+    if (window.innerWidth >= 768) ta.focus();
+  }
+
+  async function loadMsgs(scroll) {
+    if (!active) return;
+    const { data, error } = await sb.rpc('get_messages', { p_other: active.user_id, p_limit: 300 });
+    if (error) return;
+    const msgs = data || [];
+    const sig = msgs.length + ':' + (msgs.length ? msgs[msgs.length - 1].id : '');
+    if (sig === lastSig) return;
+    lastSig = sig;
+    const box = $('msgs'); if (!box) return;
+    const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+    let lastDay = '';
+    box.innerHTML = msgs.length ? msgs.map((m) => {
+      const d = new Date(m.created_at), day = d.toDateString();
+      const sep = day !== lastDay ? `<div class="dsep">${d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}</div>` : '';
+      lastDay = day;
+      return `${sep}<div class="bub ${m.mine ? 'mine' : 'them'}"><span class="tx">${FL.linkify(m.body)}</span><span class="t">${d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}${m.mine && m.read_at ? ' · Seen' : ''}</span>
+        ${m.mine ? '' : `<button class="icon-btn flag" data-flag="${m.id}" title="Report this message" aria-label="Report this message" style="width:26px;height:26px">${I('flag', 14)}</button>`}</div>`;
+    }).join('') : `<div class="thread-empty" style="flex:none;padding:40px 10px">${FL.avatarHtml(active, 'avatar lg2')}<div><b style="display:block;color:var(--bone);margin:10px 0 4px">${esc(active.full_name)}</b>${esc(active.headline || '')}<br><br>Start with a professional hello.</div></div>`;
+    if (scroll || atBottom) box.scrollTop = box.scrollHeight;
+    if (msgs.some((m) => !m.mine && !m.read_at)) { await sb.rpc('mark_conversation_read', { p_other: active.user_id }); FL.refreshCounts(); const c = convs.find((x) => x.user_id === active.user_id); if (c && c.unread) { c.unread = 0; drawConvs(); } }
+  }
+
+  $('convs').addEventListener('click', (e) => { const el = e.target.closest('[data-u]'); if (el) open(el.dataset.u); });
+  $('convs').addEventListener('keydown', (e) => { if (e.key === 'Enter') { const el = e.target.closest('[data-u]'); if (el) open(el.dataset.u); } });
+  $('q').addEventListener('input', drawConvs);
+  $('thread').addEventListener('click', (e) => {
+    const f = e.target.closest('[data-flag]'); if (f) FL.report('message', f.dataset.flag, { userId: active.user_id, name: active.full_name, onDone: () => { lastSig = ''; loadMsgs(false); } });
+    if (!e.target.closest('#tmore')) { const pm = $('thread').querySelector('.menu-pop'); if (pm && !pm.contains(e.target)) pm.remove(); }
+  });
+  setInterval(() => { if (document.visibilityState === 'visible') loadConvs(); }, 20000);
+
+  await loadConvs();
+  const want = FL.param('u');
+  const pre = want && convs.find((c) => c.username === want.replace(/^@/, ''));
+  if (pre) open(pre.user_id);
+  else if (want) FL.toast('You can message members once you\'re connected', 'err');
+  else if (window.innerWidth >= 768 && convs.length && convs[0].last_at) open(convs[0].user_id);
+})();
+</script>
+</body>
+</html>

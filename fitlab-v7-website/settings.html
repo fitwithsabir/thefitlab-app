@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Settings — The Fit Lab</title>
+<script src="assets/theme.js"></script>
+<link rel="icon" href="assets/favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+  .set-nav a{display:flex;gap:10px;align-items:center;padding:11px 18px;color:var(--ash);font-weight:600;font-size:14px}
+  .set-nav a:hover{background:var(--hover);color:var(--bone);text-decoration:none}
+  .set-row{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:14px 20px}
+  .set-row + .set-row{border-top:1px solid var(--line)}
+  .set-row b{display:block;font-size:15px}
+  .set-row .t-sm{color:var(--ash);line-height:1.45;margin-top:2px}
+  .switch{position:relative;width:46px;height:26px;flex:none}
+  .switch input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:1}
+  .switch span{position:absolute;inset:0;border-radius:99px;background:var(--line-2);transition:.2s}
+  .switch span::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+  .switch input:checked + span{background:var(--lime)}
+  .switch input:checked + span::after{transform:translateX(20px)}
+  .theme-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:4px 20px 18px}
+  .theme-cards button{border:2px solid var(--line);border-radius:12px;padding:12px;background:var(--panel);cursor:pointer;text-align:left;color:var(--bone);font:600 14px var(--body)}
+  .theme-cards button.on{border-color:var(--lime);box-shadow:0 0 0 3px var(--accent-soft)}
+  .theme-cards .pv{height:54px;border-radius:8px;margin-bottom:8px;border:1px solid var(--line);display:flex;gap:4px;padding:6px}
+  .theme-cards .pv i{flex:1;border-radius:4px}
+  @media (max-width:520px){ .theme-cards{grid-template-columns:1fr} .theme-cards .pv{height:40px} }
+</style>
+</head>
+<body data-page="me">
+<main class="page">
+  <div class="layout l-side-main">
+    <aside><div class="sticky-col"><div class="box set-nav">
+      <div class="box-head" style="padding-bottom:8px"><h3 style="font-size:16px">Settings</h3></div>
+      <a href="#appearance" id="nA"></a><a href="#account" id="nB"></a><a href="#privacy" id="nC"></a><a href="#community" id="nD"></a><a href="#blocked" id="nE"></a>
+    </div></div></aside>
+    <section class="stack" id="main"></section>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(async () => {
+  const $ = (id) => document.getElementById(id);
+  const esc = FL.esc, I = FL.icon;
+  const session = await FL.requireAuth(); if (!session) return;
+  let me; try { me = await FL.getProfile(); } catch (e) { return FL.toast(FL.friendly(e), 'err'); }
+  FL.renderHeader(me);
+  $('nA').innerHTML = I('sun', 18) + 'Appearance'; $('nB').innerHTML = I('settings', 18) + 'Account'; $('nC').innerHTML = I('eye', 18) + 'Visibility';
+  $('nD').innerHTML = I('shield', 18) + 'Community'; $('nE').innerHTML = I('block', 18) + 'Blocked members';
+
+  const t = FL.theme.get();
+  $('main').innerHTML = `
+    <div class="box" id="appearance"><div class="box-head"><div><h2>Appearance</h2><div class="sub">Choose how The Fit Lab looks on this device. “Auto” follows your phone or computer setting.</div></div></div>
+      <div class="theme-cards">
+        <button data-theme-set="system" class="${t === 'system' ? 'on' : ''}"><div class="pv" style="background:linear-gradient(90deg,#f3f2ee 50%,#050605 50%)"><i style="background:#fff"></i><i style="background:#131613"></i></div>${I('monitor', 16)} Auto (device)</button>
+        <button data-theme-set="light" class="${t === 'light' ? 'on' : ''}"><div class="pv" style="background:#f3f2ee"><i style="background:#fff"></i><i style="background:#3f7d0f"></i></div>${I('sun', 16)} Light</button>
+        <button data-theme-set="dark" class="${t === 'dark' ? 'on' : ''}"><div class="pv" style="background:#050605"><i style="background:#131613"></i><i style="background:#a3e635"></i></div>${I('moon', 16)} Dark</button>
+      </div></div>
+
+    <div class="box" id="account"><div class="box-head"><h2>Account</h2></div>
+      <div class="set-row"><div><b>Email</b><div class="t-sm">${esc(me.email || session.user.email || '')} · used to sign in. Only the Academy can see it.</div></div></div>
+      <div class="set-row"><div><b>Username</b><div class="t-sm">@${esc(me.username || '')} — you can sign in with this too.</div></div><a class="pill sm" href="profile.html?edit=1">Change</a></div>
+      <div class="set-row"><div><b>Password</b><div class="t-sm">At least 8 characters.</div></div><button class="pill sm" id="btnPw">Change password</button></div>
+      <div class="set-row"><div><b>Member ID</b><div class="t-sm mono">${esc(me.unique_id || '')}</div></div></div>
+      <div class="set-row"><div><b>Sign out</b><div class="t-sm">Sign out of The Fit Lab on this device.</div></div><button class="pill ghost sm" id="btnOut">Sign out</button></div></div>
+
+    <div class="box" id="privacy"><div class="box-head"><h2>Visibility</h2></div>
+      <div class="set-row"><div><b>Show my profile in search and suggestions</b><div class="t-sm">When on, members can find you, and gyms can see you on the Hire-a-Coach portal once you're certified. Your phone, email and date of birth are never shown to anyone.</div></div>
+        <label class="switch"><input type="checkbox" id="swVis" ${me.display_consent ? 'checked' : ''} aria-label="Show my profile in search"><span></span></label></div>
+      <div class="set-row"><div><b>Open to coaching roles</b><div class="t-sm">Shows a badge on your profile and puts you first on the hire portal.</div></div>
+        <label class="switch"><input type="checkbox" id="swOtw" ${me.open_to_work ? 'checked' : ''} aria-label="Open to coaching roles"><span></span></label></div>
+      <div class="set-row"><div><b>Who can message you</b><div class="t-sm">Only your accepted connections. This can't be changed — it keeps The Fit Lab professional and safe.</div></div><span class="chip">${I('lock', 13)}Connections only</span></div></div>
+
+    <div class="box" id="community"><div class="box-head"><h2>Community</h2></div>
+      ${FL.communityNotice(me) ? `<div style="padding:0 20px">${FL.communityNotice(me)}</div>` : ''}
+      <div class="set-row"><div><b>Community guidelines</b><div class="t-sm">${me.guidelines_accepted_at ? 'You agreed on ' + FL.fmtDate(me.guidelines_accepted_at) + '.' : 'You\'ll be asked to agree before your first post, message or invitation.'}</div></div>
+        <button class="pill sm" data-guidelines>Read</button></div>
+      <div class="set-row"><div><b>Status</b><div class="t-sm">${me.community_status === 'active' ? 'Active — messaging, posting and connecting are available.' : esc(me.suspended_reason || 'Under review')}</div></div>
+        <span class="chip ${me.community_status === 'active' ? 'acc' : ''}">${me.community_status === 'active' ? 'Active' : me.community_status === 'banned' ? 'Removed' : 'Paused'}</span></div></div>
+
+    <div class="box" id="blocked"><div class="box-head"><div><h2>Blocked members</h2><div class="sub">They can't see your profile or posts, message you or connect.</div></div></div>
+      <div id="blist"><div class="skeleton" style="height:56px;margin:14px"></div></div></div>`;
+  FL.wireCommon($('main'));
+
+  $('btnOut').onclick = () => FL.signOut();
+  const toggle = async (el, field) => {
+    const { error } = await sb.from('profiles').update({ [field]: el.checked }).eq('id', me.id);
+    if (error) { el.checked = !el.checked; return FL.toast(FL.friendly(error), 'err'); }
+    me[field] = el.checked; FL.toast('Saved', 'ok');
+  };
+  $('swVis').onchange = (e) => toggle(e.target, 'display_consent');
+  $('swOtw').onchange = (e) => toggle(e.target, 'open_to_work');
+  $('btnPw').onclick = () => {
+    const m = FL.modal({ title: 'Change password', body: `<div class="field"><label for="pw1">New password</label><input id="pw1" type="password" autocomplete="new-password" minlength="8"></div>
+      <div class="field"><label for="pw2">Confirm new password</label><input id="pw2" type="password" autocomplete="new-password"></div><div class="err hidden" id="pwErr"></div>`,
+      foot: `<button class="pill solid" id="pwSave">Save</button>` });
+    m.q('#pwSave').onclick = async (e) => {
+      const a = m.q('#pw1').value, b = m.q('#pw2').value, err = m.q('#pwErr');
+      if (a.length < 8) { err.textContent = 'Use at least 8 characters.'; return err.classList.remove('hidden'); }
+      if (a !== b) { err.textContent = 'The passwords don\'t match.'; return err.classList.remove('hidden'); }
+      FL.busy(e.target, true, 'Saving…');
+      const { error } = await sb.auth.updateUser({ password: a });
+      FL.busy(e.target, false);
+      if (error) { err.textContent = FL.friendly(error); return err.classList.remove('hidden'); }
+      m.close(); FL.toast('Password changed', 'ok');
+    };
+  };
+
+  async function blocked() {
+    const { data } = await sb.rpc('list_blocked');
+    const list = data || [];
+    $('blist').innerHTML = list.length ? list.map((b) => `<div class="ent">${FL.avatarHtml(b, 'avatar')}<div class="ent-main"><b class="ent-name">${esc(b.full_name)}</b>
+      <div class="ent-meta">@${esc(b.username)} · blocked ${FL.timeAgo(b.blocked_at)} ago</div></div><button class="pill ghost sm" data-ub="${b.user_id}">Unblock</button></div>`).join('')
+      : '<p class="t-sm muted" style="padding:0 20px 18px;margin:0">You haven\'t blocked anyone.</p>';
+  }
+  $('blist').addEventListener('click', async (e) => { const b = e.target.closest('[data-ub]'); if (!b) return;
+    const r = await FL.call('unblock_member', { p_user_id: b.dataset.ub }); if (r) { FL.toast('Unblocked', 'ok'); blocked(); } });
+  blocked();
+  if (location.hash) setTimeout(() => document.querySelector(location.hash)?.scrollIntoView(), 100);
+})();
+</script>
+</body>
+</html>

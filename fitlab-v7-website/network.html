@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>My Network — The Fit Lab</title>
+<script src="assets/theme.js"></script>
+<link rel="icon" href="assets/favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+  .mn a{display:flex;justify-content:space-between;align-items:center;padding:11px 18px;color:var(--ash);font-size:14px;font-weight:600}
+  .mn a:hover{background:var(--hover);color:var(--bone);text-decoration:none}
+  .mn a.on{color:var(--lime);background:var(--accent-soft)}
+  .mn a b{color:var(--bone);font-weight:700}
+  .inv-note{margin-top:8px;padding:10px 12px;border-radius:10px;background:var(--panel-2);font-size:13.5px;line-height:1.5;border:1px solid var(--line)}
+  .conn-tools{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:4px 20px 12px;flex-wrap:wrap}
+  .conn-tools input{max-width:280px;height:36px;font-size:14px}
+  @media (max-width:767px){ .mn-mobile{display:block} .col-nav{display:none} }
+  @media (min-width:768px){ .mn-mobile{display:none} }
+</style>
+</head>
+<body data-page="network">
+<main class="page">
+  <div class="layout l-side-main">
+    <aside class="col-nav"><div class="sticky-col">
+      <div class="box mn"><div class="box-head" style="padding-bottom:8px"><h3 style="font-size:16px">Manage my network</h3></div>
+        <a href="#invitations" data-v="invitations">Invitations <b id="nInv">0</b></a>
+        <a href="#connections" data-v="connections">Connections <b id="nConn">0</b></a>
+        <a href="#sent" data-v="sent">Sent <b id="nSent">0</b></a>
+        <a href="#grow" data-v="grow">People you may know</a>
+        <a href="settings.html#blocked">Blocked members</a>
+      </div>
+      <div id="footL"></div>
+    </div></aside>
+
+    <section class="stack">
+      <div class="box mn-mobile"><div class="utabs" id="mtabs">
+        <a href="#grow" data-v="grow">Grow</a><a href="#invitations" data-v="invitations">Invitations</a>
+        <a href="#connections" data-v="connections">Connections</a><a href="#sent" data-v="sent">Sent</a></div></div>
+      <div id="notice"></div>
+      <div id="view"><div class="box skeleton" style="height:320px"></div></div>
+    </section>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(async () => {
+  const $ = (id) => document.getElementById(id);
+  const esc = FL.esc;
+  const session = await FL.requireAuth(); if (!session) return;
+  let me; try { me = await FL.getProfile(); } catch (e) { return FL.toast(FL.friendly(e), 'err'); }
+  if (!me.profile_completed) return location.replace('register.html');
+  FL.renderHeader(me);
+  $('notice').innerHTML = FL.communityNotice(me);
+  $('footL').innerHTML = FL.siteFootHtml(true); FL.wireCommon($('footL'));
+
+  let pending = [], accepted = [];
+  const view = $('view');
+  const plink = (u) => `profile.html?u=${encodeURIComponent(u)}`;
+
+  async function loadLists() {
+    const [p, a] = await Promise.all([sb.rpc('list_connections', { p_status: 'pending' }), sb.rpc('list_connections', { p_status: 'accepted' })]);
+    pending = p.data || []; accepted = a.data || [];
+    $('nInv').textContent = pending.filter((c) => c.direction === 'incoming').length;
+    $('nSent').textContent = pending.filter((c) => c.direction === 'outgoing').length;
+    $('nConn').textContent = accepted.length;
+  }
+
+  const row = (c, actions, extra = '') => `<div class="ent">
+      <a href="${plink(c.username)}">${FL.avatarHtml(c, 'avatar')}</a>
+      <div class="ent-main"><a class="ent-name" href="${plink(c.username)}">${esc(c.full_name || '@' + c.username)}</a>
+        <div class="ent-sub">${esc(c.headline || '')}</div>
+        <div class="ent-meta">${c.city ? esc(c.city) + ' · ' : ''}${FL.timeAgo(c.created_at)} ago</div>${extra}</div>
+      <div class="ent-act" style="margin:0">${actions}</div></div>`;
+
+  async function show(v) {
+    document.querySelectorAll('[data-v]').forEach((a) => a.classList.toggle('on', a.dataset.v === v));
+    if (v === 'invitations') {
+      const inc = pending.filter((c) => c.direction === 'incoming');
+      view.innerHTML = `<div class="box"><div class="box-head"><h2>Invitations</h2><span class="sub">${inc.length}</span></div>
+        ${inc.length ? inc.map((c) => row(c, `<button class="txt-btn" data-dec="${c.connection_id}">Ignore</button><button class="pill sm" data-acc="${c.connection_id}">Accept</button>`,
+            c.note ? `<div class="inv-note">“${esc(c.note)}”</div>` : '')).join('')
+          : '<div class="empty"><b>No pending invitations</b>When coaches invite you to connect, you\'ll see them here.</div>'}</div>`;
+    } else if (v === 'sent') {
+      const out = pending.filter((c) => c.direction === 'outgoing');
+      view.innerHTML = `<div class="box"><div class="box-head"><h2>Sent invitations</h2><span class="sub">${out.length} of 50 allowed</span></div>
+        ${out.length ? out.map((c) => row(c, `<button class="pill ghost sm" data-wd="${c.connection_id}">Withdraw</button>`)).join('')
+          : '<div class="empty"><b>No invitations waiting</b>Invitations you send appear here until they\'re answered.</div>'}</div>`;
+    } else if (v === 'connections') {
+      view.innerHTML = `<div class="box"><div class="box-head"><h2>${accepted.length} connection${accepted.length === 1 ? '' : 's'}</h2></div>
+        <div class="conn-tools"><input id="cq" type="search" placeholder="Search by name"><span class="t-xs muted">Sorted by recently added</span></div>
+        <div id="clist"></div></div>`;
+      const draw = (q) => {
+        const list = accepted.filter((c) => !q || (c.full_name || '').toLowerCase().includes(q) || (c.username || '').includes(q));
+        $('clist').innerHTML = list.length ? list.map((c) => row(c, `<a class="pill sm" href="messaging.html?u=${encodeURIComponent(c.username)}">Message</a>
+            <button class="icon-btn" data-cm="${c.connection_id}" data-name="${esc(c.full_name)}" aria-label="More">${FL.icon('more', 20)}</button>`)).join('')
+          : `<div class="empty">${q ? 'No connections match.' : '<b>No connections yet</b>Start with the suggestions under “People you may know”.'}</div>`;
+      };
+      draw(''); $('cq').oninput = (e) => draw(e.target.value.trim().toLowerCase());
+    } else {
+      view.innerHTML = `<div class="box"><div class="box-head"><h2>People you may know</h2><span class="sub">Coaches and trainers on The Fit Lab</span></div>
+        <div class="pgrid" id="pg">${'<div class="pcard skeleton" style="height:250px"></div>'.repeat(4)}</div></div>`;
+      const { data } = await sb.rpc('people_you_may_know', { p_limit: 24 });
+      const list = data || [];
+      $('pg').innerHTML = list.length ? list.map((p) => `<div class="pcard" data-card="${esc(p.username)}">
+          <div class="cov" ${p.cover_url ? `style="background-image:url('${esc(p.cover_url)}')"` : ''}></div>
+          <a href="${plink(p.username)}">${FL.avatarHtml(p, 'avatar')}</a>
+          <a class="nm" href="${plink(p.username)}">${esc(p.full_name)}</a>
+          <p class="hl">${esc(p.headline || 'Fit Lab member')}</p>
+          <p class="why">${p.mutual ? FL.icon('network', 14) + ' ' : ''}${esc(p.reason)}</p>
+          <button class="pill" data-connect="${esc(p.username)}" data-name="${esc(p.full_name)}">${FL.icon('userplus', 17)}Connect</button>
+        </div>`).join('') : '<div class="empty" style="grid-column:1/-1"><b>No new suggestions</b>Use the search bar at the top to find coaches by name, city or skill.</div>';
+    }
+  }
+
+  view.addEventListener('click', async (e) => {
+    const t = e.target.closest('button'); if (!t) return;
+    if (t.dataset.acc || t.dataset.dec) {
+      const accept = !!t.dataset.acc;
+      FL.busy(t, true, '');
+      const r = await FL.call('respond_connection_request', { p_id: t.dataset.acc || t.dataset.dec, p_accept: accept });
+      FL.busy(t, false);
+      if (!r) return;
+      FL.toast(accept ? 'Connected' : 'Invitation ignored', 'ok');
+      await loadLists(); show('invitations'); FL.refreshCounts();
+    } else if (t.dataset.wd) {
+      const r = await FL.call('cancel_connection_request', { p_id: t.dataset.wd });
+      if (r) { FL.toast('Invitation withdrawn', 'ok'); await loadLists(); show('sent'); }
+    } else if (t.dataset.connect) {
+      const r = await FL.connect(t.dataset.connect, t.dataset.name);
+      if (r) { t.outerHTML = `<span class="chip" style="margin:12px auto 14px">${FL.icon('clock', 14)}Pending</span>`; await loadLists(); }
+    } else if (t.dataset.cm) {
+      const ok = await FL.confirm('Remove connection', `Remove ${t.dataset.name} from your connections? You won't be able to message each other until you reconnect.`, 'Remove', true);
+      if (!ok) return;
+      const r = await FL.call('remove_connection', { p_id: t.dataset.cm });
+      if (r) { FL.toast('Connection removed', 'ok'); await loadLists(); show('connections'); }
+    }
+  });
+
+  await loadLists();
+  const route = () => {
+    let v = (location.hash || '').slice(1);
+    if (!['invitations', 'connections', 'sent', 'grow'].includes(v)) v = pending.some((c) => c.direction === 'incoming') ? 'invitations' : 'grow';
+    show(v);
+  };
+  window.addEventListener('hashchange', route);
+  route();
+})();
+</script>
+</body>
+</html>

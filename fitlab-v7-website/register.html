@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Your member profile — The Fit Lab Academy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="icon" href="assets/favicon.png">
+<script src="assets/theme.js"></script>
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+  .photo{display:grid;grid-template-columns:120px 1fr;gap:18px;align-items:center}
+  .drop{border:1px dashed var(--line-2);border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:.15s;font-size:13px;color:var(--ash)}
+  .drop:hover,.drop.over{border-color:var(--lime);color:var(--bone)}
+  .drop input{display:none}
+  .id-card{text-align:center;padding:40px 24px}
+  .id-card .avatar.lg{margin:0 auto 18px}
+  @media (max-width:520px){.photo{grid-template-columns:1fr;justify-items:center}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="nav"></div>
+
+  <div style="max-width:720px;margin:36px auto 0">
+    <div id="formWrap">
+      <div class="eyebrow" id="regEyebrow">Step 1 of 1 · Member profile</div>
+      <h1 class="display" id="regTitle" style="font-size:clamp(38px,6vw,64px);margin:8px 0 6px">Set up your <span class="lime">member profile</span></h1>
+      <p class="ash" style="margin:0 0 24px">This is what appears on your certificate and verification page, so use your real name and a clear, well-lit photo of yourself — the kind you'd use for a professional bio.</p>
+
+      <form id="form" class="card hud" novalidate><span class="c1"></span><span class="c2"></span>
+        <div class="field">
+          <label>Profile photo</label>
+          <div class="photo">
+            <div id="preview" class="avatar lg">?</div>
+            <label class="drop" id="drop" for="photo">
+              <strong style="color:var(--bone)">Choose a photo</strong> or drop it here<br>
+              JPG / PNG · face clearly visible · we crop it to a square automatically
+              <input id="photo" type="file" accept="image/jpeg,image/png,image/webp">
+            </label>
+          </div>
+        </div>
+
+        <div class="grid grid-2">
+          <div class="field"><label for="full_name">Full name</label><input id="full_name" required placeholder="As it should appear on your certificate"></div>
+          <div class="field"><label for="headline">Headline</label><input id="headline" maxlength="160" required placeholder="e.g. Personal Trainer · Strength & fat-loss coach">
+            <span class="help">Shown under your name everywhere on The Fit Lab — like a professional tagline.</span></div>
+          <div class="field"><label for="username">Username</label>
+            <input id="username" placeholder="sabirrasool" autocomplete="off">
+            <span class="help">Letters and numbers only. Others use this to find you and send connection requests.</span></div>
+          <div class="field"><label for="phone">Mobile number</label><input id="phone" type="tel" placeholder="+91 9XXXXXXXXX"></div>
+          <div class="field"><label for="gender">Gender</label>
+            <select id="gender" required><option value="">Select</option><option value="male">Male</option><option value="female">Female</option></select>
+            <span class="help" id="genderLocked" style="display:none">Gender is set — gyms can filter by it on the hire portal. Contact the Academy if it needs correcting.</span></div>
+          <div class="field"><label for="dob">Date of birth</label><input id="dob" type="date"></div>
+          <div class="field"><label for="city">City</label><input id="city" placeholder="Kakinada"></div>
+          <div class="field"><label for="district">District</label><input id="district" placeholder="East Godavari"></div>
+          <div class="field"><label for="country">Country</label><input id="country" placeholder="India" value="India"></div>
+          <div class="field"><label for="experience">Coaching experience</label>
+            <select id="experience"><option value="">Select</option><option value="beginner">Beginner / aspiring coach</option><option value="1-3 years">1–3 years</option><option value="3+ years">3+ years</option></select></div>
+        </div>
+        <div class="field"><label for="occupation">Current role</label><input id="occupation" placeholder="e.g. Trainer at ___ Gym · Freelance PT · Fitness enthusiast planning to coach"></div>
+        <div class="field"><label for="bio">Why do you want to become a better coach? <span class="ash" style="text-transform:none;letter-spacing:0;font-weight:500">(1–2 lines, shown on your portfolio)</span></label>
+          <textarea id="bio" maxlength="280" placeholder="e.g. I train 20+ clients a week and want to program with real understanding, not templates."></textarea></div>
+
+        <label class="check"><input type="checkbox" id="consent" required>
+          <span>I agree that my name, photo and course results may be shown to other members, on my public verification page, and on the Hire-a-Coach portal once I'm certified. I can change this in Settings.</span></label>
+        <label class="check" style="margin-top:10px"><input type="checkbox" id="guide" required>
+          <span>I've read and agree to the <a href="#" id="readGuide">community guidelines</a> — The Fit Lab is a professional coaching network, not a dating space; no abuse, no flirting, no sharing contact details.</span></label>
+
+        <div id="err" class="err hidden" style="margin-top:12px"></div>
+        <div class="btn-row" style="margin-top:20px">
+          <button class="btn btn-primary" type="submit" id="btnSave">Save & get my Unique ID</button>
+          <span class="help">Your details are private. Only you and the Academy can see them.</span>
+        </div>
+      </form>
+
+      <!-- Work Experience — LinkedIn-style: entries grouped by organisation, newest first.
+           Shown once the account exists (edit mode, or right after first save). -->
+      <div id="expWrap" style="margin-top:20px">
+        <div class="card hud"><span class="c1"></span><span class="c2"></span>
+          <div class="lab" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+            <span class="eyebrow">Work experience</span>
+            <button class="btn btn-ghost small" id="btnAddExp">+ Add experience</button>
+          </div>
+          <p class="ash small" id="expEmpty">No experience added yet — this is optional, but it strengthens your public coaching profile.</p>
+          <div id="expList" style="display:grid;gap:14px"></div>
+        </div>
+      </div>
+
+      <!-- Add/edit experience — small inline form, reused for both -->
+      <div id="expFormWrap" class="card hud hidden" style="margin-top:16px"><span class="c1"></span><span class="c2"></span>
+        <div class="eyebrow" id="expFormTitle">Add experience</div>
+        <div class="grid grid-2" style="margin-top:14px">
+          <div class="field"><label for="expTitle">Title / role</label><input id="expTitle" placeholder="Head Coach"></div>
+          <div class="field"><label for="expOrg">Organisation</label><input id="expOrg" placeholder="Shaan Fitness"></div>
+          <div class="field"><label for="expType">Employment type</label>
+            <select id="expType"><option value="">Select</option><option>Full-time</option><option>Part-time</option><option>Freelance</option><option>Internship</option><option>Self-employed</option></select></div>
+          <div class="field"><label for="expLocation">Location</label><input id="expLocation" placeholder="Kakinada, Andhra Pradesh"></div>
+          <div class="field"><label for="expStart">Start date</label><input id="expStart" type="date"></div>
+          <div class="field"><label for="expEnd">End date</label><input id="expEnd" type="date">
+            <label class="check" style="margin-top:8px"><input type="checkbox" id="expCurrent"><span>I currently work here</span></label></div>
+        </div>
+        <div class="field"><label for="expDesc">Description <span class="ash" style="text-transform:none;letter-spacing:0;font-weight:500">(optional)</span></label>
+          <textarea id="expDesc" maxlength="400" placeholder="What you did, who you trained, what you built…"></textarea></div>
+        <div class="btn-row" style="margin-top:10px">
+          <button class="btn btn-ghost" id="btnExpCancel">Cancel</button>
+          <button class="btn btn-primary" id="btnExpSave">Save experience</button>
+        </div>
+        <div id="expErr" class="err hidden" style="margin-top:10px"></div>
+      </div>
+
+      <!-- Gender confirmation: shown once, before the profile is first saved. Cannot be edited after. -->
+      <div id="genderConfirm" class="card hud hidden" style="margin-top:16px"><span class="c1"></span><span class="c2"></span>
+        <div class="eyebrow">Confirm before you continue</div>
+        <h3 class="display" style="font-size:26px;margin:8px 0 10px">You selected <span class="lime" id="gcValue"></span></h3>
+        <p class="ash small" style="margin:0 0 18px">Gyms can filter coaches by gender on the hire portal, so this can only be changed by the Academy later. Please confirm it's correct.</p>
+        <div class="btn-row">
+          <button class="btn" id="gcBack">← Go back and change it</button>
+          <button class="btn btn-primary" id="gcConfirm">Yes, this is correct — lock it in</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="done" class="card glow hud id-card hidden"><span class="c1"></span><span class="c2"></span>
+      <div id="doneAvatar"></div>
+      <div class="eyebrow">Welcome to the Academy</div>
+      <h2 class="display" id="doneName" style="font-size:44px;margin:6px 0 4px"></h2>
+      <div class="ash small">Your Fit Lab Unique ID</div>
+      <div class="uid" id="doneId" style="margin:6px 0 22px"></div>
+      <p class="ash small" style="max-width:420px;margin:0 auto 22px">This ID stays with you across every Academy course. It's printed on your certificate and is how anyone can verify your completion.</p>
+      <a class="btn btn-primary" href="feed.html">Enter The Fit Lab</a> <a class="btn" href="courses.html">Start Day 1</a>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(async function () {
+  const session = await FL.requireAuth(); if (!session) return;
+  const $ = (id) => document.getElementById(id);
+  const uid = session.user.id;
+  const editing = FL.param('edit') === '1';
+
+  let profile;
+  try { profile = await FL.getProfile(); } catch (e) { FL.toast('Could not load your profile: ' + FL.friendly(e), 'err'); return; }
+  if (profile.profile_completed) { location.replace(editing ? 'profile.html?edit=1' : 'feed.html'); return; }
+  FL.renderHeader(profile);
+
+  // Prefill
+  $('full_name').value = profile.full_name || session.user.user_metadata?.full_name || '';
+  ['phone', 'gender', 'city', 'district', 'occupation', 'bio', 'username', 'headline'].forEach((k) => { if (profile[k]) $(k).value = profile[k]; });
+  if (profile.guidelines_accepted_at) $('guide').checked = true;
+  $('readGuide').onclick = (e) => { e.preventDefault(); FL.guidelines(true); };
+  if (profile.country) $('country').value = profile.country;
+  if (profile.date_of_birth) $('dob').value = profile.date_of_birth;
+  if (profile.experience_level) $('experience').value = profile.experience_level;
+
+  // Gender: if it's already set, lock the field permanently — no re-confirmation needed.
+  let genderConfirmed = false;
+  const genderSelect = $('gender');
+  if (profile.gender) {
+    genderSelect.value = profile.gender;
+    genderSelect.disabled = true;
+    $('genderLocked').style.display = 'inline';
+    genderConfirmed = true;
+  } else {
+    // First time setting it: require an explicit second confirmation step before it can be saved.
+    const confirmBox = $('genderConfirm'), gcValue = $('gcValue'), mainForm = $('form');
+    genderSelect.addEventListener('change', () => {
+      genderConfirmed = false;
+      if (!genderSelect.value) return;
+      gcValue.textContent = genderSelect.value === 'male' ? 'MALE' : 'FEMALE';
+      confirmBox.classList.remove('hidden');
+      mainForm.style.opacity = '.35'; mainForm.style.pointerEvents = 'none';
+      confirmBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    $('gcBack').onclick = () => {
+      genderSelect.value = ''; genderConfirmed = false;
+      confirmBox.classList.add('hidden');
+      mainForm.style.opacity = ''; mainForm.style.pointerEvents = '';
+    };
+    $('gcConfirm').onclick = () => {
+      genderConfirmed = true;
+      genderSelect.disabled = true; // locked from this point in the session too
+      $('genderLocked').style.display = 'inline';
+      confirmBox.classList.add('hidden');
+      mainForm.style.opacity = ''; mainForm.style.pointerEvents = '';
+      FL.toast('Gender confirmed', 'ok');
+    };
+  }
+  if (profile.display_consent) $('consent').checked = true;
+  if (editing && profile.profile_completed) {
+    $('regEyebrow').textContent = 'Member profile · ' + (profile.unique_id || '');
+    $('regTitle').innerHTML = 'Edit your <span class="lime">profile</span>';
+  }
+
+  // live username availability
+  const uIn = $('username'), uHelp = uIn.parentElement.querySelector('.help'), uHelpDefault = uHelp.textContent;
+  let uTimer = null;
+  uIn.addEventListener('input', () => {
+    clearTimeout(uTimer);
+    const v = uIn.value.trim();
+    if (!v || v.toLowerCase().replace(/[^a-z0-9]/g, '') === (profile.username || '')) { uHelp.textContent = uHelpDefault; uHelp.style.color = ''; return; }
+    uTimer = setTimeout(async () => {
+      const { data } = await sb.rpc('username_available', { p_username: v });
+      if (!data || uIn.value.trim() !== v) return;
+      uHelp.textContent = data.ok ? `✓ @${data.username} is available` : `✕ ${data.reason}`;
+      uHelp.style.color = data.ok ? 'var(--lime)' : '#f87171';
+    }, 350);
+  });
+  if (profile.photo_url) $('preview').outerHTML = `<img id="preview" class="avatar lg" src="${FL.esc(profile.photo_url)}" alt="">`;
+  else $('preview').textContent = FL.initials($('full_name').value);
+
+  // Photo: preview + square-crop + resize to 800px JPEG (keeps uploads small and consistent)
+  let photoBlob = null;
+  async function processImage(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image(); const url = URL.createObjectURL(file);
+      img.onload = () => {
+        const S = 800, c = document.createElement('canvas'); c.width = S; c.height = S;
+        const s = Math.min(img.width, img.height), sx = (img.width - s) / 2, sy = (img.height - s) / 2;
+        c.getContext('2d').drawImage(img, sx, sy, s, s, 0, 0, S, S);
+        c.toBlob((b) => { URL.revokeObjectURL(url); b ? resolve(b) : reject(new Error('Could not process the image')); }, 'image/jpeg', 0.88);
+      };
+      img.onerror = () => reject(new Error('That file is not a readable image'));
+      img.src = url;
+    });
+  }
+  async function takeFile(file) {
+    if (!file) return;
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return FL.toast('Use a JPG, PNG or WebP image', 'err');
+    try {
+      photoBlob = await processImage(file);
+      const url = URL.createObjectURL(photoBlob);
+      const el = $('preview');
+      el.outerHTML = `<img id="preview" class="avatar lg" src="${url}" alt="">`;
+    } catch (e) { FL.toast(e.message, 'err'); }
+  }
+  $('photo').onchange = (e) => takeFile(e.target.files[0]);
+  const drop = $('drop');
+  ['dragenter', 'dragover'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', (e) => takeFile(e.dataTransfer.files[0]));
+
+  $('form').onsubmit = async (e) => {
+    e.preventDefault();
+    const err = $('err'); err.classList.add('hidden');
+    const name = $('full_name').value.trim();
+    if (name.length < 2) { err.textContent = 'Enter your full name.'; return err.classList.remove('hidden'); }
+    if (!genderSelect.value) { err.textContent = 'Select your gender.'; return err.classList.remove('hidden'); }
+    if (!genderConfirmed) { err.textContent = 'Please confirm your gender selection above before saving.'; return err.classList.remove('hidden'); }
+    if (!$('gender').value) { err.textContent = 'Select your gender.'; return err.classList.remove('hidden'); }
+    if (!photoBlob && !profile.photo_url) { err.textContent = 'Add a profile photo — it goes on your certificate.'; return err.classList.remove('hidden'); }
+    if (!$('gender').value) { err.textContent = 'Select your gender.'; return err.classList.remove('hidden'); }
+    if (!$('consent').checked) { err.textContent = 'Please tick the consent box to continue.'; return err.classList.remove('hidden'); }
+    if (!$('guide').checked) { err.textContent = 'Please agree to the community guidelines to continue.'; return err.classList.remove('hidden'); }
+    if ($('headline').value.trim().length < 3) { err.textContent = 'Add a short headline (e.g. "Personal Trainer").'; return err.classList.remove('hidden'); }
+
+    const btn = $('btnSave'); FL.busy(btn, true, 'Saving…');
+    try {
+      let photo_url = profile.photo_url || null;
+      if (photoBlob) {
+        const path = `${uid}/avatar.jpg`;
+        const { error: upErr } = await sb.storage.from('avatars').upload(path, photoBlob, { upsert: true, contentType: 'image/jpeg', cacheControl: '3600' });
+        if (upErr) throw upErr;
+        photo_url = sb.storage.from('avatars').getPublicUrl(path).data.publicUrl + '?v=' + Date.now();
+      }
+      const uname = $('username').value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (uname && uname.length < 3) throw new Error('Username must be at least 3 characters (letters and numbers only).');
+
+      const update = {
+        full_name: name,
+        headline: $('headline').value.trim(),
+        username: uname || undefined,
+        phone: $('phone').value.trim() || null,
+        gender: $('gender').value || null,
+        date_of_birth: $('dob').value || null,
+        city: $('city').value.trim() || null,
+        district: $('district').value.trim() || null,
+        country: $('country').value.trim() || null,
+        occupation: $('occupation').value.trim() || null,
+        experience_level: $('experience').value || null,
+        bio: $('bio').value.trim() || null,
+        photo_url,
+        display_consent: true,
+        profile_completed: true
+      };
+      const { data, error } = await sb.from('profiles').update(update).eq('id', uid).select().single();
+      if (error) throw error;
+      await sb.rpc('accept_guidelines');
+
+      if (editing && profile.profile_completed) {
+        FL.toast('Profile saved', 'ok');
+        setTimeout(() => location.href = 'profile.html?u=' + encodeURIComponent(data.username || ''), 700);
+        return;
+      }
+
+      // Reveal the Unique ID
+      $('formWrap').classList.add('hidden');
+      $('doneAvatar').innerHTML = FL.avatarHtml(data, 'avatar lg');
+      $('doneName').textContent = data.full_name;
+      $('doneId').textContent = data.unique_id || '—';
+      $('done').classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (ex) {
+      FL.busy(btn, false);
+      err.textContent = 'Could not save: ' + FL.friendly(ex);
+      err.classList.remove('hidden');
+    }
+  };
+
+  // ===================================================================
+  // WORK EXPERIENCE — add / edit / delete / "add position" (promotion)
+  // Entries are grouped by organisation and shown newest-first, the
+  // same way LinkedIn groups multiple roles under one company.
+  // ===================================================================
+  let expEditingId = null;
+
+  async function loadExperience() {
+    const { data, error } = await sb.from('work_experience').select('*').eq('user_id', uid).order('start_date', { ascending: false });
+    if (error) { FL.toast('Could not load experience: ' + FL.friendly(error), 'err'); return; }
+    renderExperience(data || []);
+  }
+
+  function fmtMonth(d) {
+    if (!d) return 'Present';
+    const dt = new Date(d + 'T00:00:00');
+    return dt.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+  }
+
+  function renderExperience(rows) {
+    $('expEmpty').classList.toggle('hidden', rows.length > 0);
+    // group by normalised organisation name, preserve newest-first overall ordering
+    const groups = [];
+    const byOrg = new Map();
+    for (const r of rows) {
+      const key = r.organization.trim().toLowerCase();
+      if (!byOrg.has(key)) { const g = { organization: r.organization, roles: [] }; byOrg.set(key, g); groups.push(g); }
+      byOrg.get(key).roles.push(r);
+    }
+    $('expList').innerHTML = groups.map((g) => `
+      <div class="card" style="padding:18px 20px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
+          <strong style="font-size:16px">${FL.esc(g.organization)}</strong>
+          <button class="btn btn-ghost small" data-add-position="${FL.esc(g.organization)}">+ Add position at ${FL.esc(g.organization)}</button>
+        </div>
+        <div style="margin-top:10px;display:grid;gap:12px">
+          ${g.roles.map((r) => `
+            <div style="padding-left:14px;border-left:2px solid var(--line-2)">
+              <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">
+                <div>
+                  <div style="font-weight:600">${FL.esc(r.title)}</div>
+                  <div class="ash small">${[r.employment_type, r.location].filter(Boolean).map(FL.esc).join(' · ')}</div>
+                  <div class="mono ash small" style="margin-top:2px">${fmtMonth(r.start_date)} — ${fmtMonth(r.end_date)}</div>
+                  ${r.description ? `<p class="small" style="margin:8px 0 0">${FL.esc(r.description)}</p>` : ''}
+                </div>
+                <div class="btn-row" style="flex:none">
+                  <button class="btn btn-ghost small" data-edit-exp="${r.id}">Edit</button>
+                  <button class="btn btn-ghost small" data-del-exp="${r.id}">Delete</button>
+                </div>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>`).join('');
+  }
+
+  function openExpForm(prefillOrg) {
+    expEditingId = null;
+    $('expFormTitle').textContent = prefillOrg ? `Add position at ${prefillOrg}` : 'Add experience';
+    ['expTitle', 'expLocation', 'expDesc'].forEach((k) => $(k).value = '');
+    $('expOrg').value = prefillOrg || '';
+    $('expType').value = ''; $('expStart').value = ''; $('expEnd').value = ''; $('expCurrent').checked = false;
+    $('expEnd').disabled = false;
+    $('expErr').classList.add('hidden');
+    $('expFormWrap').classList.remove('hidden');
+    $('expFormWrap').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function fillExpForm(r) {
+    expEditingId = r.id;
+    $('expFormTitle').textContent = 'Edit experience';
+    $('expTitle').value = r.title; $('expOrg').value = r.organization;
+    $('expType').value = r.employment_type || ''; $('expLocation').value = r.location || '';
+    $('expStart').value = r.start_date || ''; $('expEnd').value = r.end_date || '';
+    $('expCurrent').checked = !r.end_date; $('expEnd').disabled = !r.end_date;
+    $('expDesc').value = r.description || '';
+    $('expErr').classList.add('hidden');
+    $('expFormWrap').classList.remove('hidden');
+    $('expFormWrap').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  $('btnAddExp').onclick = () => openExpForm(null);
+  $('btnExpCancel').onclick = () => $('expFormWrap').classList.add('hidden');
+  $('expCurrent').onchange = (e) => { $('expEnd').disabled = e.target.checked; if (e.target.checked) $('expEnd').value = ''; };
+
+  $('expList').addEventListener('click', (e) => {
+    const addBtn = e.target.closest('[data-add-position]'); if (addBtn) return openExpForm(addBtn.dataset.addPosition);
+    const editBtn = e.target.closest('[data-edit-exp]');
+    if (editBtn) { sb.from('work_experience').select('*').eq('id', editBtn.dataset.editExp).single().then(({ data }) => data && fillExpForm(data)); return; }
+    const delBtn = e.target.closest('[data-del-exp]');
+    if (delBtn) {
+      if (!confirm('Delete this experience entry?')) return;
+      sb.from('work_experience').delete().eq('id', delBtn.dataset.delExp).then(({ error }) => {
+        if (error) return FL.toast('Could not delete: ' + FL.friendly(error), 'err');
+        FL.toast('Experience deleted', 'ok'); loadExperience();
+      });
+    }
+  });
+
+  $('btnExpSave').onclick = async () => {
+    const errEl = $('expErr'); errEl.classList.add('hidden');
+    const title = $('expTitle').value.trim(), org = $('expOrg').value.trim(), start = $('expStart').value;
+    const isCurrent = $('expCurrent').checked;
+    if (!title || !org) { errEl.textContent = 'Title and organisation are required.'; return errEl.classList.remove('hidden'); }
+    if (!start) { errEl.textContent = 'Start date is required.'; return errEl.classList.remove('hidden'); }
+    const end = isCurrent ? null : ($('expEnd').value || null);
+    if (end && end < start) { errEl.textContent = 'End date can\'t be before the start date.'; return errEl.classList.remove('hidden'); }
+
+    const row = {
+      user_id: uid, title, organization: org,
+      employment_type: $('expType').value || null,
+      location: $('expLocation').value.trim() || null,
+      start_date: start, end_date: end,
+      description: $('expDesc').value.trim() || null,
+    };
+    const btn = $('btnExpSave'); FL.busy(btn, true, 'Saving…');
+    const q = expEditingId ? sb.from('work_experience').update(row).eq('id', expEditingId) : sb.from('work_experience').insert(row);
+    const { error } = await q;
+    FL.busy(btn, false);
+    if (error) { errEl.textContent = FL.friendly(error); return errEl.classList.remove('hidden'); }
+    FL.toast('Experience saved', 'ok');
+    $('expFormWrap').classList.add('hidden');
+    loadExperience();
+  };
+
+  loadExperience();
+})();
+</script>
+</body>
+</html>

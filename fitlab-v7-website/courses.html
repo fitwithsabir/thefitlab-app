@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Courses — The Fit Lab</title>
+<script src="assets/theme.js"></script>
+<link rel="icon" href="assets/favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+  .chead{padding:22px 24px}
+  .chead h1{margin:6px 0 4px;font:700 clamp(22px,3vw,30px)/1.2 var(--body);color:var(--bone)}
+  .chead .sub{color:var(--ash);font-size:14.5px;margin:0}
+  .chead .desc{font-size:14.5px;line-height:1.6;margin:12px 0 0}
+  .cta-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:16px}
+  .stats3{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font-size:13px;color:var(--ash)}
+  .stats3 b{color:var(--bone)}
+  .cert-row{display:flex;gap:14px;align-items:center;padding:14px 20px}
+  .cert-row + .cert-row{border-top:1px solid var(--line)}
+</style>
+</head>
+<body data-page="courses">
+<main class="page">
+  <div class="layout l-main-side">
+    <section class="stack" id="main"><div class="box skeleton" style="height:340px"></div></section>
+    <aside><div class="sticky-col" id="side"></div></aside>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(async () => {
+  const $ = (id) => document.getElementById(id);
+  const esc = FL.esc;
+  const session = await FL.requireAuth(); if (!session) return;
+  let me; try { me = await FL.getProfile(); } catch (e) { return FL.toast(FL.friendly(e), 'err'); }
+  if (!me.profile_completed) return location.replace('register.html');
+  FL.renderHeader(me);
+  const uid = me.id;
+
+  const [crs, enr, prog, att, cer, st] = await Promise.all([
+    sb.from('courses').select('*').eq('is_published', true).order('sort_order'),
+    sb.from('enrollments').select('*').eq('user_id', uid),
+    sb.from('lesson_progress').select('lesson_id, course_id, completed_at').eq('user_id', uid),
+    sb.from('exam_attempts').select('course_id, percentage, passed, submitted_at, status').eq('user_id', uid).eq('status', 'submitted'),
+    sb.from('certificates').select('*').eq('user_id', uid),
+    sb.from('course_stats').select('*'),
+  ]);
+  const courses = crs.data || [], enrolls = enr.data || [], progress = prog.data || [], attempts = att.data || [], certs = cer.data || [], stats = st.data || [];
+  const enrolled = (c) => enrolls.find((e) => e.course_id === c.id);
+  const statFor = (c) => stats.find((s) => s.course_id === c.id) || {};
+  const doneIds = new Set(progress.map((p) => p.lesson_id));
+
+  async function daysFor(c) {
+    const { data } = await sb.from('lesson_index').select('id, day_number, title, summary, estimated_minutes, is_published').eq('course_id', c.id).order('day_number');
+    return (data || []).filter((d) => d.is_published !== false);
+  }
+
+  function state(c, days) {
+    const doneCount = days.filter((d) => doneIds.has(d.id)).length;
+    const allDone = doneCount >= c.total_days;
+    const passed = attempts.find((a) => a.course_id === c.id && a.passed);
+    const used = attempts.filter((a) => a.course_id === c.id).length;
+    const cert = certs.find((x) => x.course_id === c.id);
+    const issued = cert && !cert.revoked_at && ['approved', 'auto_approved'].includes(cert.status);
+    const next = days.find((d) => !doneIds.has(d.id));
+    return { doneCount, allDone, passed, used, cert, issued, next, pct: Math.round(doneCount / c.total_days * 100) };
+  }
+
+  function ctaFor(c, s) {
+    if (s.issued) return `<span class="otw">${FL.icon('award', 15)}Certified</span><a class="pill solid" href="verify.html?id=${encodeURIComponent(me.unique_id)}">View certificate</a>
+      ${s.cert.certificate_url ? `<a class="pill" href="${esc(s.cert.certificate_url)}" target="_blank" rel="noopener">Download</a>` : ''}`;
+    if (s.cert && s.cert.revoked_at) return `<span class="chip">Certificate withdrawn</span><span class="t-sm muted">${esc(s.cert.review_note || '')}</span>`;
+    if (s.cert && s.cert.status === 'rejected') return `<span class="chip">Changes requested</span><span class="t-sm muted">${esc(s.cert.review_note || 'Please review your assignments.')}</span>`;
+    if (s.cert || s.passed) return `<span class="otw">${FL.icon('check', 15)}Exam passed${s.passed ? ' · ' + Math.round(s.passed.percentage) + '%' : ''}</span>
+      <span class="t-sm muted">Certificate awaiting review — you'll be emailed.</span><a class="pill sm" href="verify.html?id=${encodeURIComponent(me.unique_id)}">My result page</a>`;
+    if (s.allDone) return `<a class="pill solid lg" href="exam.html?course=${encodeURIComponent(c.slug)}">Take the final exam</a>
+      <span class="t-sm muted">${c.exam_question_count} questions · ${c.exam_time_minutes} min · pass ${c.pass_percentage}% · attempts ${s.used}/${c.max_attempts}</span>`;
+    if (s.next) return `<a class="pill solid lg" href="lesson.html?course=${encodeURIComponent(c.slug)}&day=${s.next.day_number}">${s.doneCount ? 'Resume Day ' + s.next.day_number : 'Start Day 1'}</a>`;
+    return `<span class="chip">New days are being published</span>`;
+  }
+
+  const thumb = (c) => `<div class="course-thumb"><b>${esc(c.code || 'FLA')}</b><i>${c.total_days} DAYS</i></div>`;
+
+  // ---------- course page with the full day list ----------
+  async function coursePage(c) {
+    document.title = `${c.title} — The Fit Lab`;
+    const e = enrolled(c);
+    const days = await daysFor(c);
+    const s = state(c, days);
+    const stt = statFor(c);
+    $('main').innerHTML = `
+      <div><a class="txt-btn" href="courses.html" style="padding-left:0">${FL.icon('back', 18)}All courses</a></div>
+      <div class="box"><div class="chead">
+        <div class="eyebrow" style="font-size:10px">${esc(c.level || 'Course')}</div>
+        <h1>${esc(c.title)}</h1><p class="sub">${esc(c.subtitle || '')}</p>
+        ${e ? `<div class="cprog" style="margin-top:14px"><span class="progress"><i style="width:${s.pct}%"></i></span><span class="t-sm"><b>${s.doneCount}/${c.total_days}</b> days · ${s.pct}%</span></div>` : ''}
+        <div class="cta-row">${e ? ctaFor(c, s) : `<button class="pill solid lg" id="btnEnroll">Enroll — free</button>`}</div>
+        <div class="stats3">${stt.enrolled_count != null ? `<span><b>${stt.enrolled_count}</b> enrolled</span><span><b>${stt.completed_count}</b> completed</span><span><b>${stt.in_progress_count}</b> in progress</span>` : ''}</div>
+        ${c.description ? `<p class="desc">${esc(c.description)}</p>` : ''}
+      </div></div>
+      <div class="box"><div class="box-head"><h2>Course content</h2><span class="sub">${days.length} of ${c.total_days} days published</span></div>
+        <p class="t-sm muted" style="margin:0 20px 8px">${me.is_admin ? 'Admin view — every published day is open and timers are off.' : 'Completed days stay open to revise any time, with no reading timer. The next day unlocks when you finish the one before.'}</p>
+        <div class="syl" id="syl"></div>
+        <div class="syl-day ${s.allDone ? 'next' : 'locked'}" style="border-top:1px solid var(--line)">
+          <span class="syl-n">${FL.icon('award', 16)}</span><span class="meta"><b>Final exam</b><span>${c.exam_question_count} questions · ${c.exam_time_minutes} minutes · ${c.pass_percentage}% to pass</span></span>
+          ${s.allDone && !s.passed && e ? `<a class="go" href="exam.html?course=${encodeURIComponent(c.slug)}">Start →</a>` : s.passed ? `<span class="go">Passed</span>` : `<span class="t-xs muted">${FL.icon('lock', 14)}</span>`}</div>
+      </div>`;
+    const syl = $('syl');
+    syl.innerHTML = Array.from({ length: c.total_days }, (_, i) => {
+      const n = i + 1, d = days.find((x) => x.day_number === n);
+      if (!d) return `<div class="syl-day locked"><span class="syl-n">${n}</span><span class="meta"><b>Day ${n}</b><span>Not published yet</span></span></div>`;
+      const done = doneIds.has(d.id);
+      const prevDone = n === 1 || days.some((x) => x.day_number === n - 1 && doneIds.has(x.id));
+      const open = e && (done || prevDone || me.is_admin);
+      const isNext = e && !done && prevDone;
+      const href = `lesson.html?course=${encodeURIComponent(c.slug)}&day=${n}`;
+      const inner = `<span class="syl-n">${done ? FL.icon('check', 16) : n}</span>
+        <span class="meta"><b>Day ${n} · ${esc(d.title)}</b><span>${d.estimated_minutes || 25} min${done ? ' · Completed' : ''}</span></span>
+        ${open ? `<span class="go">${done ? 'Revise' : isNext ? 'Start' : 'Open'} →</span>` : `<span class="t-xs muted">${FL.icon('lock', 14)}</span>`}`;
+      return open ? `<a class="syl-day ${done ? 'done' : ''} ${isNext ? 'next' : ''}" href="${href}">${inner}</a>`
+                  : `<div class="syl-day locked" title="${e ? 'Finish Day ' + (n - 1) + ' first' : 'Enroll to start'}">${inner}</div>`;
+    }).join('');
+    const nextEl = syl.querySelector('.next'); if (nextEl && s.doneCount > 3) nextEl.scrollIntoView({ block: 'center' });
+    const be = $('btnEnroll');
+    if (be) be.onclick = () => enroll(c, be);
+    side(c);
+  }
+
+  async function enroll(c, btn) {
+    FL.busy(btn, true, 'Enrolling…');
+    const { error } = await sb.from('enrollments').insert({ user_id: uid, course_id: c.id });
+    if (error) { FL.busy(btn, false); return FL.toast('Could not enroll: ' + FL.friendly(error), 'err'); }
+    FL.toast('Enrolled — Day 1 is open', 'ok');
+    location.href = `courses.html?c=${encodeURIComponent(c.slug)}`;
+  }
+
+  // ---------- overview: my learning / explore / certificates ----------
+  async function overview(tab) {
+    const mine = courses.filter(enrolled), other = courses.filter((c) => !enrolled(c));
+    const issued = certs.filter((x) => !x.revoked_at && ['approved', 'auto_approved'].includes(x.status));
+    $('main').innerHTML = `<div class="box">
+      <div class="box-head"><h2>Courses</h2></div>
+      <div class="utabs" id="ctabs"><button data-t="learning">My learning <span class="muted">${mine.length}</span></button>
+        <button data-t="explore">Explore <span class="muted">${other.length}</span></button>
+        <button data-t="certs">Certificates <span class="muted">${issued.length}</span></button></div>
+      <div id="tabBody"></div></div>`;
+    const body = $('tabBody');
+    const setTab = async (t) => {
+      document.querySelectorAll('#ctabs button').forEach((b) => b.classList.toggle('on', b.dataset.t === t));
+      history.replaceState(null, '', 'courses.html' + (t === 'learning' ? '' : '#' + t));
+      if (t === 'learning') {
+        if (!mine.length) { body.innerHTML = `<div class="empty"><b>You haven't started a course yet</b>Pick one under Explore — enrollment is free for the current cohort.</div>`; return; }
+        const rows = [];
+        for (const c of mine) { const days = await daysFor(c); const s = state(c, days);
+          rows.push(`<div class="course-card">${thumb(c)}<div>
+            <a class="ent-name" style="font-size:16px" href="courses.html?c=${encodeURIComponent(c.slug)}">${esc(c.title)}</a>
+            <div class="ent-sub">${esc(c.subtitle || '')}</div>
+            <div class="cprog"><span class="progress"><i style="width:${s.pct}%"></i></span><span class="t-xs muted">${s.doneCount}/${c.total_days} days</span></div>
+            <div class="cta-row" style="margin-top:8px">${ctaFor(c, s)}<a class="pill ghost sm" href="courses.html?c=${encodeURIComponent(c.slug)}">All days</a></div></div></div>`); }
+        body.innerHTML = rows.join('');
+      } else if (t === 'explore') {
+        body.innerHTML = other.length ? other.map((c) => `<div class="course-card">${thumb(c)}<div>
+            <a class="ent-name" style="font-size:16px" href="courses.html?c=${encodeURIComponent(c.slug)}">${esc(c.title)}</a>
+            <div class="ent-sub">${esc(c.subtitle || '')}</div>
+            <p class="t-sm" style="margin:8px 0;line-height:1.5">${esc((c.description || '').slice(0, 220))}${(c.description || '').length > 220 ? '…' : ''}</p>
+            <div class="cta-row" style="margin-top:4px"><button class="pill solid sm" data-enroll="${c.id}">Enroll — free</button><a class="pill ghost sm" href="courses.html?c=${encodeURIComponent(c.slug)}">See all ${c.total_days} days</a></div></div></div>`).join('')
+          : `<div class="empty"><b>You're enrolled in every course</b>New courses appear here — and in your notifications — when they launch.</div>`;
+      } else {
+        body.innerHTML = issued.length ? issued.map((x) => { const c = courses.find((y) => y.id === x.course_id) || {};
+          return `<div class="cert-row"><span class="sq" style="width:52px;height:52px;border-radius:10px;background:var(--accent-soft);color:var(--lime);display:grid;place-items:center">${FL.icon('award', 26)}</span>
+            <div class="ent-main"><b>${esc(c.title || 'Course')}</b><div class="ent-meta">Issued ${FL.fmtDate(x.issued_at)} · Certificate no. <span class="mono">${esc(x.verification_code)}</span></div></div>
+            <a class="pill sm" href="verify.html?id=${encodeURIComponent(me.unique_id)}">Verify</a>${x.certificate_url ? `<a class="pill ghost sm" href="${esc(x.certificate_url)}" target="_blank" rel="noopener">Download</a>` : ''}</div>`; }).join('')
+          : `<div class="empty"><b>No certificates yet</b>Finish all days and pass the final exam — your certificate then appears here and on your profile.</div>`;
+      }
+    };
+    $('ctabs').onclick = (e) => { const b = e.target.closest('[data-t]'); if (b) setTab(b.dataset.t); };
+    body.addEventListener('click', (e) => { const b = e.target.closest('[data-enroll]'); if (b) enroll(courses.find((c) => c.id === b.dataset.enroll), b); });
+    setTab(tab || (mine.length ? 'learning' : 'explore'));
+    side(null);
+  }
+
+  function side(c) {
+    $('side').innerHTML = `
+      <div class="box box-pad"><div style="display:flex;gap:12px;align-items:center">${FL.avatarHtml(me, 'avatar md')}<div>
+        <b>${esc(me.full_name)}</b><div class="t-xs muted mono">${esc(me.unique_id || '')}</div><div style="margin-top:4px">${FL.starBadge(me.star_count || 0, me.star_tier)}</div></div></div>
+        <p class="t-sm muted" style="margin:12px 0 0;line-height:1.5">Stars rise as you complete more courses and score well in exams. A new course launch lowers everyone's ratio — keep learning to stay on top.</p></div>
+      <div class="box box-pad"><b style="font-size:15px">How certification works</b>
+        <ol class="t-sm" style="margin:10px 0 0;padding-left:18px;line-height:1.6;color:var(--ash)">
+          <li>Finish every day — cards, checks and the daily assignment.</li><li>Pass the timed final exam.</li>
+          <li>The Academy reviews your assignments and issues a QR-verified certificate.</li><li>Certified members appear on the Hire-a-Coach portal.</li></ol></div>
+      ${FL.siteFootHtml(true)}`;
+    FL.wireCommon($('side'));
+  }
+
+  const slug = FL.param('c');
+  const course = slug && courses.find((c) => c.slug === slug || c.id === slug);
+  if (course) coursePage(course);
+  else overview((location.hash || '').slice(1) || null);
+  if (enrolls.length) FL.showEntryPopups(enrolls[0].course_id);
+})();
+</script>
+</body>
+</html>

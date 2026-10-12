@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Lesson — The Fit Lab Academy</title>
+<link rel="icon" href="assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="assets/theme.js"></script>
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<div class="wrap">
+  <div id="nav"></div>
+  <div class="lesson-shell">
+    <div id="content"><div class="skeleton" style="height:22px;margin:30px 0 14px"></div><div class="skeleton" style="height:340px"></div></div>
+  </div>
+  <div class="footer">© <span id="yr"></span> The Fit Lab Academy · Education ≠ medical practice</div>
+</div>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="assets/app.js"></script>
+<script src="assets/diagrams.js"></script>
+<script>
+(async function () {
+  document.getElementById('yr').textContent = new Date().getFullYear();
+  const session = await FL.requireAuth(); if (!session) return;
+  const uid = session.user.id;
+  const host = document.getElementById('content');
+  const slug = FL.param('course'), day = parseInt(FL.param('day') || '1', 10);
+  const esc = FL.esc;
+
+  let profile;
+  try { profile = await FL.getProfile(); } catch (e) { FL.toast(FL.friendly(e), 'err'); return; }
+  if (!profile.profile_completed) { location.replace('register.html'); return; }
+  FL.renderHeader(profile);
+
+  const stop = (title, text) => { host.innerHTML = `<div class="lcard" style="margin-top:36px"><h2>${title}</h2><p class="ash">${text}</p><a class="btn" href="courses.html${slug ? '?c=' + encodeURIComponent(slug) : ''}">← Course</a></div>`; };
+  if (!slug) return stop('No course selected', 'Open a lesson from the Courses tab.');
+
+  const { data: course } = await sb.from('courses').select('*').eq('slug', slug).maybeSingle();
+  if (!course) return stop('Course not found', 'This course may be unpublished or the link is wrong.');
+  const { data: enr } = await sb.from('enrollments').select('id').eq('user_id', uid).eq('course_id', course.id).maybeSingle();
+  // admins can preview any day without enrolling (read-only: nothing is recorded)
+  const adminPreview = !enr && !!profile.is_admin;
+  if (!enr && !adminPreview) return stop('Not enrolled', 'Enroll in this course from your dashboard first.');
+  if (adminPreview) document.body.insertAdjacentHTML('afterbegin',
+    '<div class="banner" style="position:sticky;top:0;z-index:50;text-align:center">Admin preview — you are not enrolled, so nothing on this page is recorded.</div>');
+
+  const { data: lesson, error: lErr } = await sb.from('lessons').select('*').eq('course_id', course.id).eq('day_number', day).maybeSingle();
+  if (lErr) return stop('Could not load lesson', esc(FL.friendly(lErr)));
+  const { data: idx } = await sb.from('lesson_index').select('id, day_number, title').eq('course_id', course.id).order('day_number');
+  const index = idx || [];
+  if (!lesson) {
+    return stop(`Day ${day} isn't published yet`, `It will open here as soon as it's released. You can continue from your dashboard.`);
+  }
+  document.title = `Day ${day}: ${lesson.title} — The Fit Lab Academy`;
+
+  const [{ data: prog }, { data: sub }] = await Promise.all([
+    sb.from('lesson_progress').select('lesson_id, checks, time_spent_seconds').eq('user_id', uid).eq('lesson_id', lesson.id).maybeSingle(),
+    sb.from('assignment_submissions').select('content, submitted_at').eq('user_id', uid).eq('lesson_id', lesson.id).maybeSingle()
+  ]);
+  let completed = !!prog;
+  // Admins review chapters at full speed; a completed lesson is freely re-readable.
+  const noGates = completed || !!profile.is_admin;
+  let existingSub = sub ? sub.content : '';
+  const nextExists = index.some((d) => d.day_number === day + 1);
+  const isLast = day >= course.total_days;
+
+  // ---------- flow ----------
+  const sections = Array.isArray(lesson.sections) ? lesson.sections : [];
+  const flow = [{ type: 'intro' }, ...sections.map((s) => ({ ...s, type: s.type || 'content' })), { type: 'done' }];
+  const N = flow.length;
+  const nChecks = sections.filter((s) => s.type === 'check').length;
+  const hasAssignment = sections.some((s) => s.type === 'assignment');
+  const readSecs = (card) => Math.min(75, Math.max(12, Math.round(FL.stripMd(card.body || '').split(/\s+/).length / 3.4)));
+
+  // ---------- state (resumes on refresh) ----------
+  const KEY = `fl:lesson:${lesson.id}:${uid}`;
+  let st;
+  try { st = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { st = null; }
+  if (!st) st = { idx: 0, unlocked: 1, read: {}, checks: {}, time: 0, started: Date.now(), asgSaved: !!existingSub, returnTo: null };
+  if (st.unlocked < 1) st.unlocked = 1;
+  if (completed || profile.is_admin) { st.unlocked = N - 1; }
+  // revisiting a finished day opens at the start, not on the "Day complete" card
+  if ((completed || profile.is_admin) && st.idx >= N - 1) st.idx = 0;
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} };
+  const unlockTo = (i) => { if (i > st.unlocked) { st.unlocked = i; save(); } };
+
+  // active-time counter (only while tab is visible)
+  setInterval(() => { if (document.visibilityState === 'visible' && !completed) { st.time += 1; if (st.time % 5 === 0) save(); } }, 1000);
+
+  let gateTimer = null;
+  const clearGate = () => { if (gateTimer) { clearInterval(gateTimer); gateTimer = null; } };
+  window.addEventListener('beforeunload', () => { save(); FL.stopSpeaking(); });
+
+  // ---------- render ----------
+  function render() {
+    clearGate(); FL.stopSpeaking();
+    const i = st.idx, card = flow[i];
+    const pct = Math.round((i / (N - 1)) * 100);
+    const dots = flow.map((c, k) => `<b class="${k === i ? 'cur' : ''} ${k < st.unlocked || (k === st.unlocked && k < i) ? 'done' : ''} ${c.type === 'check' ? 'check' : ''}" data-go="${k}" title="${c.type === 'intro' ? 'Introduction' : c.type === 'done' ? 'Finish' : esc(c.title || c.type)}" ${k > st.unlocked ? 'disabled' : ''}></b>`).join('');
+    const top = `
+      <div class="stepbar">
+        <a class="btn btn-ghost small" href="courses.html?c=${encodeURIComponent(course.slug)}">← All days</a>
+        <div class="track"><i style="width:${pct}%"></i></div>
+        <span class="count">DAY ${String(day).padStart(2, '0')} · CARD ${i + 1}/${N}</span>
+      </div>`;
+    let body = '';
+    if (card.type === 'intro') body = renderIntro();
+    else if (card.type === 'content') body = renderContent(card, i);
+    else if (card.type === 'check') body = renderCheck(card, i);
+    else if (card.type === 'assignment') body = renderAssignment(card, i);
+    else if (card.type === 'done') body = renderDone();
+    host.innerHTML = top + body + `<div class="dots">${dots}</div>`;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    wire(card, i);
+  }
+
+  const backBtn = (i) => i > 0 ? `<button class="btn btn-ghost" data-nav="${i - 1}">← Back</button>` : '<span></span>';
+  const nextBtn = (i, label) => `<button class="btn btn-primary" data-nav="${i + 1}" id="btnNext">${label || 'Continue →'}</button>`;
+
+  function renderIntro() {
+    const objs = Array.isArray(lesson.objectives) ? lesson.objectives : [];
+    const resume = st.idx === 0 && st.unlocked > 1 && !noGates;
+    return `<div class="lcard">
+      <div class="lab"><span class="eyebrow">Day ${day} of ${course.total_days} · ${esc(course.title)}</span>${completed ? '<span class="badge ok">Completed</span>' : ''}</div>
+      <h2 style="font-size:clamp(36px,6vw,58px)">${esc(lesson.title)}</h2>
+      ${lesson.summary ? `<p class="prose" style="font-size:17px;color:var(--ash);margin:0">${esc(lesson.summary)}</p>` : ''}
+      <div class="intro-meta"><span class="badge">${lesson.estimated_minutes || 25} min</span><span class="badge">${sections.filter((s) => s.type !== 'check').length} cards</span>${nChecks ? `<span class="badge">${nChecks} knowledge check${nChecks > 1 ? 's' : ''}</span>` : ''}${hasAssignment ? '<span class="badge">1 assignment</span>' : ''}</div>
+      ${lesson.recap ? `<div class="recap"><b style="color:var(--lime);font-family:var(--mono);font-size:11px;letter-spacing:.16em">YESTERDAY</b><br>${esc(lesson.recap)}</div>` : ''}
+      ${objs.length ? `<div class="eyebrow" style="margin-top:22px">By the end of today you will be able to</div><ul class="intro-obj">${objs.map((o) => `<li>${esc(o)}</li>`).join('')}</ul>` : ''}
+      <div class="cardnav"><span class="help">${completed ? 'You can revisit any card freely.' : 'Cards unlock as you read. Knowledge checks must be passed to move on.'}</span>
+        <button class="btn btn-primary" data-nav="${resume ? Math.min(st.unlocked, N - 1) : 1}" id="btnNext">${resume ? `Resume at card ${st.unlocked + 1} →` : completed ? 'Review lesson →' : 'Begin lesson →'}</button></div>
+    </div>`;
+  }
+
+  function renderContent(card, i) {
+    const media = card.diagram && window.FLD && FLD.has(card.diagram) ? `<div class="media">${FLD.render(card.diagram, card.diagram_opts)}</div>`
+      : card.image_url ? `<div class="media"><img src="${esc(card.image_url)}" alt="${esc(card.image_alt || card.title || '')}" loading="lazy"></div>` : '';
+    const gated = !noGates && i >= st.unlocked;
+    const need = readSecs(card), had = st.read[i] || 0;
+    const nav = gated
+      ? `<span class="readgate" id="gate"><span class="ring" style="--p:${Math.round((had / need) * 100)}%"></span><span id="gateTxt">Reading…</span></span>
+         <button class="btn btn-primary" id="btnNext" data-nav="${i + 1}" disabled>Continue →</button>`
+      : (st.returnTo != null ? `<button class="btn" data-nav="${i + 1}">Continue →</button><button class="btn btn-primary" data-nav="${st.returnTo}">Back to the question →</button>` : nextBtn(i));
+    return `<div class="lcard">
+      <div class="lab"><span class="eyebrow">${esc(card.label || 'Lesson')}</span>
+        <button class="narrate" id="btnSpeak" title="Listen to this card"><span class="eq"><i></i><i></i><i></i></span>Listen</button></div>
+      <h2>${esc(card.title || '')}</h2>
+      ${media}
+      <div class="prose">${FL.md(card.body)}</div>
+      ${card.audio_url ? `<audio controls preload="none" src="${esc(card.audio_url)}" style="width:100%;margin-top:14px"></audio>` : ''}
+      <div class="cardnav">${backBtn(i)}<span class="btn-row">${nav}</span></div>
+    </div>`;
+  }
+
+  function renderCheck(card, i) {
+    st.returnTo = null;
+    const s0 = st.checks[i] || { attempts: 0, passed: false, sel: null };
+    // completed day or admin: the check is shown answered — revise freely, nothing to unlock
+    const s = noGates && !s0.passed ? { ...s0, passed: true } : s0;
+    const letters = 'ABCD';
+    return `<div class="lcard">
+      <div class="lab"><span class="eyebrow">Knowledge check${nChecks > 1 ? ` · ${sections.filter((x, k) => x.type === 'check' && k < i - 1).length + 1} of ${nChecks}` : ''}</span><span class="badge">${s.passed ? 'Passed' : s.attempts ? `Attempt ${s.attempts + 1}` : 'Required'}</span></div>
+      <h2 style="font-size:clamp(22px,3.4vw,30px);font-family:var(--body);font-weight:600;letter-spacing:0;line-height:1.35;text-transform:none">${esc(card.question)}</h2>
+      <div id="opts">${card.options.map((o, k) => `<button class="opt ${s.passed && k === card.correct_index ? 'right' : ''}" data-opt="${k}" ${s.passed ? 'disabled' : ''}><i>${letters[k]}</i><span>${esc(o)}</span></button>`).join('')}</div>
+      <div id="verdict">${s.passed ? `<div class="verdict ok"><b>${s0.passed ? 'Correct' : 'Answer'}</b>${esc(card.explanation || '')}</div>` : ''}</div>
+      <div class="cardnav">${backBtn(i)}<span class="btn-row" id="checkNav">${s.passed ? nextBtn(i) : `<button class="btn btn-primary" id="btnCheck" disabled>Check answer</button>`}</span></div>
+    </div>`;
+  }
+
+  function renderAssignment(card, i) {
+    const min = card.min_chars || 200;
+    const val = existingSub || '';
+    return `<div class="lcard assign">
+      <div class="lab"><span class="eyebrow">Daily assignment · proof of work</span>${st.asgSaved || existingSub ? '<span class="badge ok">Saved</span>' : '<span class="badge">Required</span>'}</div>
+      <h2>${esc(card.title || 'Assignment')}</h2>
+      <div class="prose" style="margin-bottom:16px">${FL.md(card.prompt)}</div>
+      <textarea id="asg" placeholder="${esc(card.placeholder || 'Write your answer here…')}">${esc(val)}</textarea>
+      <div class="charcount" id="cc"></div>
+      <div class="cardnav">${backBtn(i)}<span class="btn-row">
+        <button class="btn" id="btnSaveAsg">${existingSub ? 'Update assignment' : 'Save assignment'}</button>
+        <button class="btn btn-primary" id="btnFinish" ${(existingSub || completed) ? '' : 'disabled'}>${completed ? 'Continue →' : `Complete Day ${day} →`}</button>
+      </span></div>
+      <p class="help" style="margin:12px 0 0">Saved against your Unique ID <span class="mono lime">${esc(profile.unique_id || '')}</span>. Reviewed before certification. Minimum ${min} characters.</p>
+    </div>`;
+  }
+
+  function renderDone() {
+    const mins = Math.max(1, Math.round((prog && prog.time_spent_seconds || st.time) / 60));
+    return `<div class="lcard">
+      <div class="done-hero">
+        <div class="eyebrow">Day ${day} of ${course.total_days}</div>
+        <div class="big" style="margin:8px 0 6px">${completed ? 'Day complete' : 'Almost there'}</div>
+        <p class="ash" style="margin:0 auto 18px;max-width:520px">${completed ? `Recorded against ${esc(profile.unique_id || 'your ID')} · about ${mins} min active${nChecks ? ` · ${nChecks}/${nChecks} checks passed` : ''}.` : 'Finish the assignment card to record today in your progress.'}</p>
+      </div>
+      ${lesson.preview ? `<div class="recap" style="margin:0 0 20px"><b style="color:var(--lime);font-family:var(--mono);font-size:11px;letter-spacing:.16em">TOMORROW</b><br>${esc(lesson.preview)}</div>` : ''}
+      <div class="btn-row" style="justify-content:center">
+        ${completed && !isLast && nextExists ? `<a class="btn btn-primary" href="lesson.html?course=${course.slug}&day=${day + 1}">Continue to Day ${day + 1} →</a>` : ''}
+        ${completed && !isLast && !nextExists ? `<span class="badge warn">Day ${day + 1} is being published</span>` : ''}
+        ${completed ? `<button class="btn" data-nav="1">↺ Review Day ${day} from the start</button>` : ''}
+        ${day > 1 ? `<a class="btn btn-ghost" href="lesson.html?course=${encodeURIComponent(course.slug)}&day=${day - 1}">← Day ${day - 1}</a>` : ''}
+        <a class="btn btn-ghost" href="courses.html?c=${encodeURIComponent(course.slug)}">All days</a>
+        ${!completed ? `<button class="btn btn-ghost" data-nav="${N - 2}">← Back to the assignment</button>` : ''}
+      </div>
+    </div>`;
+  }
+
+  // ---------- wiring ----------
+  function wire(card, i) {
+    host.querySelectorAll('[data-nav]').forEach((b) => b.addEventListener('click', () => go(parseInt(b.dataset.nav, 10))));
+    host.querySelectorAll('.dots b[data-go]:not([disabled])').forEach((b) => b.addEventListener('click', () => go(parseInt(b.dataset.go, 10))));
+
+    if (card.type === 'content') {
+      // read gate
+      if (!noGates && i >= st.unlocked) {
+        const need = readSecs(card);
+        const ring = host.querySelector('#gate .ring'), txt = host.querySelector('#gateTxt'), btn = host.querySelector('#btnNext');
+        const tick = () => {
+          if (document.visibilityState !== 'visible') return;
+          st.read[i] = (st.read[i] || 0) + 1;
+          const p = Math.min(100, Math.round((st.read[i] / need) * 100));
+          if (ring) ring.style.setProperty('--p', p + '%');
+          if (st.read[i] >= need) {
+            clearGate(); unlockTo(i + 1);
+            if (txt) txt.textContent = 'Read'; if (btn) btn.disabled = false;
+            if (ring) ring.style.setProperty('--p', '100%');
+          }
+        };
+        gateTimer = setInterval(tick, 1000);
+      }
+      // narration
+      const sp = host.querySelector('#btnSpeak');
+      if (sp) sp.addEventListener('click', () => {
+        if (sp.classList.contains('on')) { FL.stopSpeaking(); return; }
+        const ok = FL.speak(`${card.title}. ${FL.stripMd(card.body)}`, () => sp.classList.remove('on'));
+        if (ok) sp.classList.add('on');
+      });
+    }
+
+    if (card.type === 'check' && !noGates) {
+      const s = st.checks[i] || (st.checks[i] = { attempts: 0, passed: false, sel: null });
+      let sel = null;
+      const opts = host.querySelectorAll('.opt'), btn = host.querySelector('#btnCheck');
+      opts.forEach((o) => o.addEventListener('click', () => {
+        if (s.passed) return;
+        sel = parseInt(o.dataset.opt, 10);
+        opts.forEach((x) => x.classList.toggle('sel', x === o));
+        if (btn) btn.disabled = false;
+      }));
+      if (btn) btn.addEventListener('click', () => {
+        if (sel == null) return;
+        s.attempts += 1; s.sel = sel;
+        const right = sel === card.correct_index;
+        opts.forEach((x) => { x.disabled = true; x.classList.remove('sel'); });
+        opts[sel].classList.add(right ? 'right' : 'wrong');
+        const v = host.querySelector('#verdict'), nav = host.querySelector('#checkNav');
+        if (right) {
+          s.passed = true; unlockTo(i + 1); save();
+          v.innerHTML = `<div class="verdict ok"><b>Correct</b>${esc(card.explanation || '')}</div>`;
+          nav.innerHTML = nextBtn(i);
+          nav.querySelector('[data-nav]').addEventListener('click', () => go(i + 1));
+        } else {
+          save();
+          const rc = Number.isInteger(card.review_card) ? card.review_card + 1 : null; // +1 for intro offset
+          v.innerHTML = `<div class="verdict no"><b>Not yet</b>${esc(card.explanation || '')}${rc ? ` <br><span class="ash">Go back to the card that covers this, then try again.</span>` : ''}</div>`;
+          nav.innerHTML = rc ? `<button class="btn btn-primary" id="btnReview">Review the card →</button>` : `<button class="btn btn-primary" id="btnRetry">Try again</button>`;
+          const rb = nav.querySelector('#btnReview'); if (rb) rb.addEventListener('click', () => { st.returnTo = i; go(rc); });
+          const tb = nav.querySelector('#btnRetry'); if (tb) tb.addEventListener('click', render);
+        }
+      });
+    }
+
+    if (card.type === 'assignment') {
+      const min = card.min_chars || 200;
+      const ta = host.querySelector('#asg'), cc = host.querySelector('#cc'), sv = host.querySelector('#btnSaveAsg'), fin = host.querySelector('#btnFinish');
+      const count = () => { const n = ta.value.trim().length; cc.textContent = `${n} / ${min} characters`; cc.classList.toggle('ok', n >= min); sv.disabled = n < min; };
+      ta.addEventListener('input', count); count();
+      sv.addEventListener('click', async () => {
+        const content = ta.value.trim();
+        if (content.length < min) return;
+        FL.busy(sv, true, 'Saving…');
+        const { error } = await sb.from('assignment_submissions').upsert({ user_id: uid, lesson_id: lesson.id, course_id: course.id, content, updated_at: new Date().toISOString() }, { onConflict: 'user_id,lesson_id' });
+        FL.busy(sv, false);
+        if (error) return FL.toast('Could not save: ' + FL.friendly(error), 'err');
+        existingSub = content; st.asgSaved = true; save();
+        sv.textContent = 'Update assignment'; fin.disabled = false;
+        FL.toast('Assignment saved', 'ok');
+        const badge = host.querySelector('.lab .badge'); if (badge) badge.outerHTML = '<span class="badge ok">Saved</span>';
+      });
+      fin.addEventListener('click', async () => {
+        if (completed) return go(i + 1);
+        FL.busy(fin, true, 'Recording…');
+        const { data, error } = await sb.rpc('complete_lesson', { p_lesson_id: lesson.id, p_checks: st.checks, p_time_spent: st.time });
+        if (error) { FL.busy(fin, false); return FL.toast(FL.friendly(error), 'err'); }
+        completed = true; st.unlocked = N - 1; save();
+        go(N - 1);
+        showCompletionPopup(data);
+      });
+    }
+  }
+
+  // ---- day-complete popup: on-screen twin of the encouragement email ----
+  async function showCompletionPopup(result) {
+    let mot = null;
+    try {
+      const { data } = await sb.rpc('motivation_for', { p_course_id: lesson.course_id });
+      mot = data;
+    } catch (_) { /* popup still works without it */ }
+
+    const allDone = result && result.all_done;
+    const done = mot ? mot.done : day;
+    const total = mot ? mot.total : 30;
+    const pct = Math.round((done / total) * 100);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'fl-modal on';
+    wrap.innerHTML = `
+      <div class="card hud" style="max-width:460px;text-align:center;padding:34px 28px">
+        <span class="c1"></span><span class="c2"></span>
+        <div class="eyebrow" style="color:var(--lime)">${allDone ? 'Course complete' : 'Day ' + day + ' recorded'}</div>
+        <h2 style="margin:12px 0 6px;font-size:26px">${allDone ? 'You finished all ' + total + ' days.' : 'Day ' + day + ' done.'}</h2>
+        <div class="mono ash" style="font-size:12px;margin-bottom:16px">${done} of ${total} days · ${pct}%</div>
+        <div class="bar" style="margin-bottom:18px"><span style="width:${pct}%"></span></div>
+        <p style="color:var(--ash);line-height:1.6;margin:0 0 22px">${FL.esc(mot ? mot.message : 'Well done — keep the streak going.')}</p>
+        <div class="btn-row" style="justify-content:center">
+          ${allDone
+            ? '<a class="btn btn-primary" href="exam.html?course=' + encodeURIComponent(course.slug) + '">Go to the exam</a>'
+            : '<a class="btn btn-primary" href="lesson.html?day=' + (day + 1) + '&course=' + encodeURIComponent(course.slug) + '">Start day ' + (day + 1) + '</a>'}
+          <a class="btn btn-ghost" href="courses.html?c=${encodeURIComponent(course.slug)}">All days</a>
+        </div>
+        <p class="ash" style="font-size:11px;margin:18px 0 0">A note is on its way to your inbox too.</p>
+      </div>`;
+    wrap.addEventListener('click', (e) => { if (e.target === wrap) wrap.remove(); });
+    document.body.appendChild(wrap);
+  }
+
+  function go(k) {
+    if (k < 0 || k >= N) return;
+    if (k > st.unlocked) return FL.toast('Finish this card first', 'err');
+    st.idx = k; save(); render();
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+    if (e.key === 'ArrowLeft') go(st.idx - 1);
+    if (e.key === 'ArrowRight' && st.idx + 1 <= st.unlocked) go(st.idx + 1);
+  });
+
+  // voices load asynchronously in some browsers
+  if (FL.speechSupported()) speechSynthesis.onvoiceschanged = () => { FL._voice = null; };
+
+  render();
+})();
+</script>
+</body>
+</html>
