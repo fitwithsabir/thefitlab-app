@@ -44,7 +44,7 @@
   if (!course) return stop('Course not found', 'This course may be unpublished or the link is wrong.');
   const { data: enr } = await sb.from('enrollments').select('id').eq('user_id', uid).eq('course_id', course.id).maybeSingle();
   // admins can preview any day without enrolling (read-only: nothing is recorded)
-  const adminPreview = !enr && !!profile.is_admin;
+  const adminPreview = !enr && !!(profile.is_admin || profile.is_owner);
   if (!enr && !adminPreview) return stop('Not enrolled', 'Enroll in this course from your dashboard first.');
   if (adminPreview) document.body.insertAdjacentHTML('afterbegin',
     '<div class="banner" style="position:sticky;top:0;z-index:50;text-align:center">Admin preview — you are not enrolled, so nothing on this page is recorded.</div>');
@@ -64,7 +64,7 @@
   ]);
   let completed = !!prog;
   // Admins review chapters at full speed; a completed lesson is freely re-readable.
-  const noGates = completed || !!profile.is_admin;
+  const noGates = completed || !!(profile.is_admin || profile.is_owner);
   let existingSub = sub ? sub.content : '';
   const nextExists = index.some((d) => d.day_number === day + 1);
   const isLast = day >= course.total_days;
@@ -83,9 +83,9 @@
   try { st = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { st = null; }
   if (!st) st = { idx: 0, unlocked: 1, read: {}, checks: {}, time: 0, started: Date.now(), asgSaved: !!existingSub, returnTo: null };
   if (st.unlocked < 1) st.unlocked = 1;
-  if (completed || profile.is_admin) { st.unlocked = N - 1; }
+  if (completed || profile.is_admin || profile.is_owner) { st.unlocked = N - 1; }
   // revisiting a finished day opens at the start, not on the "Day complete" card
-  if ((completed || profile.is_admin) && st.idx >= N - 1) st.idx = 0;
+  if ((completed || profile.is_admin || profile.is_owner) && st.idx >= N - 1) st.idx = 0;
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} };
   const unlockTo = (i) => { if (i > st.unlocked) { st.unlocked = i; save(); } };
 

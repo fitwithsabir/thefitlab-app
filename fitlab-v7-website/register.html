@@ -46,6 +46,8 @@
           <div class="field"><label for="full_name">Full name</label><input id="full_name" required placeholder="As it should appear on your certificate"></div>
           <div class="field"><label for="headline">Headline</label><input id="headline" maxlength="160" required placeholder="e.g. Personal Trainer · Strength & fat-loss coach">
             <span class="help">Shown under your name everywhere on The Fit Lab — like a professional tagline.</span></div>
+          <div class="field"><label for="profession">Profession</label><select id="profession" required><option value="">Loading…</option></select>
+            <span class="help">Trainer, physio, doctor, dietitian, gym owner, student… Used for search, job matches and the verified tick.</span></div>
           <div class="field"><label for="username">Username</label>
             <input id="username" placeholder="sabirrasool" autocomplete="off">
             <span class="help">Letters and numbers only. Others use this to find you and send connection requests.</span></div>
@@ -57,7 +59,7 @@
           <div class="field"><label for="city">City</label><input id="city" placeholder="Kakinada"></div>
           <div class="field"><label for="district">District</label><input id="district" placeholder="East Godavari"></div>
           <div class="field"><label for="country">Country</label><input id="country" placeholder="India" value="India"></div>
-          <div class="field"><label for="experience">Coaching experience</label>
+          <div class="field"><label for="experience">Experience in health &amp; fitness</label>
             <select id="experience"><option value="">Select</option><option value="beginner">Beginner / aspiring coach</option><option value="1-3 years">1–3 years</option><option value="3+ years">3+ years</option></select></div>
         </div>
         <div class="field"><label for="occupation">Current role</label><input id="occupation" placeholder="e.g. Trainer at ___ Gym · Freelance PT · Fitness enthusiast planning to coach"></div>
@@ -158,6 +160,7 @@
   if (profile.country) $('country').value = profile.country;
   if (profile.date_of_birth) $('dob').value = profile.date_of_birth;
   if (profile.experience_level) $('experience').value = profile.experience_level;
+  FL.professions().then((list) => { $('profession').innerHTML = FL.professionOptions(list, profile.profession || '', 'Choose your profession'); });
 
   // Gender: if it's already set, lock the field permanently — no re-confirmation needed.
   let genderConfirmed = false;
@@ -259,6 +262,7 @@
     if (!$('consent').checked) { err.textContent = 'Please tick the consent box to continue.'; return err.classList.remove('hidden'); }
     if (!$('guide').checked) { err.textContent = 'Please agree to the community guidelines to continue.'; return err.classList.remove('hidden'); }
     if ($('headline').value.trim().length < 3) { err.textContent = 'Add a short headline (e.g. "Personal Trainer").'; return err.classList.remove('hidden'); }
+    if (!$('profession').value) { err.textContent = 'Choose your profession — it helps the right jobs and people find you.'; return err.classList.remove('hidden'); }
 
     const btn = $('btnSave'); FL.busy(btn, true, 'Saving…');
     try {
@@ -275,6 +279,7 @@
       const update = {
         full_name: name,
         headline: $('headline').value.trim(),
+        profession: $('profession').value || null,
         username: uname || undefined,
         phone: $('phone').value.trim() || null,
         gender: $('gender').value || null,

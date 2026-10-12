@@ -28,7 +28,9 @@
         <a href="#invitations" data-v="invitations">Invitations <b id="nInv">0</b></a>
         <a href="#connections" data-v="connections">Connections <b id="nConn">0</b></a>
         <a href="#sent" data-v="sent">Sent <b id="nSent">0</b></a>
+        <a href="#requests" data-v="requests">Service requests <b id="nReq">0</b></a>
         <a href="#grow" data-v="grow">People you may know</a>
+        <a href="company.html">Pages</a>
         <a href="settings.html#blocked">Blocked members</a>
       </div>
       <div id="footL"></div>
@@ -37,7 +39,7 @@
     <section class="stack">
       <div class="box mn-mobile"><div class="utabs" id="mtabs">
         <a href="#grow" data-v="grow">Grow</a><a href="#invitations" data-v="invitations">Invitations</a>
-        <a href="#connections" data-v="connections">Connections</a><a href="#sent" data-v="sent">Sent</a></div></div>
+        <a href="#connections" data-v="connections">Connections</a><a href="#requests" data-v="requests">Requests</a><a href="#sent" data-v="sent">Sent</a><a href="company.html">Pages</a></div></div>
       <div id="notice"></div>
       <div id="view"><div class="box skeleton" style="height:320px"></div></div>
     </section>
@@ -58,13 +60,14 @@
   $('notice').innerHTML = FL.communityNotice(me);
   $('footL').innerHTML = FL.siteFootHtml(true); FL.wireCommon($('footL'));
 
-  let pending = [], accepted = [];
+  let pending = [], accepted = [], reqs = { incoming: [], outgoing: [] };
   const view = $('view');
   const plink = (u) => `profile.html?u=${encodeURIComponent(u)}`;
 
   async function loadLists() {
-    const [p, a] = await Promise.all([sb.rpc('list_connections', { p_status: 'pending' }), sb.rpc('list_connections', { p_status: 'accepted' })]);
-    pending = p.data || []; accepted = a.data || [];
+    const [p, a, r] = await Promise.all([sb.rpc('list_connections', { p_status: 'pending' }), sb.rpc('list_connections', { p_status: 'accepted' }), sb.rpc('my_service_requests')]);
+    pending = p.data || []; accepted = a.data || []; reqs = r.data || { incoming: [], outgoing: [] };
+    $('nReq').textContent = reqs.incoming.filter((x) => x.status === 'new').length;
     $('nInv').textContent = pending.filter((c) => c.direction === 'incoming').length;
     $('nSent').textContent = pending.filter((c) => c.direction === 'outgoing').length;
     $('nConn').textContent = accepted.length;
@@ -85,6 +88,19 @@
         ${inc.length ? inc.map((c) => row(c, `<button class="txt-btn" data-dec="${c.connection_id}">Ignore</button><button class="pill sm" data-acc="${c.connection_id}">Accept</button>`,
             c.note ? `<div class="inv-note">“${esc(c.note)}”</div>` : '')).join('')
           : '<div class="empty"><b>No pending invitations</b>When coaches invite you to connect, you\'ll see them here.</div>'}</div>`;
+    } else if (v === 'requests') {
+      const ST = { new: 'Waiting for a reply', accepted: 'Accepted', declined: 'Declined' };
+      const inc = reqs.incoming, out = reqs.outgoing;
+      const card = (x, mine) => `<div class="ent"><a href="${plink(x.member.username)}">${FL.ringAvatar(x.member, 'avatar')}</a>
+          <div class="ent-main"><a class="ent-name" href="${plink(x.member.username)}">${esc(x.member.full_name)}${FL.tags(x.member)}</a>
+            <div class="ent-sub">${esc(x.member.headline || '')}</div>
+            <div class="ent-meta">${esc(x.service)} · ${FL.timeAgo(x.created_at)} ago · ${ST[x.status]}</div>
+            <div class="inv-note">“${esc(x.goal)}”${x.preferred ? `<br><span class="t-xs muted">Preferred: ${esc(x.preferred)}</span>` : ''}</div>
+            ${!mine && x.status === 'new' ? `<div class="ent-act"><button class="pill sm" data-racc="${x.id}">Accept</button><button class="txt-btn" data-rdec="${x.id}">Decline</button></div>`
+              : x.status === 'accepted' ? `<div class="ent-act"><a class="pill sm" href="messaging.html?u=${encodeURIComponent(x.member.username)}">Message</a></div>` : ''}</div></div>`;
+      view.innerHTML = `<div class="box"><div class="box-head"><div><h2>Service requests</h2><div class="sub">Clients asking about the services on your profile. Accepting opens a conversation.</div></div></div>
+          ${inc.length ? inc.map((x) => card(x, false)).join('') : `<div class="empty"><b>No requests yet</b>Add services to your profile — training packages, consultations, diet plans — and clients can request them here. <a href="profile.html">Add a service</a></div>`}</div>
+        ${out.length ? `<div class="box"><div class="box-head"><h2>Requests you sent</h2></div>${out.map((x) => card(x, true)).join('')}</div>` : ''}`;
     } else if (v === 'sent') {
       const out = pending.filter((c) => c.direction === 'outgoing');
       view.innerHTML = `<div class="box"><div class="box-head"><h2>Sent invitations</h2><span class="sub">${out.length} of 50 allowed</span></div>
@@ -102,14 +118,14 @@
       };
       draw(''); $('cq').oninput = (e) => draw(e.target.value.trim().toLowerCase());
     } else {
-      view.innerHTML = `<div class="box"><div class="box-head"><h2>People you may know</h2><span class="sub">Coaches and trainers on The Fit Lab</span></div>
+      view.innerHTML = `<div class="box"><div class="box-head"><h2>People you may know</h2><span class="sub">People across health and fitness</span></div>
         <div class="pgrid" id="pg">${'<div class="pcard skeleton" style="height:250px"></div>'.repeat(4)}</div></div>`;
       const { data } = await sb.rpc('people_you_may_know', { p_limit: 24 });
       const list = data || [];
       $('pg').innerHTML = list.length ? list.map((p) => `<div class="pcard" data-card="${esc(p.username)}">
           <div class="cov" ${p.cover_url ? `style="background-image:url('${esc(p.cover_url)}')"` : ''}></div>
-          <a href="${plink(p.username)}">${FL.avatarHtml(p, 'avatar')}</a>
-          <a class="nm" href="${plink(p.username)}">${esc(p.full_name)}</a>
+          <a href="${plink(p.username)}">${FL.ringAvatar(p, 'avatar')}</a>
+          <a class="nm" href="${plink(p.username)}">${esc(p.full_name)}${FL.tags(p)}</a>
           <p class="hl">${esc(p.headline || 'Fit Lab member')}</p>
           <p class="why">${p.mutual ? FL.icon('network', 14) + ' ' : ''}${esc(p.reason)}</p>
           <button class="pill" data-connect="${esc(p.username)}" data-name="${esc(p.full_name)}">${FL.icon('userplus', 17)}Connect</button>
@@ -119,6 +135,15 @@
 
   view.addEventListener('click', async (e) => {
     const t = e.target.closest('button'); if (!t) return;
+    if (t.dataset.racc || t.dataset.rdec) {
+      const accept = !!t.dataset.racc;
+      FL.busy(t, true, '');
+      const r = await FL.call('respond_service_request', { p_id: t.dataset.racc || t.dataset.rdec, p_accept: accept });
+      FL.busy(t, false);
+      if (!r) return;
+      FL.toast(accept ? 'Accepted — you can now message each other' : 'Declined — they\'ve been told kindly', 'ok');
+      await loadLists(); show('requests'); FL.refreshCounts(); return;
+    }
     if (t.dataset.acc || t.dataset.dec) {
       const accept = !!t.dataset.acc;
       FL.busy(t, true, '');
@@ -144,7 +169,7 @@
   await loadLists();
   const route = () => {
     let v = (location.hash || '').slice(1);
-    if (!['invitations', 'connections', 'sent', 'grow'].includes(v)) v = pending.some((c) => c.direction === 'incoming') ? 'invitations' : 'grow';
+    if (!['invitations', 'connections', 'sent', 'grow', 'requests'].includes(v)) v = pending.some((c) => c.direction === 'incoming') ? 'invitations' : reqs.incoming.some((x) => x.status === 'new') ? 'requests' : 'grow';
     show(v);
   };
   window.addEventListener('hashchange', route);

@@ -8,14 +8,31 @@
 <link rel="icon" href="assets/favicon.png">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
+<style>
+  .sf{display:flex;gap:8px;padding:4px 20px 10px;flex-wrap:wrap}
+  .sf input[type=search]{flex:2 1 220px;min-width:0;height:40px}
+  .sfil{display:flex;gap:8px;padding:0 20px 12px;overflow-x:auto;scrollbar-width:none}
+  .sfil::-webkit-scrollbar{display:none}
+  .sfil select,.sfil input,.sfil button.fc{height:32px;border-radius:999px;border:1px solid var(--line-2);background:var(--panel);color:var(--bone);font:600 13px var(--body);padding:0 12px;flex:none;width:auto;cursor:pointer}
+  .sfil input{cursor:text;width:130px}
+  .sfil button.fc.on{background:var(--lime);border-color:var(--lime);color:var(--on-lime)}
+</style>
 </head>
 <body data-page="search">
 <main class="page">
   <div class="layout l-main-side">
     <section class="stack">
       <div class="box">
-        <div class="box-head"><div><h2 id="ttl">People</h2><div class="sub" id="sub"></div></div></div>
-        <form id="f" style="display:flex;gap:8px;padding:4px 20px 14px"><input id="q" type="search" placeholder="Name, @username, Unique ID, city or skill" aria-label="Search people"><button class="pill solid">Search</button></form>
+        <div class="utabs" id="kind"><button data-k="people" class="on">People</button><button data-k="pages">Pages</button><a href="jobs.html" id="jobsLnk">Jobs</a></div>
+        <form id="f" class="sf" style="padding-top:14px"><input id="q" type="search" placeholder="Name, @username, skill or specialty" aria-label="Search"><button class="pill solid">Search</button></form>
+        <div class="sfil" id="fil">
+          <select id="fp" aria-label="Profession"></select>
+          <input id="fc" type="search" placeholder="City" aria-label="City">
+          <button type="button" class="fc" id="fv">Verified</button>
+          <button type="button" class="fc" id="fo">#OpenToWork</button>
+        </div>
+        <div class="sfil" id="pfil" hidden><select id="pk" aria-label="Type"><option value="">Any type</option></select><input id="pc" type="search" placeholder="City" aria-label="City"></div>
+        <div class="box-head" style="padding-top:4px"><div><h2 id="ttl" style="font-size:17px">People</h2><div class="sub" id="sub"></div></div></div>
         <div id="res"><div class="skeleton" style="height:70px;margin:14px"></div></div>
       </div>
     </section>
@@ -34,8 +51,14 @@
   let me; try { me = await FL.getProfile(); } catch (e) { return FL.toast(FL.friendly(e), 'err'); }
   if (!me.profile_completed) return location.replace('register.html');
   FL.renderHeader(me);
-  $('side').innerHTML = `<div class="box box-pad"><b style="font-size:15px">Looking to hire?</b><p class="t-sm muted" style="margin:8px 0 12px;line-height:1.5">Gyms and studios can filter certified coaches by course, city, experience and stars.</p>
-    <a class="pill sm" href="hire.html">Open the hire portal</a></div>${FL.siteFootHtml(true)}`;
+  const profs = await FL.professions();
+  $('fp').innerHTML = FL.professionOptions(profs, FL.param('profession') || '', 'Any profession');
+  $('pk').innerHTML += Object.entries(FL.PAGE_KINDS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
+  let kind = FL.param('type') === 'pages' ? 'pages' : 'people', verified = false, open = false;
+  $('fc').value = FL.param('city') || '';
+  $('side').innerHTML = `<div class="box box-pad"><b style="font-size:15px">Hiring?</b><p class="t-sm muted" style="margin:8px 0 12px;line-height:1.5">Post a job from your page, or use Recruiter's candidate search to find open-to-work trainers, physios and coaches.</p>
+      <div class="ent-act" style="margin:0"><a class="pill sm" href="hiring.html">Post a job</a><a class="pill ghost sm" href="hiring.html?tab=candidates">Find candidates</a></div></div>
+    <div class="box box-pad"><b style="font-size:15px">Looking for work?</b><p class="t-sm muted" style="margin:8px 0 12px;line-height:1.5">Every job shows its pay, and you see each step of your application.</p><a class="pill sm" href="jobs.html">Browse jobs</a></div>${FL.siteFootHtml(true)}`;
   FL.wireCommon($('side'));
 
   const btn = (p) => {
@@ -45,31 +68,63 @@
     if (s === 'incoming') return `<a class="pill sm" href="network.html#invitations">Respond</a>`;
     return `<button class="pill sm" data-connect="${esc(p.username)}" data-name="${esc(p.full_name)}">${I('userplus', 16)}Connect</button>`;
   };
-  async function run(q) {
-    $('q').value = q;
-    history.replaceState(null, '', q ? 'search.html?q=' + encodeURIComponent(q) : 'search.html');
+  function setKind(k) {
+    kind = k;
+    document.querySelectorAll('#kind [data-k]').forEach((b) => b.classList.toggle('on', b.dataset.k === k));
+    $('fil').hidden = k !== 'people'; $('pfil').hidden = k !== 'pages';
+    $('q').placeholder = k === 'people' ? 'Name, @username, skill or specialty' : 'Gym, studio, clinic or brand name';
+  }
+  async function run() {
+    const q = $('q').value.trim();
+    const url = new URL(location.href); url.search = ''; if (q) url.searchParams.set('q', q); if (kind === 'pages') url.searchParams.set('type', 'pages');
+    history.replaceState(null, '', url);
+    $('jobsLnk').href = 'jobs.html' + (q ? '?q=' + encodeURIComponent(q) : '');
     $('res').innerHTML = '<div class="skeleton" style="height:70px;margin:14px"></div>';
-    const { data, error } = await sb.rpc(q ? 'search_people' : 'people_you_may_know', q ? { p_q: q, p_limit: 50 } : { p_limit: 20 });
+    if (kind === 'pages') {
+      const { data, error } = await sb.rpc('search_pages', { p_q: q || null, p_kind: $('pk').value || null, p_city: $('pc').value.trim() || null, p_limit: 50 });
+      if (error) { $('res').innerHTML = `<div class="empty">${esc(FL.friendly(error))}</div>`; return; }
+      const list = data || [];
+      $('ttl').textContent = 'Pages'; $('sub').textContent = `${list.length} result${list.length === 1 ? '' : 's'}`;
+      $('res').innerHTML = list.length ? list.map((g) => `<div class="ent"><a href="company.html?p=${encodeURIComponent(g.slug)}">${FL.pageLogo(g)}</a>
+          <div class="ent-main"><a class="ent-name" href="company.html?p=${encodeURIComponent(g.slug)}">${esc(g.name)}${FL.tick(g.verified, 15)}</a>
+          <div class="ent-sub">${esc(g.tagline || '')}</div><div class="ent-meta">${esc([g.kind_label, g.city].filter(Boolean).join(' · '))} · ${g.followers} follower${g.followers === 1 ? '' : 's'}${g.open_jobs ? ` · ${g.open_jobs} open job${g.open_jobs === 1 ? '' : 's'}` : ''}</div></div>
+          <button class="pill sm ${g.is_following ? 'ghost' : ''}" data-follow="${g.page_id}">${g.is_following ? 'Following' : I('plus', 15) + 'Follow'}</button></div>`).join('')
+        : `<div class="empty"><b>No pages found</b>Try another name — or <a href="company.html?new=1">create your organisation's page</a>.</div>`;
+      return;
+    }
+    const prof = $('fp').value || null, city = $('fc').value.trim() || null;
+    const filtered = q || prof || city || verified || open;
+    const { data, error } = filtered
+      ? await sb.rpc('search_people2', { p_q: q || null, p_profession: prof, p_city: city, p_verified: verified, p_open: open, p_limit: 60 })
+      : await sb.rpc('people_you_may_know', { p_limit: 20 });
     if (error) { $('res').innerHTML = `<div class="empty">${esc(FL.friendly(error))}</div>`; return; }
     const list = data || [];
-    $('ttl').textContent = q ? 'People' : 'Suggested for you';
-    $('sub').textContent = q ? `${list.length} result${list.length === 1 ? '' : 's'} for “${q}”` : 'Coaches and trainers on The Fit Lab';
+    $('ttl').textContent = filtered ? 'People' : 'Suggested for you';
+    $('sub').textContent = filtered ? `${list.length} result${list.length === 1 ? '' : 's'}` : 'People across health and fitness';
     $('res').innerHTML = list.length ? list.map((p) => `<div class="ent">
-        <a href="profile.html?u=${encodeURIComponent(p.username)}">${FL.avatarHtml(p, 'avatar')}</a>
-        <div class="ent-main"><a class="ent-name" href="profile.html?u=${encodeURIComponent(p.username)}">${esc(p.full_name)}</a>
-          ${p.level && p.level !== 'trainee' ? `<span class="chip acc" style="padding:0 7px;font-size:10.5px">${FL.levelLabel(p.level)}</span>` : ''}
+        <a href="profile.html?u=${encodeURIComponent(p.username)}">${FL.ringAvatar(p, 'avatar')}</a>
+        <div class="ent-main"><a class="ent-name" href="profile.html?u=${encodeURIComponent(p.username)}">${esc(p.full_name)}${FL.tags(p)}</a>
           <div class="ent-sub">${esc(p.headline || '')}</div>
-          <div class="ent-meta">${[p.city, '@' + p.username].filter(Boolean).map(esc).join(' · ')}${p.mutual ? ` · ${p.mutual} mutual` : ''} ${FL.starsIf(p.star_count || 0, p.star_tier)}</div></div>
+          <div class="ent-meta">${[p.profession_label, p.city, '@' + p.username].filter(Boolean).map(esc).join(' · ')}${p.mutual ? ` · ${p.mutual} mutual` : ''} ${FL.starsIf(p.star_count || 0, p.star_tier)}</div></div>
         <div class="ent-act" style="margin:0">${btn(p)}</div></div>`).join('')
-      : `<div class="empty"><b>No members found</b>Try a first name, a city, or a username like @coachravi.</div>`;
+      : `<div class="empty"><b>No members found</b>Try a first name, a city, or a username like @coachravi — or clear some filters.</div>`;
   }
-  $('f').onsubmit = (e) => { e.preventDefault(); run($('q').value.trim()); };
+  $('kind').onclick = (e) => { const b = e.target.closest('[data-k]'); if (!b) return; setKind(b.dataset.k); run(); };
+  $('f').onsubmit = (e) => { e.preventDefault(); run(); };
+  $('fp').onchange = run; $('pk').onchange = run;
+  $('fc').addEventListener('change', run); $('pc').addEventListener('change', run);
+  $('fv').onclick = () => { verified = !verified; $('fv').classList.toggle('on', verified); run(); };
+  $('fo').onclick = () => { open = !open; $('fo').classList.toggle('on', open); run(); };
   $('res').addEventListener('click', async (e) => {
+    const f = e.target.closest('[data-follow]');
+    if (f) { const r = await FL.call('follow_page', { p_page: f.dataset.follow }); if (r) { f.classList.toggle('ghost', r.following); f.innerHTML = r.following ? 'Following' : I('plus', 15) + 'Follow'; } return; }
     const b = e.target.closest('[data-connect]'); if (!b) return;
     const r = await FL.connect(b.dataset.connect, b.dataset.name);
     if (r) b.outerHTML = `<span class="chip">${I('clock', 14)}Pending</span>`;
   });
-  run((FL.param('q') || '').trim());
+  setKind(kind);
+  $('q').value = (FL.param('q') || '').trim();
+  run();
 })();
 </script>
 </body>

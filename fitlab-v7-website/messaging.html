@@ -12,6 +12,9 @@
   .page.msg{padding-top:18px;padding-bottom:18px}
   @media (max-width:767px){ .page.msg{padding:0} .page.msg .box{border-radius:0;border:0} }
   .msg-guard{font-size:11.5px;color:var(--ash);padding:6px 14px 0;display:flex;gap:6px;align-items:center}
+  .im-tag{display:inline-block;font-size:10.5px;font-weight:700;color:var(--gold);border:1px solid var(--gold);border-radius:999px;padding:0 6px;margin-left:6px;vertical-align:1px}
+  .im-banner{margin:10px 14px 0;padding:12px 14px;border:1px solid var(--gold);border-radius:12px;background:color-mix(in srgb,var(--gold) 7%,transparent);font-size:13.5px;line-height:1.5}
+  .im-banner .ent-act{margin-top:8px}
 </style>
 </head>
 <body data-page="messages">
@@ -25,7 +28,7 @@
       </div>
       <div class="thread" id="thread">
         <div class="thread-empty"><div><div style="color:var(--lime)" id="emptyIc"></div><b style="display:block;color:var(--bone);margin:10px 0 4px">Your messages</b>
-          Choose a connection to start a conversation. Messaging is for accepted connections only.</div></div>
+          Choose a conversation. Messaging is for your connections, plus job-related InMails you accept.</div></div>
       </div>
     </div>
   </div>
@@ -56,7 +59,7 @@
     const q = $('q').value.trim().toLowerCase();
     const list = convs.filter((c) => !q || (c.full_name || '').toLowerCase().includes(q) || (c.username || '').includes(q));
     $('convs').innerHTML = list.length ? list.map((c) => `<div class="conv ${active && active.user_id === c.user_id ? 'on' : ''} ${c.unread ? 'unread' : ''}" data-u="${c.user_id}" tabindex="0" role="button">
-        ${FL.avatarHtml(c, 'avatar')}<div class="meta"><div class="top"><b>${esc(c.full_name)}</b><span>${c.last_at ? FL.timeAgo(c.last_at) : ''}</span></div>
+        ${FL.avatarHtml(c, 'avatar')}<div class="meta"><div class="top"><b>${esc(c.full_name)}${FL.tick(c.verified, 13)}${c.inmail ? '<span class="im-tag">InMail</span>' : ''}</b><span>${c.last_at ? FL.timeAgo(c.last_at) : ''}</span></div>
         <div class="prev">${c.last_body ? (c.last_mine ? 'You: ' : '') + esc(c.last_body) : `<span style="font-style:italic">${esc(c.headline || 'Say hello')}</span>`}</div></div>
         ${c.unread ? '<span class="dot" aria-label="unread"></span>' : ''}</div>`).join('')
       : `<div class="empty">${convs.length ? 'No matches.' : '<b>No connections yet</b>Connect with coaches on <a href="network.html">My Network</a> to message them.'}</div>`;
@@ -70,12 +73,19 @@
     $('thread').innerHTML = `
       <div class="thread-head"><button class="icon-btn" id="back" aria-label="Back to conversations" style="${window.innerWidth < 768 ? '' : 'display:none'}">${I('back', 20)}</button>
         <a href="profile.html?u=${encodeURIComponent(active.username)}">${FL.avatarHtml(active, 'avatar')}</a>
-        <div class="meta"><a href="profile.html?u=${encodeURIComponent(active.username)}" style="color:var(--bone)"><b>${esc(active.full_name)}</b></a><span>${esc(active.headline || '')}</span></div>
+        <div class="meta"><a href="profile.html?u=${encodeURIComponent(active.username)}" style="color:var(--bone)"><b>${esc(active.full_name)}${FL.tick(active.verified, 14)}</b></a><span>${esc(active.headline || '')}</span></div>
         <div style="position:relative"><button class="icon-btn" id="tmore" aria-label="Conversation options">${I('more', 20)}</button></div></div>
+      ${imBanner(active)}
       <div class="msgs" id="msgs" aria-live="polite"><div class="skeleton" style="height:40px;width:60%"></div></div>
       <div class="msg-guard">${I('shield', 13)}Professional conversations only. Contact details and inappropriate messages are blocked automatically.</div>
       <form class="composebar" id="comp"><textarea id="body" maxlength="2000" placeholder="Write a message…" aria-label="Message" rows="1"></textarea>
         <button class="pill solid" id="send" disabled>Send</button></form>`;
+    const ia = $('imAcc'), id_ = $('imDec');
+    if (ia) ia.onclick = async () => { const r = await FL.call('respond_inmail', { p_other: active.user_id, p_accept: true }); if (r) { await loadConvs(); open(active.user_id); } };
+    if (id_) id_.onclick = async () => {
+      if (!(await FL.confirm('Decline this InMail?', `${active.full_name} won't be able to message you again unless you connect.`, 'Decline'))) return;
+      const r = await FL.call('respond_inmail', { p_other: active.user_id, p_accept: false }); if (r) { FL.toast('Declined', 'ok'); location.href = 'messaging.html'; } };
+    if (active.inmail && active.inmail.mine && active.inmail.status === 'pending') { $('body').disabled = true; $('body').placeholder = 'Waiting for a reply to your InMail…'; }
     $('back').onclick = () => { $('shell').classList.remove('open'); active = null; drawConvs(); clearInterval(poll); history.replaceState(null, '', 'messaging.html'); };
     const ta = $('body'), btn = $('send');
     ta.addEventListener('input', () => { btn.disabled = !ta.value.trim(); ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 160) + 'px'; });
@@ -110,6 +120,16 @@
     await loadMsgs(true);
     clearInterval(poll); poll = setInterval(() => { if (document.visibilityState === 'visible') loadMsgs(false); }, 5000);
     if (window.innerWidth >= 768) ta.focus();
+  }
+
+  function imBanner(c) {
+    const t = c.inmail; if (!t) return '';
+    const what = t.context === 'service' ? `a service request${t.subject ? ': ' + esc(t.subject) : ''}`
+      : t.job_title ? `the job <b>${esc(t.job_title)}</b>` : t.context === 'recruiter' ? 'a role you might be interested in' : esc(t.subject || 'a job');
+    if (t.mine) return t.status === 'pending' ? `<div class="im-banner">${FL.icon('mail', 15)} You sent an InMail about ${what}. You can send more once ${esc(c.full_name.split(' ')[0])} replies.</div>` : '';
+    if (t.status === 'pending') return `<div class="im-banner">${FL.icon('mail', 15)} <b>${esc(c.full_name)}</b> sent you an InMail about ${what}. You're not connected — reply or accept to continue, or decline to stop further messages.
+      <div class="ent-act"><button class="pill sm" id="imAcc">Accept</button><button class="pill ghost sm" id="imDec">Decline</button></div></div>`;
+    return '';
   }
 
   async function loadMsgs(scroll) {

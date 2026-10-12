@@ -19,6 +19,13 @@
   .skill-add input{height:38px;font-size:14px}
   .vis-note{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--ash);line-height:1.5}
   .pv-unavail{padding:40px 20px;text-align:center}
+  .ph-prof{margin:4px 0 0;font-size:14px;color:var(--ash)}
+  .spec{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .ph-views{display:inline-flex;gap:6px;align-items:center;margin-top:10px;font-size:13px;font-weight:600}
+  .svc-list{padding:0 20px 18px}
+  .svc .meta{font-size:12.5px;color:var(--ash)}
+  .svc .price{font-weight:700;color:var(--bone)}
+  .org-row{display:flex;gap:12px;padding:10px 20px;border-top:1px solid var(--line);align-items:center}
 </style>
 </head>
 <body data-page="profile">
@@ -42,7 +49,8 @@
   if (!me.profile_completed) return location.replace('register.html');
   FL.renderHeader(me);
   const target = (FL.param('u') || me.username || '').replace(/^@/, '').trim();
-  let p = null, posts = [];
+  let p = null, posts = [], orgPages = [];
+  const PROFS = await FL.professions();
 
   // ------------------------------------------------------------ helpers
   const monthVal = (d) => d ? String(d).slice(0, 7) : '';
@@ -58,7 +66,7 @@
       const lbl = `<label for="f_${f.k}" class="${f.req ? 'req' : ''}">${esc(f.label)}</label>`;
       let input;
       if (f.type === 'textarea') input = `<textarea id="f_${f.k}" maxlength="${f.max || 2000}" placeholder="${esc(f.ph || '')}" style="min-height:${f.rows || 120}px">${esc(v)}</textarea>`;
-      else if (f.type === 'select') input = `<select id="f_${f.k}">${f.options.map(([ov, ol]) => `<option value="${esc(ov)}" ${String(v) === String(ov) ? 'selected' : ''}>${esc(ol)}</option>`).join('')}</select>`;
+      else if (f.type === 'select') input = `<select id="f_${f.k}">${f.optionsHtml || f.options.map(([ov, ol]) => `<option value="${esc(ov)}" ${String(v) === String(ov) ? 'selected' : ''}>${esc(ol)}</option>`).join('')}</select>`;
       else if (f.type === 'checkbox') return `<label class="check" style="margin-bottom:12px;color:var(--bone)"><input type="checkbox" id="f_${f.k}" ${v ? 'checked' : ''}><span>${esc(f.label)}</span></label>`;
       else input = `<input id="f_${f.k}" type="${f.type || 'text'}" value="${esc(v)}" maxlength="${f.max || 200}" placeholder="${esc(f.ph || '')}" ${f.min ? `min="${f.min}"` : ''} ${f.maxv ? `max="${f.maxv}"` : ''}>`;
       return `<div class="field" ${f.half ? 'data-half' : ''}>${lbl}${input}${f.help ? `<span class="help">${esc(f.help)}</span>` : ''}</div>`;
@@ -91,9 +99,11 @@
   const EMP = [['', 'Please select'], ['Full-time', 'Full-time'], ['Part-time', 'Part-time'], ['Self-employed', 'Self-employed'], ['Freelance', 'Freelance'], ['Contract', 'Contract'], ['Internship', 'Internship'], ['Apprenticeship', 'Apprenticeship']];
   const editors = {
     intro() {
-      formModal({ title: 'Edit intro', wide: true, values: { ...me, open_to_work: me.open_to_work }, fields: [
+      formModal({ title: 'Edit intro', wide: true, values: { ...me, open_to_work: me.open_to_work, specialties: (me.specialties || []).join(', ') }, fields: [
         { k: 'full_name', label: 'Full name', req: true, max: 80, help: 'As it should appear on your certificate.' },
         { k: 'headline', label: 'Headline', req: true, max: 160, ph: 'e.g. Strength & Conditioning Coach · PCOS & fat-loss specialist' },
+        { k: 'profession', label: 'Profession', req: true, type: 'select', optionsHtml: FL.professionOptions(PROFS, me.profession), half: true },
+        { k: 'specialties', label: 'Specialties', max: 300, ph: 'e.g. PCOS, Post-natal, Sports rehab', help: 'Up to 10, separated by commas.', half: true },
         { k: 'username', label: 'Username', max: 30, help: 'Letters and numbers only. Used for your profile link, search and sign-in.', half: true },
         { k: 'occupation', label: 'Current position', max: 120, ph: 'e.g. Head Coach at Shaan Fitness', half: true },
         { k: 'city', label: 'City', max: 60, half: true }, { k: 'district', label: 'District', max: 60, half: true },
@@ -101,7 +111,8 @@
         { k: 'experience_level', label: 'Coaching experience', type: 'select', options: [['', 'Select'], ['beginner', 'Beginner / aspiring coach'], ['1-3 years', '1–3 years'], ['3+ years', '3+ years']], half: true },
         { k: 'date_of_birth', label: 'Date of birth (private)', type: 'date', half: true },
         { k: 'phone', label: 'Mobile (private — only the Academy sees it)', type: 'tel', max: 20, half: true },
-        { k: 'open_to_work', label: 'Show “Open to coaching roles” on my profile and the hire portal', type: 'checkbox' },
+        { k: 'open_to_work', label: 'Show #OpenToWork — I\'m looking for a role (green photo frame, and I appear in employers\' searches)', type: 'checkbox' },
+        { k: 'hiring', label: 'Show #Hiring — I\'m recruiting for my team (purple photo frame)', type: 'checkbox' },
       ], onSave: async (v) => {
         const un = v.username.toLowerCase().replace(/[^a-z0-9]/g, '');
         if (un && un !== me.username) {
@@ -110,7 +121,8 @@
         }
         must(await sb.from('profiles').update({ full_name: v.full_name, headline: v.headline, username: un || undefined, occupation: v.occupation || null,
           city: v.city || null, district: v.district || null, country: v.country || null, experience_level: v.experience_level || null,
-          date_of_birth: v.date_of_birth || null, phone: v.phone || null, open_to_work: v.open_to_work }).eq('id', me.id));
+          date_of_birth: v.date_of_birth || null, phone: v.phone || null, open_to_work: v.open_to_work, hiring: v.hiring,
+          profession: v.profession || null, specialties: [...new Set(v.specialties.split(',').map((x) => x.trim()).filter(Boolean).map((x) => x.slice(0, 40)))].slice(0, 10) }).eq('id', me.id));
         me = await FL.getProfile(true);
         if (un && un !== target) history.replaceState(null, '', 'profile.html?u=' + encodeURIComponent(me.username));
       } });
@@ -123,23 +135,38 @@
     },
     exp(id) {
       const x = (p.experience || []).find((e) => e.id === id) || {};
-      formModal({ title: id ? 'Edit experience' : 'Add experience', wide: true,
+      if (x.page) orgPages = [x.page];
+      const m = formModal({ title: id ? 'Edit experience' : 'Add experience', wide: true,
         values: { ...x, start_date: monthVal(x.start_date), end_date: monthVal(x.end_date), current: id ? !x.end_date : true }, fields: [
         { k: 'title', label: 'Title', req: true, max: 100, ph: 'e.g. Personal Trainer' },
         { k: 'employment_type', label: 'Employment type', type: 'select', options: EMP, half: true },
-        { k: 'organization', label: 'Gym / studio / company', req: true, max: 120, ph: 'e.g. Shaan Fitness', half: true },
+        { k: 'organization', label: 'Gym / clinic / company', req: true, max: 120, ph: 'e.g. Shaan Fitness', half: true, help: 'Pick the organisation\'s page from the list to show its logo and appear on its People tab.' },
         { k: 'location', label: 'Location', max: 100, ph: 'e.g. Kakinada, Andhra Pradesh' },
         { k: 'current', label: 'I currently work in this role', type: 'checkbox' },
         { k: 'start_date', label: 'Start date', type: 'month', req: true, half: true },
         { k: 'end_date', label: 'End date', type: 'month', half: true, help: 'Leave empty if current.' },
         { k: 'description', label: 'Description', type: 'textarea', max: 1500, ph: 'Clients you coach, programmes you run, results.' }],
         onSave: async (v) => {
+          const pageHit = orgPages.find((x) => x.name.toLowerCase() === v.organization.toLowerCase());
           const row = { title: v.title, organization: v.organization, employment_type: v.employment_type || null, location: v.location || null,
-            start_date: monthToDate(v.start_date), end_date: v.current ? null : monthToDate(v.end_date), description: v.description || null };
+            start_date: monthToDate(v.start_date), end_date: v.current ? null : monthToDate(v.end_date), description: v.description || null,
+            page_id: pageHit ? pageHit.page_id : null };
           if (row.end_date && row.end_date < row.start_date) throw new Error('End date can\'t be before the start date.');
           must(id ? await sb.from('work_experience').update(row).eq('id', id) : await sb.from('work_experience').insert({ ...row, user_id: me.id }));
         },
         onDelete: id ? async () => must(await sb.from('work_experience').delete().eq('id', id)) : null });
+      // suggest organisation pages as you type
+      const org = m.q('#f_organization');
+      org.setAttribute('list', 'orgList'); org.insertAdjacentHTML('afterend', '<datalist id="orgList"></datalist>');
+      let tmr;
+      const suggest = async () => {
+        const q = org.value.trim(); if (q.length < 2) return;
+        const { data } = await sb.rpc('search_pages', { p_q: q, p_kind: null, p_city: null, p_limit: 8 });
+        orgPages = data || [];
+        m.q('#orgList').innerHTML = orgPages.map((g) => `<option value="${esc(g.name)}">${esc([g.kind_label, g.city].filter(Boolean).join(' · '))}</option>`).join('');
+      };
+      org.addEventListener('input', () => { clearTimeout(tmr); tmr = setTimeout(suggest, 250); });
+      if (org.value) suggest();
     },
     edu(id) {
       const x = (p.education || []).find((e) => e.id === id) || {};
@@ -168,12 +195,14 @@
         { k: 'issuer', label: 'Issuing organization', req: true, max: 150, ph: 'e.g. American Council on Exercise' },
         { k: 'issue_date', label: 'Issue date', type: 'month', half: true },
         { k: 'expiry_date', label: 'Expiration date', type: 'month', half: true, help: 'Leave empty if it doesn\'t expire.' },
-        { k: 'credential_id', label: 'Credential ID', max: 80 },
+        { k: 'credential_id', label: 'Credential ID', max: 80, half: true },
+        { k: 'ce_hours', label: 'CE / CPD hours', type: 'number', min: 0, maxv: 999, half: true, help: 'Continuing-education hours this earned, if any.' },
         { k: 'credential_url', label: 'Credential URL', type: 'url', max: 300, ph: 'https://' }],
         onSave: async (v) => {
           if (v.credential_url && !/^https?:\/\//i.test(v.credential_url)) throw new Error('Credential URL must start with https://');
           const row = { name: v.name, issuer: v.issuer, issue_date: monthToDate(v.issue_date), expiry_date: monthToDate(v.expiry_date),
-            credential_id: v.credential_id || null, credential_url: v.credential_url || null };
+            credential_id: v.credential_id || null, credential_url: v.credential_url || null,
+            ce_hours: v.ce_hours !== '' && v.ce_hours != null ? Math.max(0, Math.min(999, +v.ce_hours)) : null };
           must(id ? await sb.from('credentials').update(row).eq('id', id) : await sb.from('credentials').insert({ ...row, user_id: me.id }));
         },
         onDelete: id ? async () => must(await sb.from('credentials').delete().eq('id', id)) : null });
@@ -205,6 +234,43 @@
       m.q('#skQuick').onclick = (e) => { const b = e.target.closest('[data-q]'); if (b) { b.remove(); add(b.dataset.q); } };
       m.q('#skList').onclick = async (e) => { const b = e.target.closest('[data-rm]'); if (!b) return;
         const { error } = await sb.from('skills').delete().eq('id', b.dataset.rm); if (error) return FL.toast(FL.friendly(error), 'err'); await reload(); draw(); };
+    },
+    svc(id) {
+      const x = (p.services || []).find((e) => e.id === id) || {};
+      formModal({ title: id ? 'Edit service' : 'Add a service', wide: true, values: { ...x, active: id ? x.active : true }, fields: [
+        { k: 'title', label: 'Service', req: true, max: 80, ph: 'e.g. 1-on-1 strength coaching · 12 sessions' },
+        { k: 'mode', label: 'Where', type: 'select', options: Object.entries(MODES), half: true },
+        { k: 'city', label: 'City', max: 80, half: true, def: me.city || '' },
+        { k: 'price_from', label: 'Price from (₹, optional)', type: 'number', min: 0, half: true },
+        { k: 'price_unit', label: 'Per', type: 'select', options: [['', '—']].concat(Object.entries(UNITS)), half: true },
+        { k: 'description', label: 'What\'s included', type: 'textarea', max: 600, rows: 100, ph: 'Assessment, programme, check-ins, who it suits.' },
+        { k: 'active', label: 'Show this service on my profile', type: 'checkbox' }],
+        onSave: async (v) => {
+          const r = await FL.call('save_service', { p_id: id || null, p: v });
+          if (!r) return false;
+        },
+        onDelete: id ? async () => { const r = await FL.call('delete_service', { p_id: id }); if (!r || !r.ok) throw new Error('Could not delete'); } : null });
+    },
+    async feat() {
+      const { data: recent } = await sb.rpc('get_feed', { p_before: null, p_author: me.id, p_limit: 20 });
+      const mine = (recent || []).filter((x) => x.status === 'visible' && x.kind !== 'milestone').slice(0, 10);
+      const m = FL.modal({ title: 'Add to Featured', wide: true, body: `
+        <div class="utabs" style="padding:0;margin:-6px 0 14px"><button class="on" data-ft="link">A link</button><button data-ft="post">One of my posts</button></div>
+        <div id="ftLink"><div class="field"><label for="ftU">Link</label><input id="ftU" type="url" maxlength="500" placeholder="https://"></div>
+          <div class="field"><label for="ftT">Title</label><input id="ftT" maxlength="120" placeholder="e.g. Client transformation: 12 weeks"></div></div>
+        <div id="ftPost" hidden>${mine.length ? `<div class="radio-list">${mine.map((x, i) => `<label><input type="radio" name="ftp" value="${x.id}" ${i === 0 ? 'checked' : ''}><span style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(x.body)}</span></label>`).join('')}</div>`
+          : '<p class="t-sm muted">Your recent posts appear here once you\'ve shared something.</p>'}</div>`,
+        foot: `<button class="pill solid" data-ok>Add</button>` });
+      let mode = 'link';
+      m.qa('[data-ft]').forEach((b) => { b.onclick = () => { mode = b.dataset.ft; m.qa('[data-ft]').forEach((x) => x.classList.toggle('on', x === b)); m.q('#ftLink').hidden = mode !== 'link'; m.q('#ftPost').hidden = mode !== 'post'; }; });
+      m.q('[data-ok]').onclick = async (e) => {
+        const payload = mode === 'link' ? { url: m.q('#ftU').value.trim(), title: m.q('#ftT').value.trim() } : { post_id: (m.q('input[name=ftp]:checked') || {}).value };
+        if (mode === 'post' && !payload.post_id) return;
+        FL.busy(e.target, true, 'Adding…');
+        const r = await FL.call('save_featured', { p: payload });
+        FL.busy(e.target, false);
+        if (r) { m.close(); FL.toast('Added to Featured', 'ok'); reload(); }
+      };
     },
     langs() {
       formModal({ title: 'Languages', values: { langs: (me.languages || []).join(', ') }, fields: [
@@ -239,29 +305,43 @@
     let acts = '';
     if (self) {
       acts = `<div class="add-sec"><button class="pill solid" id="btnAddSec">Add profile section ${I('down', 14)}</button></div>
-        <button class="pill" data-ed="intro">${p.open_to_work ? 'Open to work · edit' : 'Open to work'}</button>
+        <button class="pill" data-ed="intro">${p.open_to_work ? '#OpenToWork · edit' : 'Open to work'}</button>
+        ${p.verified ? '' : `<a class="pill" href="verification.html">${I('tick', 16)}Get verified</a>`}
         <button class="pill ghost" id="btnShare">${I('link', 16)}Share profile</button>`;
     } else {
+      const im = p.can_inmail || {};
       if (c.state === 'connected') acts = `<a class="pill solid" href="messaging.html?u=${encodeURIComponent(p.username)}">${I('send', 16)}Message</a>`;
       else if (c.state === 'incoming') acts = `<button class="pill solid" data-conn="accept">Accept invitation</button><button class="pill ghost" data-conn="ignore">Ignore</button>`;
       else if (c.state === 'outgoing') acts = `<button class="pill ghost" data-conn="withdraw">${I('clock', 16)}Pending · withdraw</button>`;
       else if (!p.blocked_by_me) acts = `<button class="pill solid" data-conn="connect">${I('userplus', 17)}Connect</button>`;
+      if (c.state !== 'connected' && !p.blocked_by_me) {
+        if (im.existing) acts += `<a class="pill" href="messaging.html?u=${encodeURIComponent(p.username)}">${I('mail', 16)}Message</a>`;
+        else if (im.ok) acts += `<button class="pill gold-o" id="btnInmail">${I('mail', 16)}${im.cost ? 'InMail' : 'Message about the job'}</button>`;
+        else if (im.premium_needed && (p.hiring || p.open_to_work)) acts += `<button class="pill ghost" id="btnInmail">${I('lock', 15)}Message</button>`;
+      }
       acts += `<div class="acts-menu"><button class="pill ghost" id="btnMore">More</button></div>`;
     }
+    const ring = p.hiring ? 'hiring' : p.open_to_work ? 'otw' : '';
+    const avatar = p.photo_url ? `<img class="ph-avatar" src="${esc(p.photo_url)}" alt="${esc(p.full_name)}">` : `<div class="ph-avatar">${esc(FL.initials(p.full_name))}</div>`;
     return `<div class="box">
       <div class="ph-cover" ${p.cover_url ? `style="background-image:url('${esc(p.cover_url)}')"` : ''}>${self ? `<button class="icon-btn" id="btnCover" aria-label="Change cover image">${I('camera', 20)}</button>` : ''}</div>
       <div class="ph-body">
         ${self ? `<span class="ph-edit">${editBtn('intro', '', 'Edit intro')}</span>` : ''}
-        <div class="ph-avatar-wrap">${p.photo_url ? `<img class="ph-avatar" src="${esc(p.photo_url)}" alt="${esc(p.full_name)}">` : `<div class="ph-avatar">${esc(FL.initials(p.full_name))}</div>`}
+        <div class="ph-avatar-wrap">${ring ? `<span class="ring ${ring}" title="${ring === 'hiring' ? '#Hiring' : '#OpenToWork'}">${avatar}</span>` : avatar}
           ${self ? `<button class="icon-btn" id="btnPhoto" aria-label="Change profile photo">${I('camera', 18)}</button>` : ''}</div>
-        <h1 class="ph-name">${esc(p.full_name)}</h1>
+        <h1 class="ph-name">${esc(p.full_name)}${FL.tick(p.verified, 22)}${p.premium ? FL.prem(p.premium) : ''}</h1>
         <p class="ph-head">${esc(p.headline || p.occupation || (self ? '' : 'Fit Lab member'))}${self && !p.headline ? `<button class="txt-btn" data-ed="intro" style="color:var(--lime)">${I('plus', 16)}Add a headline</button>` : ''}</p>
+        ${p.profession_label ? `<p class="ph-prof">${esc(p.profession_label)}${p.licence_label ? ` · <span style="color:var(--lime);font-weight:700">${I('shield', 13)} ${esc(p.licence_label)}</span>` : ''}</p>`
+          : self ? `<p class="ph-prof"><button class="txt-btn" data-ed="intro" style="color:var(--lime);padding:0">${I('plus', 15)}Add your profession</button></p>` : ''}
+        ${(p.specialties || []).length ? `<div class="spec">${p.specialties.map((x) => `<span class="chip">${esc(x)}</span>`).join('')}</div>` : ''}
         <p class="ph-loc">${loc ? esc(loc) + ' · ' : ''}<span class="mono" style="font-size:12px">${esc(p.unique_id || '')}</span></p>
         <p class="ph-loc"><a href="${self ? 'network.html#connections' : '#'}" ${self ? '' : 'onclick="return false"'}>${p.connections} connection${p.connections === 1 ? '' : 's'}</a>${!self && p.mutual ? ` · ${p.mutual} mutual` : ''}</p>
         <div class="ph-badges">${FL.starsIf(p.star_count || 0, p.star_tier)}
           ${p.coach_level && p.coach_level !== 'trainee' ? `<span class="chip acc">${I('award', 13)}Certified ${FL.levelLabel(p.coach_level)}</span>` : ''}
-          ${p.open_to_work ? `<span class="otw">${I('briefcase', 14)}Open to coaching roles</span>` : ''}
+          ${p.open_to_work ? `<span class="ring-lbl">${I('briefcase', 13)}#OpenToWork</span>` : ''}
+          ${p.hiring ? `<span class="ring-lbl hiring">${I('userplus', 13)}#Hiring</span>` : ''}
           ${p.community_status && p.community_status !== 'active' ? `<span class="chip" style="color:var(--warn);border-color:var(--warn)">Community access ${p.community_status === 'banned' ? 'removed' : 'paused'}</span>` : ''}</div>
+        ${self && p.views_90d != null ? `<a class="ph-views" href="insights.html">${I('eye', 16)}${p.views_90d} profile view${p.views_90d === 1 ? '' : 's'} in the last 90 days →</a>` : ''}
         <div class="ph-acts">${acts}</div>
       </div></div>`;
   }
@@ -272,13 +352,13 @@
       ['Profile photo', !!p.photo_url, 'photo'], ['Headline', !!p.headline, 'intro'], ['About (50+ characters)', (p.bio || '').length >= 50, 'about'],
       ['Experience', (p.experience || []).length > 0, 'exp'], ['Education', (p.education || []).length > 0, 'edu'],
       ['3 or more skills', (p.skills || []).length >= 3, 'skills'], ['A license or certification', (p.credentials || []).length + (p.certifications || []).length > 0, 'cred'],
-      ['Cover image', !!p.cover_url, 'cover'], ['Languages', (p.languages || []).length > 0, 'langs']];
+      ['Cover image', !!p.cover_url, 'cover'], ['Languages', (p.languages || []).length > 0, 'langs'], ['Profession', !!p.profession, 'intro']];
     const done = items.filter((x) => x[1]).length, pct = Math.round(done / items.length * 100);
     if (pct === 100) return '';
     const label = pct < 40 ? 'Beginner' : pct < 70 ? 'Intermediate' : pct < 100 ? 'Advanced' : 'All-Star';
     return `<div class="box"><div class="box-head"><h2>Profile strength: ${label}</h2><span class="sub">Private to you</span></div>
       <div class="strength"><div class="bar"><i style="width:${pct}%"></i></div>
-        <p class="t-sm muted" style="margin:10px 0 0">Complete profiles are more likely to be found by gyms on the Hire-a-Coach portal.</p>
+        <p class="t-sm muted" style="margin:10px 0 0">Complete profiles rank higher in search, match more jobs and raise your verification trust score.</p>
         <ul>${items.filter((x) => !x[1]).slice(0, 4).map(([l, , k]) => `<li>${I('plus', 16)}${l}<button class="pill sm" data-ed="${k}">Add</button></li>`).join('')}</ul></div></div>`;
   }
 
@@ -298,6 +378,50 @@
       ${n > posts.length ? `<div class="box-foot"><button id="moreAct">Show all ${n} posts →</button></div>` : ''}</div>`;
   }
 
+  const orgIcon = (r) => r.page ? `<a href="company.html?p=${encodeURIComponent(r.page.slug)}">${FL.pageLogo(r.page)}</a>` : `<span class="sq">${I('briefcase', 22)}</span>`;
+  const orgName = (r) => r.page ? `<a href="company.html?p=${encodeURIComponent(r.page.slug)}" style="color:inherit">${esc(r.organization)}</a>${FL.tick(r.page.verified, 13)}` : esc(r.organization);
+
+  const BADGE_IC = { verified: 'tick', licence: 'shield', premium: 'crown', certified: 'award', open_to_work: 'briefcase', hiring: 'userplus', founding: 'sparkles', voice: 'comment' };
+  function badges() {
+    const b = p.badges || [];
+    if (!b.length) return '';
+    return `<div class="box sec-box"><div class="box-head"><h2>Badges</h2></div>
+      <div class="badges">${b.map((x) => `<div class="bdg ${x.code}"><i>${I(BADGE_IC[x.code] || 'award', 17)}</i><div><b>${esc(x.label)}</b><span>${esc(x.detail || '')}</span></div></div>`).join('')}</div></div>`;
+  }
+
+  const MODES = { in_person: 'In person', online: 'Online', home_visit: 'Home visits', hybrid: 'In person & online' };
+  const UNITS = { session: 'session', month: 'month', package: 'package', consultation: 'consultation', hour: 'hour' };
+  function services() {
+    const sv = p.services || [];
+    if (!sv.length && !isSelf()) return '';
+    return `<div class="box sec-box" id="svcBox"><div class="box-head"><div><h2>Services</h2>${isSelf() ? '<div class="sub">Clients send a request — no phone numbers needed</div>' : ''}</div><span class="sec-tools">${addBtn('svc', 'Add a service')}</span></div>
+      <div class="svc-list">${sv.map((x) => `<div class="svc" ${x.active ? '' : 'style="opacity:.6"'}><div style="display:flex;gap:8px;align-items:flex-start"><div style="flex:1;min-width:0">
+          <b>${esc(x.title)}</b>${x.active ? '' : ' <span class="chip">Hidden</span>'}
+          <div class="meta">${esc([MODES[x.mode], x.city].filter(Boolean).join(' · '))}${x.price_from != null ? ` · <span class="price">from ${FL.inr(x.price_from)}${x.price_unit ? ' / ' + UNITS[x.price_unit] : ''}</span>` : ''}</div></div>
+          ${isSelf() ? editBtn('svc', x.id) : `<button class="pill sm" data-req="${x.id}">Request</button>`}</div>
+          ${x.description ? `<p class="t-sm" style="margin:6px 0 0;line-height:1.5;white-space:pre-line">${esc(x.description)}</p>` : ''}</div>`).join('')
+        || `<p class="t-sm muted" style="margin:0">Coach clients, see patients or run sessions? List what you offer — training packages, physio consultations, diet plans — and clients can send you a request.</p>`}</div></div>`;
+  }
+
+  function featured() {
+    const ft = p.featured || [];
+    if (!ft.length && !isSelf()) return '';
+    return `<div class="box sec-box"><div class="box-head"><h2>Featured</h2><span class="sec-tools">${addBtn('feat', 'Add to Featured')}</span></div>
+      ${ft.length ? `<div class="feat">${ft.map((f) => f.post ? `<div class="fpost"><div class="ft">Post${isSelf() ? ` <button class="txt-btn" data-unfeat="${f.id}" style="float:right;padding:0;font-size:11px">Remove</button>` : ''}</div><p>${esc(f.post.body)}</p>
+          <div class="t-xs muted" style="margin-top:6px">${f.post.reaction_total} reaction${f.post.reaction_total === 1 ? '' : 's'} · ${f.post.comment_count} comment${f.post.comment_count === 1 ? '' : 's'}</div></div>`
+        : `<a href="${esc(f.url)}" target="_blank" rel="noopener nofollow"><div class="ft">Link${isSelf() ? ` <span class="txt-btn" data-unfeat="${f.id}" role="button" style="float:right;padding:0;font-size:11px">Remove</span>` : ''}</div>
+          <p style="font-weight:700">${esc(f.title || f.url)}</p><div class="t-xs muted" style="margin-top:4px">${esc(f.url.replace(/^https?:\/\//, '').split('/')[0])} ${I('external', 12)}</div></a>`).join('')}</div>`
+        : `<p class="t-sm muted" style="padding:0 20px 18px;margin:0">Pin your best posts, a client transformation, an article or your website — up to 6 items.</p>`}</div>`;
+  }
+
+  function orgs() {
+    const pg = p.pages || [];
+    if (!pg.length) return '';
+    return `<div class="box sec-box"><div class="box-head"><h2>Organisations</h2>${isSelf() ? '<a class="txt-btn" href="company.html?new=1">' + I('plus', 15) + 'New page</a>' : ''}</div>
+      ${pg.map((g) => `<a class="org-row" href="company.html?p=${encodeURIComponent(g.slug)}" style="color:inherit">${FL.pageLogo(g, 'co-logo sm')}<div style="flex:1;min-width:0">
+        <b>${esc(g.name)}</b>${FL.tick(g.verified, 14)}<div class="t-xs muted">${esc(g.kind_label)} · ${g.role === 'owner' ? 'Owner' : g.role === 'admin' ? 'Admin' : 'Recruiter'}${g.open_jobs ? ` · ${g.open_jobs} open job${g.open_jobs === 1 ? '' : 's'}` : ''}</div></div></a>`).join('')}</div>`;
+  }
+
   function experience() {
     const ex = p.experience || [];
     if (!ex.length && !isSelf()) return '';
@@ -307,13 +431,13 @@
     const span = (r) => `${FL.fmtMonth(r.start_date)} – ${r.end_date ? FL.fmtMonth(r.end_date) : 'Present'} · ${FL.duration(r.start_date, r.end_date)}`;
     const body = groups.map((g) => {
       if (g.roles.length === 1) { const r = g.roles[0];
-        return `<div class="ent"><span class="sq">${I('briefcase', 22)}</span><div class="ent-main"><b class="ent-name">${esc(r.title)}</b>
-          <div class="t-sm">${esc(r.organization)}${r.employment_type ? ' · ' + esc(r.employment_type) : ''}</div>
+        return `<div class="ent">${orgIcon(r)}<div class="ent-main"><b class="ent-name">${esc(r.title)}</b>
+          <div class="t-sm">${orgName(r)}${r.employment_type ? ' · ' + esc(r.employment_type) : ''}</div>
           <div class="ent-meta">${span(r)}</div>${r.location ? `<div class="ent-meta">${esc(r.location)}</div>` : ''}
           ${r.description ? `<p class="t-sm" style="margin:8px 0 0;white-space:pre-line;line-height:1.55">${FL.linkify(r.description)}</p>` : ''}</div>${editBtn('exp', r.id)}</div>`; }
       const first = g.roles[g.roles.length - 1], last = g.roles[0];
-      return `<div class="ent exp-group" style="display:block"><div style="display:flex;gap:12px"><span class="sq">${I('briefcase', 22)}</span>
-        <div><b class="ent-name">${esc(g.org)}</b><div class="ent-meta">${FL.duration(first.start_date, last.end_date)}</div></div></div>
+      return `<div class="ent exp-group" style="display:block"><div style="display:flex;gap:12px">${orgIcon(last)}
+        <div><b class="ent-name">${orgName(last)}</b><div class="ent-meta">${FL.duration(first.start_date, last.end_date)}</div></div></div>
         <div class="roles" style="margin-top:8px">${g.roles.map((r) => `<div class="role" style="display:flex;gap:8px"><div style="flex:1;min-width:0"><b>${esc(r.title)}</b>
           <div class="ent-meta">${r.employment_type ? esc(r.employment_type) + ' · ' : ''}${span(r)}</div>${r.location ? `<div class="ent-meta">${esc(r.location)}</div>` : ''}
           ${r.description ? `<p>${FL.linkify(r.description)}</p>` : ''}</div>${editBtn('exp', r.id)}</div>`).join('')}</div></div>`;
@@ -343,9 +467,9 @@
       <div class="ent-act"><a class="pill ghost sm" href="verify.html?id=${encodeURIComponent(p.unique_id)}">Show credential ${I('link', 14)}</a><span class="chip acc">${I('shield', 13)}Verified</span></div></div></div>`).join('');
     const extRows = ext.map((c) => `<div class="ent"><span class="sq">${I('award', 22)}</span><div class="ent-main"><b class="ent-name">${esc(c.name)}</b>
       <div class="t-sm">${esc(c.issuer)}</div>${c.issue_date ? `<div class="ent-meta">Issued ${FL.fmtMonth(c.issue_date)}${c.expiry_date ? ' · Expires ' + FL.fmtMonth(c.expiry_date) : ''}</div>` : ''}
-      ${c.credential_id ? `<div class="ent-meta">Credential ID ${esc(c.credential_id)}</div>` : ''}
+      ${c.credential_id ? `<div class="ent-meta">Credential ID ${esc(c.credential_id)}</div>` : ''}${c.ce_hours ? `<div class="ent-meta">${c.ce_hours} CE hours</div>` : ''}
       ${c.credential_url ? `<div class="ent-act"><a class="pill ghost sm" href="${esc(c.credential_url)}" target="_blank" rel="noopener nofollow">Show credential ${I('link', 14)}</a></div>` : ''}</div>${editBtn('cred', c.id)}</div>`).join('');
-    return `<div class="box sec-box"><div class="box-head"><h2>Licenses &amp; certifications</h2><span class="sec-tools">${addBtn('cred', 'Add license or certification')}</span></div>
+    return `<div class="box sec-box"><div class="box-head"><div><h2>Licenses &amp; certifications</h2>${p.ce_hours_year > 0 ? `<div class="sub">${p.ce_hours_year} CE hours this year</div>` : ''}</div><span class="sec-tools">${addBtn('cred', 'Add license or certification')}</span></div>
       ${flRows + extRows || '<p class="t-sm muted" style="padding:0 20px 18px;margin:0">Add certifications like ACE, NASM, ACSM, K11, first-aid / CPR. Fit Lab certificates appear here automatically.</p>'}</div>`;
   }
 
@@ -383,18 +507,39 @@
   async function side() {
     const { data: sugg } = await sb.rpc('people_you_may_know', { p_limit: 5 });
     $('side').innerHTML = `
-      ${isSelf() ? `<div class="box box-pad"><div class="vis-note">${I('eye', 18)}<div><b style="color:var(--bone)">Who sees your profile</b><br>
+      ${isSelf() ? `<div class="box box-pad"><b style="display:flex;gap:8px;align-items:center">${I('chart', 18)}Profile insights</b>
+        <p class="t-sm muted" style="margin:6px 0 10px;line-height:1.5">${p.views_90d || 0} view${p.views_90d === 1 ? '' : 's'} in 90 days. See which employers and recruiters looked.</p>
+        <a class="pill sm" href="insights.html">Open insights</a></div>
+      <div class="box box-pad"><div class="vis-note">${I('eye', 18)}<div><b style="color:var(--bone)">Who sees your profile</b><br>
         Fit Lab members see your full profile. Gyms on the hire portal see it once you're certified. Your phone, email and date of birth are never shown.
         <a href="settings.html#privacy">Privacy settings</a></div></div></div>` : ''}
-      <div class="box"><div class="box-head" style="padding-bottom:4px"><h3 style="font-size:16px">More coaches you may know</h3></div>
+      <div class="box"><div class="box-head" style="padding-bottom:4px"><h3 style="font-size:16px">People you may know</h3></div>
         ${(sugg || []).map((s) => `<div class="ent" style="padding:10px 16px"><a href="profile.html?u=${encodeURIComponent(s.username)}">${FL.avatarHtml(s, 'avatar sm')}</a>
-          <div class="ent-main"><a class="ent-name" style="font-size:14px" href="profile.html?u=${encodeURIComponent(s.username)}">${esc(s.full_name)}</a>
+          <div class="ent-main"><a class="ent-name" style="font-size:14px" href="profile.html?u=${encodeURIComponent(s.username)}">${esc(s.full_name)}${FL.tags(s)}</a>
           <div class="ent-sub" style="font-size:12px">${esc(s.headline || '')}</div>
           <div class="ent-act" style="margin-top:6px"><a class="pill ghost sm" href="profile.html?u=${encodeURIComponent(s.username)}">View profile</a></div></div></div>`).join('')
         || '<p class="t-sm muted" style="padding:0 16px 14px">No suggestions right now.</p>'}
         <div class="box-foot"><a href="network.html">Show all →</a></div></div>
       ${FL.siteFootHtml(true)}`;
     FL.wireCommon($('side'));
+  }
+
+  function requestService(id) {
+    const x = (p.services || []).find((e) => e.id === id); if (!x) return;
+    const m = FL.modal({ title: `Request: ${x.title}`, body: `
+      <p class="t-sm muted" style="margin:0 0 12px;line-height:1.5">${esc(p.full_name.split(' ')[0])} gets your request on The Fit Lab. If they accept, you can message each other to plan the details.</p>
+      <div class="field"><label for="rqG" class="req">What are you looking for?</label><textarea id="rqG" maxlength="600" style="min-height:110px" placeholder="e.g. I'm 34, want to lose 8 kg and fix my knee pain. I can train 3 mornings a week."></textarea></div>
+      <div class="field"><label for="rqP">Preferred days or times</label><input id="rqP" maxlength="120" placeholder="e.g. Weekday mornings"></div>`,
+      foot: `<button class="pill ghost" data-no>Cancel</button><button class="pill solid" data-ok>Send request</button>` });
+    m.q('[data-no]').onclick = m.close;
+    m.q('[data-ok]').onclick = async (e) => {
+      const g = m.q('#rqG').value.trim();
+      if (g.length < 10) return FL.toast('Tell them briefly what you\'re looking for', 'err');
+      FL.busy(e.target, true, 'Sending…');
+      const r = await FL.call('request_service', { p_service: id, p_goal: g, p_preferred: m.q('#rqP').value.trim() || null });
+      FL.busy(e.target, false);
+      if (r) { m.close(); FL.toast('Request sent — you\'ll be notified when they reply', 'ok'); }
+    };
   }
 
   function render() {
@@ -406,15 +551,17 @@
       return;
     }
     document.title = `${p.full_name} — The Fit Lab`;
-    $('main').innerHTML = header() + strength() + about() + activity() + experience() + education() + credentials() + skills() + courses() + languages();
+    $('main').innerHTML = header() + strength() + about() + featured() + activity() + services() + experience() + education() + credentials() + skills() + badges() + courses() + orgs() + languages();
     const am = $('aboutMore'); if (am) am.onclick = () => { $('aboutTxt').classList.remove('clamp'); am.remove(); };
     const asb = $('allSkills'); if (asb) asb.onclick = () => { $('skills').outerHTML = skills(true); };
   }
 
   async function reload() {
-    const { data, error } = await sb.rpc('get_profile_for_viewer', { p_username: (FL.param('u') || me.username).replace(/^@/, '') });
+    const { data, error } = await sb.rpc('get_profile_v8', { p_username: (FL.param('u') || me.username).replace(/^@/, '') });
     if (error) { $('main').innerHTML = `<div class="box empty"><b>Member not found</b>${esc(FL.friendly(error))}<br><br><a class="pill sm" href="search.html">Search members</a></div>`; return; }
+    const first = !p;
     p = data;
+    if (first && !p.is_self && p.visibility === 'full') sb.rpc('log_profile_view', { p_user: p.user_id }).then(() => {}, () => {});
     if (p.visibility !== 'unavailable') {
       const { data: fp } = await sb.rpc('get_feed', { p_before: null, p_author: p.user_id, p_limit: 3 });
       posts = fp || [];
@@ -430,7 +577,15 @@
     if (ed) { const k = ed.dataset.ed, id = ed.dataset.id || null;
       if (k === 'photo') return uploadPic('photo'); if (k === 'cover') return uploadPic('cover');
       return editors[k] && editors[k](id); }
+    const uf = e.target.closest('[data-unfeat]');
+    if (uf) { e.preventDefault(); const r = await FL.call('delete_featured', { p_id: uf.dataset.unfeat }); if (r) reload(); return; }
     const t = e.target.closest('button,a'); if (!t) return;
+    if (t.id === 'btnInmail') {
+      const im = p.can_inmail || {};
+      if (im.ok) { const r = await FL.inmail(p, im); if (r) reload(); return; }
+      return FL.upsell('Message ' + p.full_name.split(' ')[0], im.reason || 'Connect first, or use Premium InMail for job-related messages.', 'pro');
+    }
+    if (t.dataset.req) return requestService(t.dataset.req);
     if (t.id === 'btnPhoto') return uploadPic('photo');
     if (t.id === 'btnCover') return uploadPic('cover');
     if (t.id === 'btnShare') { const url = new URL('profile.html?u=' + encodeURIComponent(p.username), location.href).href;
@@ -439,7 +594,7 @@
       const old = main.querySelector('.add-sec .menu-pop'); if (old) return old.remove();
       const pop = document.createElement('div'); pop.className = 'menu-pop'; pop.style.left = '0'; pop.style.right = 'auto';
       pop.innerHTML = [['about', 'About', 'edit'], ['exp', 'Experience', 'briefcase'], ['edu', 'Education', 'school'], ['cred', 'License or certification', 'award'],
-        ['skills', 'Skills', 'sparkles'], ['langs', 'Languages', 'globe'], ['photo', 'Profile photo', 'camera'], ['cover', 'Cover image', 'image']]
+        ['skills', 'Skills', 'sparkles'], ['svc', 'Services', 'briefcase'], ['feat', 'Featured', 'bookmark'], ['langs', 'Languages', 'globe'], ['photo', 'Profile photo', 'camera'], ['cover', 'Cover image', 'image']]
         .map(([k, l, ic]) => `<button data-ed="${k}">${I(ic, 18)}${l}</button>`).join('');
       t.parentElement.appendChild(pop); return;
     }

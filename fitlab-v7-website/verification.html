@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Verified tick — The Fit Lab</title>
+<script src="assets/theme.js"></script>
+<link rel="icon" href="assets/favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+  .v-hero{display:flex;gap:16px;align-items:center;padding:20px 22px}
+  .v-hero .big{color:var(--lime);flex:none}
+  .v-hero h1{font:700 clamp(20px,2.8vw,26px)/1.25 var(--body);margin:0;letter-spacing:0;text-transform:none}
+  .v-hero p{margin:4px 0 0;color:var(--ash);line-height:1.5;font-size:14px}
+  .score{display:flex;align-items:baseline;gap:8px}
+  .score b{font:700 34px/1 var(--body)}
+  .vstep{padding:16px 20px;border-top:1px solid var(--line)}
+  .vstep h3{display:flex;gap:10px;align-items:center;font:700 16px var(--body);margin:0 0 8px;letter-spacing:0;text-transform:none}
+  .vstep h3 .n{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--lime);font-size:13px;flex:none}
+  .vstep h3 .n.ok{background:var(--lime);color:var(--on-lime)}
+  .methods{display:grid;gap:8px;margin:10px 0}
+  .methods div{font-size:13.5px;line-height:1.5}
+  .methods code{font:12.5px var(--mono);background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:2px 6px;word-break:break-all}
+  .docs{display:grid;gap:6px;margin-top:8px}
+  .docs div{display:flex;gap:8px;align-items:center;font-size:13.5px;padding:8px 10px;border:1px solid var(--line);border-radius:8px}
+  .docs div span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .gchk{font-size:12.5px;font-weight:700;margin-top:4px;min-height:18px}
+  .tips li{color:var(--ash)}
+</style>
+</head>
+<body data-page="me">
+<main class="page">
+  <div class="layout l-main-side">
+    <section class="stack" id="main"><div class="box skeleton" style="height:360px"></div></section>
+    <aside><div class="sticky-col" id="side"></div></aside>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(async () => {
+  const $ = (id) => document.getElementById(id);
+  const esc = FL.esc, I = FL.icon;
+  const session = await FL.requireAuth(); if (!session) return;
+  let me; try { me = await FL.getProfile(); } catch (e) { return FL.toast(FL.friendly(e), 'err'); }
+  if (!me.profile_completed) return location.replace('register.html');
+  FL.renderHeader(me);
+  const pageId = FL.param('page');
+  const type = pageId ? 'page' : 'user';
+  let st = null, pg = null, docs = [];
+  const profs = await FL.professions();
+  const prof = profs.find((p) => p.code === me.profession);
+
+  $('side').innerHTML = `<div class="box box-pad"><b style="display:flex;gap:8px;align-items:center">${I('tick', 20)}How the tick works</b>
+      <ul class="checklist tips" style="margin-top:10px">
+        <li>${I('check', 15)}Applying is free. No Aadhaar, PAN or other ID is asked for or stored.</li>
+        <li>${I('check', 15)}The review queue is sorted by trust score, so the most complete, authentic profiles are checked first.</li>
+        <li>${I('check', 15)}Approval is automatic only when a computer can really check the proof — a business that proves it owns its website and has a valid GST number, or a trainer with an approved Fit Lab certificate.</li>
+        <li>${I('check', 15)}Doctors, physios, dietitians and other licensed professionals are always checked by a person.</li>
+        <li>${I('check', 15)}The Fit Lab's own accounts carry the tick automatically.</li></ul></div>
+    <div class="box box-pad"><b>What the tick means</b><p class="t-sm muted" style="margin:8px 0 0;line-height:1.55">The Fit Lab has checked that this person or organisation is who they say they are. It is not an endorsement of their services.</p></div>
+    ${FL.siteFootHtml(true)}`;
+  FL.wireCommon($('side'));
+
+  async function load() {
+    if (type === 'page') {
+      const { data: mine } = await sb.rpc('my_pages');
+      const card = (mine || []).find((p) => p.page_id === pageId);
+      if (!card || !['owner', 'admin'].includes(card.my_role)) {
+        $('main').innerHTML = `<div class="box"><div class="empty"><b>Only page admins can apply</b>Ask the page's owner to add you as an admin. <a href="company.html">Browse pages</a></div></div>`; return false;
+      }
+      pg = (await sb.rpc('get_page', { p_slug: card.slug })).data;
+      document.title = `Verify ${pg.name} — The Fit Lab`;
+    }
+    const { data, error } = await sb.rpc('verification_status', { p_type: type, p_id: type === 'page' ? pageId : null });
+    if (error || !data) { $('main').innerHTML = `<div class="box"><div class="empty">${esc(error ? FL.friendly(error) : 'Not available.')}</div></div>`; return false; }
+    st = data; return true;
+  }
+
+  function hero() {
+    const name = type === 'page' ? pg.name : 'you';
+    const r = st.request;
+    if (st.verified) return `<div class="box"><div class="v-hero"><span class="big">${I('tick', 56)}</span><div>
+      <h1>${type === 'page' ? esc(pg.name) + ' is verified' : 'You\'re verified'}</h1>
+      <p>The tick now shows next to ${type === 'page' ? 'the page name, its jobs and posts' : 'your name on your profile, posts, comments and applications'}.${r && r.auto ? ' It was approved automatically because the checks passed.' : ''}</p>
+      <div class="ent-act"><a class="pill sm" href="${type === 'page' ? 'company.html?p=' + encodeURIComponent(pg.slug) : 'profile.html'}">View ${type === 'page' ? 'page' : 'profile'}</a></div></div></div></div>`;
+    let line = type === 'page' ? `Show members and applicants that ${esc(pg.name)} is a real, checked organisation.` : 'Show gyms, clinics and clients that you are who you say you are.';
+    let cls = '';
+    if (r && r.status === 'pending') { line = `Your request is in the review queue (sent ${FL.timeAgo(r.created_at)} ago). Higher trust scores are reviewed first — you can still add details below to raise yours.`; }
+    if (r && r.status === 'needs_info') { cls = 'warn'; line = `The team asked for more information${r.note ? ': “' + esc(r.note) + '”' : '.'} Add it below and send again.`; }
+    if (r && r.status === 'rejected') { cls = 'bad'; line = `Your last request wasn't approved${r.note ? ': “' + esc(r.note) + '”' : '.'} You can apply again 7 days after the decision.`; }
+    return `<div class="box"><div class="v-hero"><span class="big">${I('tick', 56)}</span><div>
+      <h1>${type === 'page' ? 'Verify ' + esc(pg.name) : 'Get the verified tick'}</h1><p>${line}</p></div></div>
+      ${cls ? `<div class="notice ${cls}" style="margin:0 20px 16px">${I('shield', 18)}<div class="t-sm">${cls === 'bad' ? 'Not approved' : 'More information needed'}</div></div>` : ''}</div>`;
+  }
+
+  function scoreBox() {
+    const p = st.preview || { score: 0, detail: [] };
+    return `<div class="box"><div class="box-head"><div><h2>Your trust score</h2><div class="sub">Updates as you complete ${type === 'page' ? 'the page' : 'your profile'} · used to order the review queue</div></div>
+        <div class="score"><b>${p.score}</b><span class="t-sm muted">/ 100</span></div></div>
+      <div style="padding:0 20px"><div class="meter"><i style="width:${p.score}%"></i></div></div>
+      <ul class="checklist" style="padding:4px 20px 6px">${(p.detail || []).map((d) => `<li class="${d.points < 0 ? 'neg' : ''}">${I(d.points < 0 ? 'flag' : 'check', 15)}${esc(d.label)}<span class="pts">${d.points > 0 ? '+' : ''}${d.points}</span></li>`).join('') || '<li class="t-sm muted">Nothing yet — complete the steps below.</li>'}</ul>
+      <div class="notice" style="margin:10px 20px 18px">${I(p.auto_ok ? 'zap' : 'clock', 18)}<div class="t-sm"><b>${p.auto_ok ? 'Eligible for automatic approval' : 'Reviewed by The Fit Lab team'}</b><br>${esc(p.auto_reason || '')}</div></div>
+      ${tips(p)}</div>`;
+  }
+  function tips(p) {
+    const have = new Set((p.detail || []).map((d) => d.label));
+    const has = (re) => [...have].some((l) => re.test(l));
+    const t = [];
+    if (type === 'user') {
+      if (!has(/photo/i)) t.push(['Add a profile photo', 'profile.html?edit=1']);
+      if (!has(/Headline/)) t.push(['Add a headline', 'profile.html?edit=1']);
+      if (!has(/^Profession/)) t.push(['Choose your profession', 'profile.html?edit=1']);
+      if (!has(/About/)) t.push(['Write your About section', 'profile.html']);
+      if (!has(/Experience/)) t.push(['Add your work experience', 'profile.html']);
+      if (!has(/certificate issued/)) t.push(['Earn a Fit Lab certificate', 'courses.html']);
+      if (!has(/connection/)) t.push(['Connect with people you work with', 'network.html']);
+    } else {
+      if (!has(/Logo/)) t.push(['Add a logo', 'company.html?p=' + encodeURIComponent(pg.slug)]);
+      if (!has(/About/)) t.push(['Add an About section', 'company.html?p=' + encodeURIComponent(pg.slug)]);
+      if (!has(/Website ownership/)) t.push(['Prove you own the website (step 1)', '#s1']);
+      if (!has(/Valid GST/)) t.push(['Add a valid GST number (step 2)', '#s2']);
+    }
+    return t.length ? `<div style="padding:0 20px 18px"><b class="t-sm">Raise your score</b><div class="ent-act">${t.slice(0, 5).map(([l, h]) => `<a class="pill ghost sm" href="${h}">${I('plus', 13)}${l}</a>`).join('')}</div></div>` : '';
+  }
+
+  function userForm() {
+    const ev = (st.request && st.request.evidence) || {};
+    const lic = prof && prof.requires_licence;
+    return `<div class="box"><div class="box-head"><div><h2>Your details</h2><div class="sub">Private — only The Fit Lab's verification team sees them</div></div></div>
+      <div class="vstep"><h3><span class="n ${prof ? 'ok' : ''}">1</span>Profession</h3>
+        ${prof ? `<p class="t-sm" style="margin:0">${esc(prof.label)}${lic ? ' — a licensed profession, so a person will check your registration.' : ''} <a href="profile.html?edit=1">Change</a></p>`
+          : `<p class="t-sm" style="margin:0">Choose your profession on your profile first. <a href="profile.html?edit=1">Set profession</a></p>`}</div>
+      <div class="vstep"><h3><span class="n">2</span>${lic ? 'Licence or registration' : 'Certification or registration (optional)'}</h3>
+        <div class="row2"><div class="field"><label for="vBody" class="${lic ? 'req' : ''}">${lic ? 'Council or registering body' : 'Issued by'}</label>
+            <input id="vBody" maxlength="120" value="${esc(ev.licence_body || '')}" placeholder="${lic ? 'e.g. Andhra Pradesh Medical Council' : 'e.g. American Council on Exercise'}"></div>
+          <div class="field"><label for="vNum" class="${lic ? 'req' : ''}">${lic ? 'Registration / licence number' : 'Certificate or member number'}</label>
+            <input id="vNum" maxlength="60" value="${esc(ev.licence_number || '')}"></div></div></div>
+      <div class="vstep">${docsHtml('3', 'Supporting documents', 'Your degree or diploma, council registration certificate, certification, or an offer letter from your employer. PDF, JPG or PNG, up to 8 MB each, 5 at most.')}</div>
+      <div class="vstep"><h3><span class="n">4</span>Anything else?</h3>
+        <div class="field" style="margin:0"><textarea id="vNotes" maxlength="600" style="min-height:80px" placeholder="e.g. I'm the head coach at Shaan Fitness, Kakinada — my manager can confirm.">${esc(ev.notes || '')}</textarea></div></div>
+      <div style="padding:6px 20px 20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="pill solid lg" id="vGo" ${prof ? '' : 'disabled'}>${st.request && ['pending', 'needs_info'].includes(st.request.status) ? 'Update my request' : 'Send for verification'}</button>
+        <span class="t-xs muted">Please don't upload Aadhaar, PAN or other government ID — we don't need them.</span></div></div>`;
+  }
+
+  function pageForm() {
+    const ev = (st.request && st.request.evidence) || {};
+    const a = pg.admin || {};
+    const code = a.website_token || '';
+    const gst = ev.gstin || a.gstin || '';
+    return `<div class="box"><div class="box-head"><div><h2>Prove it's really ${esc(pg.name)}</h2><div class="sub">Two checks a computer can confirm — together they approve the page automatically</div></div></div>
+      <div class="vstep" id="s1"><h3><span class="n ${pg.website_verified ? 'ok' : ''}">${pg.website_verified ? I('check', 14) : '1'}</span>Website ownership</h3>
+        ${pg.website_verified ? `<p class="t-sm" style="margin:0">${I('check', 14)} Confirmed — the code was found on <b>${esc(pg.website)}</b>.</p>`
+        : !pg.website ? `<p class="t-sm" style="margin:0">Add your website to the page first. <a href="company.html?p=${encodeURIComponent(pg.slug)}">Edit page</a></p>`
+        : `<p class="t-sm" style="margin:0 0 8px;line-height:1.55">Add this code to <b>${esc(pg.website)}</b> in any one of these ways, then press <b>Check my website</b>. Your web designer can do it in a minute.</p>
+          <div class="codebox" id="code">${esc(code)}</div>
+          <div class="methods">
+            <div><b>Option A · a tag in your home page</b><br><code>&lt;meta name="fitlab-verify" content="${esc(code)}"&gt;</code></div>
+            <div><b>Option B · text anywhere on your home page</b><br><code>fitlab-verify=${esc(code)}</code></div>
+            <div><b>Option C · a file</b><br>Create <code>${esc(pg.website.replace(/\/+$/, ''))}/fitlab-verify.txt</code> containing only the code.</div></div>
+          <div class="ent-act"><button class="pill solid" id="chk">${I('search', 15)}Check my website</button><button class="pill ghost sm" id="cpy">${I('link', 14)}Copy code</button></div>
+          <div class="t-sm" id="chkMsg" style="margin-top:8px"></div>`}</div>
+      <div class="vstep" id="s2"><h3><span class="n ${FL.gstinValid(gst) ? 'ok' : ''}">${FL.gstinValid(gst) ? I('check', 14) : '2'}</span>GST number</h3>
+        <div class="row2"><div class="field" style="margin-bottom:0"><label for="vGst">GSTIN</label><input id="vGst" maxlength="15" value="${esc(gst)}" placeholder="e.g. 37ABCDE1234F1Z5" style="text-transform:uppercase;font-family:var(--mono)">
+            <div class="gchk" id="gchk"></div></div>
+          <div class="field" style="margin-bottom:0"><label for="vReg">Registration number (optional)</label><input id="vReg" maxlength="60" value="${esc(ev.registration_no || a.registration_no || '')}" placeholder="Shop &amp; establishment, trade licence or clinic registration"></div></div>
+        <p class="t-xs muted" style="margin:6px 0 0">We check that the number is real-format (its built-in check digit). No GST? Add a registration number and documents — a person will review it.</p></div>
+      <div class="vstep">${docsHtml('3', 'Supporting documents (optional)', 'GST certificate, trade licence, clinic or hospital registration. PDF, JPG or PNG, up to 8 MB each.')}</div>
+      <div class="vstep"><h3><span class="n">4</span>Anything else?</h3>
+        <div class="field" style="margin:0"><textarea id="vNotes" maxlength="600" style="min-height:70px" placeholder="e.g. We've run two branches in Kakinada since 2019.">${esc(ev.notes || '')}</textarea></div></div>
+      <div style="padding:6px 20px 20px"><button class="pill solid lg" id="vGo">${st.request && ['pending', 'needs_info'].includes(st.request.status) ? 'Update request' : 'Send for verification'}</button></div></div>`;
+  }
+
+  function docsHtml(n, title, help) {
+    const prior = st.request && st.request.documents ? `<p class="t-xs muted" style="margin:0 0 6px">${st.request.documents} document${st.request.documents === 1 ? '' : 's'} already sent with your request. Adding new ones replaces them.</p>` : '';
+    return `<h3><span class="n">${n}</span>${title}</h3><p class="t-sm muted" style="margin:0 0 8px;line-height:1.5">${help}</p>${prior}
+      <label class="pill ghost sm" style="cursor:pointer">${I('upload', 15)}Add a document<input type="file" id="vFile" accept="application/pdf,image/jpeg,image/png,image/webp" hidden></label>
+      <div class="docs" id="docs"></div>`;
+  }
+  function drawDocs() {
+    $('docs').innerHTML = docs.map((d, i) => `<div>${I('file', 16)}<span>${esc(d.name)}</span><button class="icon-btn" data-rmdoc="${i}" aria-label="Remove ${esc(d.name)}" style="width:28px;height:28px">${I('close', 15)}</button></div>`).join('');
+  }
+
+  function render() {
+    $('main').innerHTML = hero() + (st.verified ? '' : scoreBox() + (type === 'page' ? pageForm() : userForm()));
+    if (st.verified) return;
+    docs = [];
+    const file = $('vFile');
+    file.onchange = async () => {
+      const f = file.files[0]; file.value = ''; if (!f) return;
+      if (docs.length >= 5) return FL.toast('You can add up to 5 documents', 'err');
+      FL.toast('Uploading…');
+      try {
+        const safe = f.name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-60);
+        const path = await FL.uploadFile('verification-docs', `${me.id}/${Date.now()}-${safe}`, f, 8);
+        docs.push({ path, name: f.name }); drawDocs(); FL.toast('Added', 'ok');
+      } catch (e) { FL.toast(FL.friendly(e), 'err'); }
+    };
+    $('docs').onclick = (e) => { const b = e.target.closest('[data-rmdoc]'); if (!b) return; docs.splice(+b.dataset.rmdoc, 1); drawDocs(); };
+    if (type === 'page') {
+      const g = $('vGst'), gc = $('gchk');
+      const chk = () => { const v = g.value.trim().toUpperCase(); gc.innerHTML = !v ? '' : FL.gstinValid(v) ? `<span style="color:var(--lime)">${I('check', 13)} Valid GST number</span>` : v.length < 15 ? '<span class="muted">15 characters</span>' : '<span style="color:var(--danger-text)">This number fails the GST check — please re-check it</span>'; };
+      g.oninput = chk; chk();
+      const c = $('chk');
+      if (c) c.onclick = async () => {
+        FL.busy(c, true, 'Checking…'); $('chkMsg').textContent = '';
+        const { data, error } = await FL.fn('verify-website', { page_id: pg.page_id });
+        FL.busy(c, false);
+        if (error) { $('chkMsg').textContent = 'The check couldn\'t run. Please try again in a moment.'; return; }
+        if (data && data.website_verified) {
+          FL.toast(data.verified ? 'Website confirmed — your page is verified!' : 'Website ownership confirmed', 'ok');
+          await load(); render(); return;
+        }
+        $('chkMsg').innerHTML = `<span style="color:var(--warn)">${esc((data && data.message) || 'Not found yet.')}</span>`;
+      };
+      const cp = $('cpy'); if (cp) cp.onclick = async () => { try { await navigator.clipboard.writeText(pg.admin.website_token); FL.toast('Code copied', 'ok'); } catch (_) {} };
+    }
+    $('vGo').onclick = submit;
+  }
+
+  async function submit(e) {
+    const btn = e.currentTarget;
+    const ev = { notes: $('vNotes').value.trim() };
+    if (type === 'user') {
+      ev.licence_body = $('vBody').value.trim(); ev.licence_number = $('vNum').value.trim();
+      if (prof && prof.requires_licence && (!ev.licence_body || !ev.licence_number)) return FL.toast('Add your council and registration number — they are needed for licensed professions.', 'err');
+    } else {
+      ev.gstin = $('vGst').value.trim().toUpperCase(); ev.registration_no = $('vReg').value.trim();
+      if (ev.gstin && !FL.gstinValid(ev.gstin)) return FL.toast('That GST number fails the check. Fix it, or leave it empty and add a registration number.', 'err');
+      if (!ev.gstin && !ev.registration_no && !docs.length && !pg.website_verified) return FL.toast('Add at least one proof: website check, GST number, registration number or a document.', 'err');
+    }
+    if (docs.length) ev.documents = docs.map((d) => d.path);
+    FL.busy(btn, true, 'Sending…');
+    const r = await FL.call('request_verification', { p_type: type, p_id: type === 'page' ? pg.page_id : null, p_evidence: ev });
+    FL.busy(btn, false);
+    if (!r) return;
+    if (r.status === 'approved') FL.toast('Approved automatically — you\'re verified!', 'ok');
+    else FL.toast('Sent — you\'re in the review queue', 'ok');
+    if (type === 'user') { me = await FL.getProfile(true); FL.renderHeader(me); }
+    await load(); render(); window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  if (await load()) render();
+})();
+</script>
+</body>
+</html>

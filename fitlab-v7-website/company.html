@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Pages — The Fit Lab</title>
+<meta name="description" content="Gyms, studios, clinics, hospitals, academies and brands on The Fit Lab — follow them, see their jobs and the people who work there.">
+<script src="assets/theme.js"></script>
+<link rel="icon" href="assets/favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+  .co-head .ph-body{padding-top:0}
+  .co-logo-wrap{position:relative;display:inline-block}
+  .co-logo-wrap .icon-btn{position:absolute;right:-6px;bottom:-6px;background:var(--panel);box-shadow:var(--shadow)}
+  .co-logo-lg img{width:100%;height:100%;object-fit:cover;border-radius:8px}
+  .co-meta{display:flex;gap:6px 14px;flex-wrap:wrap;margin-top:8px;font-size:13.5px;color:var(--ash)}
+  .co-meta span{display:inline-flex;gap:5px;align-items:center}
+  .dl{display:grid;grid-template-columns:150px 1fr;gap:10px 16px;padding:4px 20px 20px;font-size:14px}
+  .dl dt{color:var(--ash);font-weight:600}
+  .dl dd{margin:0;word-break:break-word}
+  @media (max-width:560px){ .dl{grid-template-columns:1fr;gap:2px} .dl dd{margin-bottom:10px} }
+  .jrow{display:flex;gap:12px;padding:14px 20px;border-top:1px solid var(--line);color:var(--bone)}
+  .jrow:hover{background:var(--hover);text-decoration:none}
+  .jrow b{color:var(--lime);display:block;font-size:15px}
+  .create-hero{padding:22px 24px 6px}
+  .create-hero h1{font:700 clamp(22px,3vw,28px)/1.2 var(--body);margin:0 0 6px;letter-spacing:0;text-transform:none}
+  .cform{padding:6px 24px 24px}
+  .preview-card{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .preview-card .cv{height:64px;background:linear-gradient(120deg,var(--moss),var(--lime))}
+  .preview-card .bd{padding:0 16px 16px}
+  .preview-card .co-logo{width:64px;height:64px;margin-top:-32px;border:3px solid var(--panel);position:relative}
+  .adm-row{display:flex;gap:8px;padding:0 20px 16px;flex-wrap:wrap}
+  .adm-row input{flex:1 1 180px;min-width:0;height:38px}
+  .adm-row select{width:auto;height:38px}
+  @media (max-width:640px){.hp-head{padding-left:16px!important;padding-right:16px!important}.pgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+</head>
+<body data-page="network">
+<main class="page">
+  <div class="layout l-main-side">
+    <section class="stack" id="main"><div class="box skeleton" style="height:320px"></div></section>
+    <aside><div class="sticky-col" id="side"></div></aside>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="assets/app.js"></script>
+<script src="assets/posts.js"></script>
+<script>
+(async () => {
+  const $ = (id) => document.getElementById(id);
+  const esc = FL.esc, I = FL.icon;
+  const session = await FL.session();
+  let me = null;
+  if (session) {
+    try { me = await FL.getProfile(); } catch (e) { return FL.toast(FL.friendly(e), 'err'); }
+    if (!me.profile_completed) return location.replace('register.html');
+  }
+  FL.renderHeader(me);
+  const KINDS = Object.entries(FL.PAGE_KINDS);
+  const SIZES = [['', 'Select'], ['1', 'Just me'], ['2-10', '2–10 people'], ['11-50', '11–50 people'], ['51-200', '51–200 people'], ['201-500', '201–500 people'], ['500+', '500+ people']];
+  const login = () => { location.href = 'index.html?next=' + encodeURIComponent('company.html' + location.search); };
+  const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+  const sideFoot = () => FL.siteFootHtml(true);
+
+  if (FL.param('new')) return createPage();
+  const slug = (FL.param('p') || '').trim().toLowerCase();
+  if (!slug) return directory();
+  return pageView(slug);
+
+  // =========================================================== create
+  function createPage() {
+    if (!me) return login();
+    document.title = 'Create a page — The Fit Lab';
+    $('main').innerHTML = `<div class="box">
+      <div class="create-hero"><div class="eyebrow" style="font-size:10px">Pages</div>
+        <h1>Create a page for your organisation</h1>
+        <p class="t-sm muted" style="margin:0;line-height:1.55">Gyms, studios, clinics, hospitals, academies and brands use pages to post jobs, share updates and show the team who works there. It's free.</p></div>
+      <form class="cform" id="cf" novalidate>
+        <div class="field"><label for="cName" class="req">Organisation name</label><input id="cName" maxlength="120" required placeholder="e.g. Shaan Fitness"></div>
+        <div class="row2"><div class="field"><label for="cKind" class="req">Type</label><select id="cKind"><option value="">Choose</option>${KINDS.map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select></div>
+          <div class="field"><label for="cSize">Team size</label><select id="cSize">${SIZES.map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select></div></div>
+        <div class="field"><label for="cTag">Tagline</label><input id="cTag" maxlength="160" placeholder="e.g. Boutique strength studio · Kakinada"></div>
+        <div class="field"><label for="cWeb">Website</label><input id="cWeb" type="url" maxlength="200" placeholder="https://yourgym.in">
+          <span class="help">Optional now, but needed for the verified tick: you'll prove you own it by adding a short code.</span></div>
+        <div class="row2"><div class="field"><label for="cCity">City</label><input id="cCity" maxlength="80" value="${esc(me.city || '')}"></div>
+          <div class="field"><label for="cState">State</label><input id="cState" maxlength="80"></div></div>
+        <div class="row2"><div class="field"><label for="cFounded">Year founded</label><input id="cFounded" type="number" inputmode="numeric" min="1900" max="${new Date().getFullYear()}"></div><div></div></div>
+        <div class="field"><label for="cAbout">About</label><textarea id="cAbout" maxlength="3000" style="min-height:110px" placeholder="What you do, who you serve, what makes you different."></textarea></div>
+        <label class="check" style="color:var(--bone);margin:4px 0 14px"><input type="checkbox" id="cAuth"><span>I'm an authorised representative of this organisation, and I can create and manage this page for it.</span></label>
+        <div class="err hidden" id="cErr"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end"><a class="pill ghost" href="company.html">Cancel</a><button class="pill solid" id="cGo">Create page</button></div>
+      </form></div>`;
+    $('side').innerHTML = `<div class="box box-pad"><b style="font-size:15px">Page preview</b>
+      <div class="preview-card" style="margin-top:12px"><div class="cv"></div><div class="bd">${FL.pageLogo(null)}
+        <b style="display:block;margin-top:8px" id="pvName">Organisation name</b><div class="t-sm muted" id="pvTag">Tagline</div>
+        <div class="t-xs muted" style="margin-top:4px" id="pvKind">Type · City</div></div></div>
+      <ul class="checklist" style="margin-top:14px">
+        <li>${I('check', 16)}Post jobs, with pay always shown</li><li>${I('check', 16)}Share updates with followers</li>
+        <li>${I('check', 16)}Show the team who work here</li><li>${I('tick', 16)}Apply for the verified tick</li></ul></div>${sideFoot()}`;
+    FL.wireCommon($('side'));
+    const pv = () => {
+      $('pvName').textContent = $('cName').value.trim() || 'Organisation name';
+      $('pvTag').textContent = $('cTag').value.trim() || 'Tagline';
+      $('pvKind').textContent = [FL.PAGE_KINDS[$('cKind').value], $('cCity').value.trim()].filter(Boolean).join(' · ') || 'Type · City';
+    };
+    ['cName', 'cTag', 'cKind', 'cCity'].forEach((id) => $(id).addEventListener('input', pv));
+    $('cf').onsubmit = async (e) => {
+      e.preventDefault();
+      const err = $('cErr'); const show = (t) => { err.textContent = t; err.classList.remove('hidden'); };
+      if ($('cName').value.trim().length < 2) return show('Enter the organisation\'s name.');
+      if (!$('cKind').value) return show('Choose what type of organisation this is.');
+      const web = $('cWeb').value.trim();
+      if (web && !/^https?:\/\/[^\s/]+\.[^\s]+$/i.test(web)) return show('Enter the website as a full link, like https://yourgym.in');
+      if (!$('cAuth').checked) return show('Please confirm you\'re authorised to create this page.');
+      err.classList.add('hidden');
+      FL.busy($('cGo'), true, 'Creating…');
+      const r = await FL.call('create_page', { p: { name: $('cName').value.trim(), kind: $('cKind').value, tagline: $('cTag').value.trim(),
+        website: web, city: $('cCity').value.trim(), state: $('cState').value.trim(), size: $('cSize').value,
+        founded: $('cFounded').value.trim(), about: $('cAbout').value.trim() } });
+      FL.busy($('cGo'), false);
+      if (r) location.href = 'company.html?p=' + encodeURIComponent(r.slug) + '&welcome=1';
+    };
+  }
+
+  // =========================================================== directory
+  async function directory() {
+    document.title = 'Pages — The Fit Lab';
+    $('main').innerHTML = `<div class="box">
+      <div class="box-head"><div><h2>Pages</h2><div class="sub">Gyms, studios, clinics, hospitals, academies and brands</div></div>
+        <a class="pill solid sm" href="company.html?new=1">${I('plus', 15)}Create a page</a></div>
+      <form id="df" style="display:flex;gap:8px;flex-wrap:wrap;padding:6px 20px 14px">
+        <input id="dq" type="search" placeholder="Search by name" aria-label="Search pages" style="flex:2 1 180px;min-width:0;height:38px">
+        <select id="dk" aria-label="Type" style="flex:1 1 140px;width:auto;height:38px"><option value="">Any type</option>${KINDS.map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>
+        <input id="dc" type="search" placeholder="City" aria-label="City" style="flex:1 1 120px;min-width:0;height:38px">
+        <button class="pill solid">Search</button></form>
+      <div id="dres"><div class="skeleton" style="height:70px;margin:14px"></div></div></div>`;
+    $('side').innerHTML = `<div id="mine"></div>${sideFoot()}`;
+    FL.wireCommon($('side'));
+    if (me) {
+      const { data: mine } = await sb.rpc('my_pages');
+      $('mine').innerHTML = `<div class="box"><div class="box-head"><h3>Your pages</h3></div>${(mine || []).length ? mine.map((p) => `<a class="ent" href="company.html?p=${encodeURIComponent(p.slug)}" style="color:inherit">
+          ${FL.pageLogo(p, 'co-logo sm')}<div class="ent-main"><b class="ent-name">${esc(p.name)}${FL.tick(p.verified, 14)}</b><div class="ent-meta">${esc(p.my_role === 'recruiter' ? 'Recruiter' : 'Admin')} · ${plural(p.followers, 'follower')}</div></div></a>`).join('')
+        : `<p class="t-sm muted" style="padding:0 20px 16px;margin:0;line-height:1.5">Run a gym, studio or clinic? Create its page to post jobs and share updates.</p>`}</div>`;
+    }
+    const run = async () => {
+      $('dres').innerHTML = '<div class="skeleton" style="height:70px;margin:14px"></div>';
+      const { data, error } = await sb.rpc('search_pages', { p_q: $('dq').value.trim() || null, p_kind: $('dk').value || null, p_city: $('dc').value.trim() || null, p_limit: 60 });
+      if (error) { $('dres').innerHTML = `<div class="empty">${esc(FL.friendly(error))}</div>`; return; }
+      const list = data || [];
+      $('dres').innerHTML = list.length ? list.map((p) => `<div class="ent">
+          <a href="company.html?p=${encodeURIComponent(p.slug)}">${FL.pageLogo(p)}</a>
+          <div class="ent-main"><a class="ent-name" href="company.html?p=${encodeURIComponent(p.slug)}">${esc(p.name)}${FL.tick(p.verified, 15)}</a>
+            <div class="ent-sub">${esc(p.tagline || p.kind_label)}</div>
+            <div class="ent-meta">${esc([p.kind_label, p.city].filter(Boolean).join(' · '))} · ${plural(p.followers, 'follower')}${p.open_jobs ? ` · <a href="jobs.html?page=${p.page_id}">${plural(p.open_jobs, 'open job')}</a>` : ''}</div></div>
+          ${me ? `<button class="pill sm ${p.is_following ? 'ghost' : ''}" data-follow="${p.page_id}">${p.is_following ? 'Following' : I('plus', 15) + 'Follow'}</button>` : ''}</div>`).join('')
+        : `<div class="empty"><b>No pages found</b>Try another name or city — or <a href="company.html?new=1">create your organisation's page</a>.</div>`;
+    };
+    $('df').onsubmit = (e) => { e.preventDefault(); run(); };
+    $('dk').onchange = run;
+    $('dres').addEventListener('click', async (e) => {
+      const b = e.target.closest('[data-follow]'); if (!b) return;
+      const r = await FL.call('follow_page', { p_page: b.dataset.follow });
+      if (r) { b.classList.toggle('ghost', r.following); b.innerHTML = r.following ? 'Following' : I('plus', 15) + 'Follow'; }
+    });
+    run();
+  }
+
+  // =========================================================== page
+  async function pageView(slug) {
+    let pg = null, tab = FL.param('tab') || 'home', feedOldest = null;
+    const isAdmin = () => pg && ['owner', 'admin'].includes(pg.my_role);
+    const isTeam = () => pg && !!pg.my_role;
+
+    async function load() {
+      const { data, error } = await sb.rpc('get_page', { p_slug: slug });
+      if (error || !data) {
+        $('main').innerHTML = `<div class="box"><div class="empty"><b>Page not found</b>It may have been renamed or removed. <a href="company.html">Browse pages</a></div></div>`;
+        $('side').innerHTML = sideFoot(); return false;
+      }
+      pg = data; document.title = `${pg.name} — The Fit Lab`;
+      return true;
+    }
+    if (!(await load())) return;
+    if (me && !pg.my_role) sb.rpc('log_page_view', { p_page: pg.page_id }).then(() => {}, () => {});
+
+    function header() {
+      const where = [pg.city, pg.state].filter(Boolean).join(', ');
+      const r = pg.response && pg.response.rate;
+      let acts = '';
+      if (isAdmin()) {
+        acts = `<button class="pill solid" data-a="post">${I('edit', 16)}Create a post</button>
+          <a class="pill" href="hiring.html?new=1&page=${pg.page_id}">${I('briefcase', 16)}Post a job</a>
+          <button class="pill ghost" data-a="edit">Edit page</button>`;
+      } else if (pg.my_role === 'recruiter') {
+        acts = `<a class="pill solid" href="hiring.html?new=1&page=${pg.page_id}">${I('briefcase', 16)}Post a job</a>`;
+      } else {
+        acts = `<button class="pill ${pg.is_following ? 'ghost' : 'solid'}" data-a="follow">${pg.is_following ? I('check', 16) + 'Following' : I('plus', 16) + 'Follow'}</button>`;
+      }
+      if (pg.website) acts += `<a class="pill ghost" href="${esc(pg.website)}" target="_blank" rel="noopener nofollow">Visit website ${I('external', 15)}</a>`;
+      acts += `<div style="position:relative"><button class="pill ghost" data-a="more" aria-haspopup="true">More</button></div>`;
+      return `<div class="box co-head">
+        <div class="ph-cover" ${pg.cover_url ? `style="background-image:url('${esc(pg.cover_url)}')"` : ''}>${isAdmin() ? `<button class="icon-btn" data-a="cover" aria-label="Change cover image">${I('camera', 20)}</button>` : ''}</div>
+        <div class="ph-body">
+          <div class="co-logo-wrap"><div class="co-logo-lg">${pg.logo_url ? `<img src="${esc(pg.logo_url)}" alt="${esc(pg.name)} logo">` : I('building', 44)}</div>
+            ${isAdmin() ? `<button class="icon-btn" data-a="logo" aria-label="Change logo">${I('camera', 18)}</button>` : ''}</div>
+          <h1 class="ph-name">${esc(pg.name)}${FL.tick(pg.verified, 22)}</h1>
+          ${pg.tagline ? `<p class="ph-head">${esc(pg.tagline)}</p>` : ''}
+          <div class="co-meta"><span>${esc(pg.kind_label)}</span>${where ? `<span>${I('pin', 14)}${esc(where)}</span>` : ''}
+            <span>${plural(pg.followers, 'follower')}</span>${pg.employees ? `<span>${I('network', 14)}${plural(pg.employees, 'employee')} on The Fit Lab</span>` : ''}</div>
+          ${r != null ? `<div style="margin-top:8px"><span class="resp">${I('check', 14)}Responds to ${r}% of applicants</span></div>` : ''}
+          <div class="ph-acts">${acts}</div>
+        </div>
+        <div class="utabs" id="tabs">${[['home', 'Home'], ['about', 'About'], ['posts', 'Posts'], ['jobs', `Jobs${pg.open_jobs ? ' (' + pg.open_jobs + ')' : ''}`], ['people', 'People']]
+          .concat(isTeam() ? [['insights', 'Analytics']] : []).concat(isTeam() ? [['admins', 'Admins']] : [])
+          .map(([k, l]) => `<button data-t="${k}" class="${tab === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+      </div>`;
+    }
+
+    function banners() {
+      let h = '';
+      if (FL.param('welcome') && isAdmin()) h += `<div class="notice">${I('sparkles', 20)}<div><b>Your page is live.</b><br><span class="t-sm">Add a logo and an About section, then post your first job or update. When you're ready, <a href="verification.html?page=${pg.page_id}">apply for the verified tick</a>.</span></div></div>`;
+      if (pg.status !== 'active') h += `<div class="notice bad">${I('shield', 20)}<div><b>This page is ${esc(pg.status)}</b><br><span class="t-sm">It's hidden from members while The Fit Lab team reviews it. Contact the Academy team if you think this is a mistake.</span></div></div>`;
+      if (isAdmin() && !pg.verified) {
+        const v = pg.admin && pg.admin.verification;
+        const st = v ? ({ pending: 'Your request is in the review queue.', needs_info: 'The team asked for more information.', rejected: 'Your last request wasn\'t approved.', approved: 'Approved.' })[v.status] : 'Verified pages get up to 10 open jobs, rank higher in search, and earn applicants\' trust.';
+        h += `<div class="box box-pad" style="display:flex;gap:14px;align-items:center;flex-wrap:wrap"><span style="color:var(--lime)">${I('tick', 30)}</span>
+          <div style="flex:1;min-width:200px"><b>Get the verified tick</b><div class="t-sm muted" style="margin-top:2px">${esc(st)}${v && v.note ? ' “' + esc(v.note) + '”' : ''}</div></div>
+          <a class="pill solid sm" href="verification.html?page=${pg.page_id}">${v ? 'View request' : 'Apply now'}</a></div>`;
+      }
+      return h;
+    }
+
+    async function body() {
+      const el = $('body');
+      if (tab === 'about') {
+        el.innerHTML = `<div class="box"><div class="box-head"><h2>Overview</h2></div>
+          ${pg.about ? `<p style="padding:0 20px;margin:0 0 16px;white-space:pre-line;line-height:1.6">${FL.linkify(pg.about)}</p>` : `<p class="t-sm muted" style="padding:0 20px;margin:0 0 16px">${isAdmin() ? 'Add an About section — it helps people decide to follow and apply.' : 'No description yet.'}</p>`}
+          <dl class="dl">
+            ${pg.website ? `<dt>Website</dt><dd><a href="${esc(pg.website)}" target="_blank" rel="noopener nofollow">${esc(pg.website.replace(/^https?:\/\//, ''))}</a>${pg.website_verified ? ` <span class="chip acc" style="padding:0 7px;font-size:10.5px">${I('check', 11)}Owner confirmed</span>` : ''}</dd>` : ''}
+            <dt>Type</dt><dd>${esc(pg.kind_label)}</dd>
+            ${pg.size ? `<dt>Team size</dt><dd>${esc(SIZES.find((x) => x[0] === pg.size)[1])}</dd>` : ''}
+            ${pg.founded ? `<dt>Founded</dt><dd>${pg.founded}</dd>` : ''}
+            ${pg.address || pg.city ? `<dt>Location</dt><dd>${esc([pg.address, pg.city, pg.state, pg.country].filter(Boolean).join(', '))}</dd>` : ''}
+            <dt>Verified</dt><dd>${pg.verified ? `${I('tick', 15)} Checked by The Fit Lab` : 'Not yet'}</dd>
+            <dt>On The Fit Lab since</dt><dd>${FL.fmtDate(pg.created_at)}</dd>
+          </dl></div>`;
+        return;
+      }
+      if (tab === 'jobs') {
+        el.innerHTML = `<div class="box"><div class="box-head"><div><h2>Jobs</h2><div class="sub">Pay is shown on every job · applicants see each step</div></div>
+          ${isTeam() ? `<a class="pill solid sm" href="hiring.html?new=1&page=${pg.page_id}">${I('plus', 15)}Post a job</a>` : ''}</div><div id="jl"><div class="skeleton" style="height:70px;margin:14px"></div></div>
+          ${isTeam() ? `<div class="box-foot"><a href="hiring.html">Manage jobs and applicants →</a></div>` : ''}</div>`;
+        const { data } = await sb.rpc('search_jobs', { p_q: null, p_profession: null, p_city: null, p_type: null, p_workplace: null, p_min_pay: null, p_verified_only: false, p_page: pg.page_id, p_limit: 50, p_offset: 0 });
+        $('jl').innerHTML = (data || []).length ? data.map(jobRow).join('') : `<div class="empty"><b>No open jobs</b>${pg.is_following ? 'You\'ll be notified when this page posts one.' : 'Follow the page to hear when they post one.'}</div>`;
+        return;
+      }
+      if (tab === 'people') {
+        el.innerHTML = `<div class="box"><div class="box-head"><div><h2>People</h2><div class="sub">Members who list ${esc(pg.name)} as their current workplace</div></div></div><div id="pl"><div class="skeleton" style="height:120px;margin:14px"></div></div></div>`;
+        const { data } = await sb.rpc('page_people', { p_page: pg.page_id, p_limit: 60 });
+        $('pl').innerHTML = (data || []).length ? `<div class="pgrid">${data.map(personCard).join('')}</div>`
+          : `<div class="empty"><b>No one listed yet</b>${isTeam() ? 'Ask your team to add ' + esc(pg.name) + ' to the Experience section of their profile and pick this page.' : 'Members appear here when they add this page to their experience.'}</div>`;
+        return;
+      }
+      if (tab === 'posts') {
+        el.innerHTML = `${isAdmin() ? composerBox() : ''}<div class="stack" id="pf"><div class="box skeleton" style="height:160px"></div></div>
+          <div style="text-align:center;margin-top:12px"><button class="pill ghost" id="moreF" hidden>Show more posts</button></div>`;
+        if (!me) { $('pf').innerHTML = `<div class="box"><div class="empty"><b>Sign in to see posts</b><a href="#" id="si">Sign in</a> to follow ${esc(pg.name)} and see their updates.</div></div>`; $('si').onclick = (e) => { e.preventDefault(); login(); }; return; }
+        feedOldest = null; await loadFeed(true);
+        FLPosts.mount($('pf'), { me });
+        $('moreF').onclick = () => loadFeed(false);
+        return;
+      }
+      if (tab === 'insights' && isTeam()) return insights(el);
+      if (tab === 'admins' && isTeam()) return admins(el);
+      // home
+      const about = pg.about ? `<div class="box"><div class="box-head"><h2>About</h2></div>
+        <p class="clamp3" style="padding:0 20px;margin:0 0 6px;white-space:pre-line;line-height:1.6;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden">${FL.linkify(pg.about)}</p>
+        <div class="box-foot"><button data-go="about">Show all details →</button></div></div>` : '';
+      el.innerHTML = `${about}<div class="box"><div class="box-head"><h2>Jobs</h2></div><div id="hj"><div class="skeleton" style="height:60px;margin:14px"></div></div></div>
+        <div id="hp"></div><div class="box"><div class="box-head"><h2>People</h2></div><div id="hpe"><div class="skeleton" style="height:100px;margin:14px"></div></div></div>`;
+      const [jobs, people] = await Promise.all([
+        sb.rpc('search_jobs', { p_q: null, p_profession: null, p_city: null, p_type: null, p_workplace: null, p_min_pay: null, p_verified_only: false, p_page: pg.page_id, p_limit: 3, p_offset: 0 }),
+        sb.rpc('page_people', { p_page: pg.page_id, p_limit: 6 })]);
+      $('hj').innerHTML = (jobs.data || []).length ? jobs.data.map(jobRow).join('') + (pg.open_jobs > 3 ? `<div class="box-foot"><button data-go="jobs">See all ${pg.open_jobs} jobs →</button></div>` : '')
+        : `<p class="t-sm muted" style="padding:0 20px 16px;margin:0">No open jobs right now.${isTeam() ? ` <a href="hiring.html?new=1&page=${pg.page_id}">Post one</a>` : ''}</p>`;
+      $('hpe').innerHTML = (people.data || []).length ? `<div class="pgrid">${people.data.map(personCard).join('')}</div>`
+        : `<p class="t-sm muted" style="padding:0 20px 16px;margin:0">Members who work here appear when they add this page to their experience.</p>`;
+      if (me) {
+        const { data: posts } = await sb.rpc('get_page_feed', { p_page: pg.page_id, p_before: null, p_limit: 2 });
+        if ((posts || []).length) {
+          $('hp').innerHTML = `<div class="box-head hp-head" style="padding:6px 4px 10px"><h2>Recent posts</h2><button class="txt-btn" data-go="posts">See all</button></div><div class="stack" id="hpl">${posts.map((p) => FLPosts.render(p)).join('')}</div>`;
+          FLPosts.mount($('hpl'), { me });
+        } else if (isAdmin()) $('hp').innerHTML = composerBox();
+      }
+    }
+
+    function composerBox() {
+      return `<div class="box composer"><div class="row">${FL.pageLogo(pg, 'co-logo sm')}<button class="fake" data-a="post">Start a post as ${esc(pg.name)}</button></div></div>`;
+    }
+    async function loadFeed(reset) {
+      const { data, error } = await sb.rpc('get_page_feed', { p_page: pg.page_id, p_before: feedOldest, p_limit: 10 });
+      if (error) { $('pf').innerHTML = `<div class="box"><div class="empty">${esc(FL.friendly(error))}</div></div>`; return; }
+      const list = data || [];
+      const html = list.map((p) => FLPosts.render(p)).join('');
+      if (reset) $('pf').innerHTML = html || `<div class="box"><div class="empty"><b>No posts yet</b>${isAdmin() ? 'Share news, tips or a job opening with your followers.' : esc(pg.name) + ' hasn\'t posted yet.'}</div></div>`;
+      else $('pf').insertAdjacentHTML('beforeend', html);
+      if (list.length) feedOldest = list[list.length - 1].created_at;
+      $('moreF').hidden = list.length < 10;
+    }
+    const jobRow = (j) => `<a class="jrow" href="jobs.html?job=${j.id}">${FL.pageLogo(j.page, 'co-logo sm')}<div style="flex:1;min-width:0">
+        <b>${esc(j.title)}</b><div class="t-sm">${esc([j.city, j.workplace_label, j.type_label].filter(Boolean).join(' · '))}</div>
+        <div class="t-sm" style="font-weight:700;margin-top:2px">${FL.pay(j)}</div>
+        <div class="t-xs muted" style="margin-top:2px">${FL.timeAgo(j.created_at)} ago · ${plural(j.applicants, 'applicant')}${j.promoted ? ' · Promoted' : ''}</div></div></a>`;
+    const personCard = (p) => `<div class="pcard"><div class="cov" ${p.cover_url ? `style="background-image:url('${esc(p.cover_url)}')"` : ''}></div>
+        <a href="profile.html?u=${encodeURIComponent(p.username)}">${FL.ringAvatar(p, 'avatar')}</a>
+        <a class="nm" href="profile.html?u=${encodeURIComponent(p.username)}">${esc(p.full_name)}${FL.tags(p)}</a>
+        <p class="hl">${esc(p.title || p.headline || '')}</p><div class="why">${esc(p.profession_label || '')}</div>
+        <a class="pill sm" href="profile.html?u=${encodeURIComponent(p.username)}">View profile</a></div>`;
+
+    async function insights(el) {
+      el.innerHTML = '<div class="box skeleton" style="height:220px"></div>';
+      const { data: d } = await sb.rpc('page_insights', { p_page: pg.page_id });
+      if (!d) { el.innerHTML = `<div class="box"><div class="empty">Analytics are available to the page's team.</div></div>`; return; }
+      const r = d.response && d.response.rate;
+      const hb = (list) => { const max = Math.max(1, ...list.map((x) => x.n)); return list.map((x) => `<div class="hbar"><span>${esc(x.label)}</span><div class="t"><i style="width:${Math.round(x.n / max * 100)}%"></i></div><b>${x.n}</b></div>`).join(''); };
+      el.innerHTML = `<div class="box"><div class="box-head"><div><h2>Analytics</h2><div class="sub">Last 30 days · visible to the page team only</div></div></div>
+        <div class="kpis">
+          <div class="kpi"><b>${d.followers}</b><span>Followers${d.followers_30d ? ` · +${d.followers_30d}` : ''}</span></div>
+          <div class="kpi"><b>${d.visitors_30d}</b><span>Unique visitors</span></div>
+          <div class="kpi"><b>${d.views_30d}</b><span>Page views</span></div>
+          <div class="kpi"><b>${d.applications_30d}</b><span>Job applications</span></div>
+          <div class="kpi"><b>${d.open_jobs}</b><span>Open jobs</span></div>
+          <div class="kpi"><b>${r != null ? r + '%' : '—'}</b><span>Applicants answered</span></div></div></div>
+        ${d.deep ? `<div class="box"><div class="box-head"><h3>Weekly page views</h3></div>${(d.weekly_views || []).length ? `<div class="bars">${(() => { const mx = Math.max(1, ...d.weekly_views.map((w) => w.n)); return d.weekly_views.map((w) => `<i style="height:${Math.max(3, Math.round(w.n / mx * 100))}%" title="Week of ${FL.fmtDate(w.week)}: ${w.n}"></i>`).join(''); })()}</div>` : '<p class="t-sm muted" style="padding:0 20px 16px">No visits yet.</p>'}</div>
+          <div class="box"><div class="box-head"><h3>Visitors by profession</h3></div>${(d.visitor_professions || []).length ? hb(d.visitor_professions) : '<p class="t-sm muted" style="padding:0 20px 16px">No visits yet.</p>'}<div style="height:12px"></div></div>
+          <div class="box"><div class="box-head"><h3>Followers by city</h3></div>${(d.follower_cities || []).length ? hb(d.follower_cities) : '<p class="t-sm muted" style="padding:0 20px 16px">No followers yet.</p>'}<div style="height:12px"></div></div>`
+        : `<div class="prem-box"><h3>${I('crown', 16)}See who visits your page</h3><div class="t-sm" style="line-height:1.55">Business and Recruiter Premium show visitors by profession, followers by city, and weekly trends — so you know who you're reaching.</div>
+            <a class="pill gold sm" href="premium.html?plan=business" style="margin-top:10px">Try Business free for 14 days</a></div>`}`;
+    }
+
+    async function admins(el) {
+      el.innerHTML = '<div class="box skeleton" style="height:160px"></div>';
+      const { data } = await sb.rpc('page_admin_list', { p_page: pg.page_id });
+      const owner = pg.my_role === 'owner';
+      const ROLE = { owner: 'Owner', admin: 'Admin', recruiter: 'Recruiter' };
+      el.innerHTML = `<div class="box"><div class="box-head"><div><h2>Page team</h2><div class="sub">Admins edit the page and post as it. Recruiters post jobs and manage applicants.</div></div></div>
+        ${(data || []).map((a) => `<div class="ent">${FL.avatarHtml(a, 'avatar')}<div class="ent-main"><a class="ent-name" href="profile.html?u=${encodeURIComponent(a.username)}">${esc(a.full_name)}${FL.tags(a)}</a>
+          <div class="ent-meta">@${esc(a.username)} · ${ROLE[a.role]}</div></div>
+          ${owner && a.role !== 'owner' ? `<button class="pill ghost sm" data-rm="${esc(a.username)}">Remove</button>` : ''}</div>`).join('')}
+        ${owner ? `<div class="box-head" style="padding-top:8px"><h3 style="font-size:15px">Add someone</h3></div>
+          <div class="adm-row"><input id="aU" placeholder="@username" aria-label="Username"><select id="aR" aria-label="Role"><option value="admin">Admin</option><option value="recruiter">Recruiter</option></select>
+          <button class="pill solid" id="aAdd">Add</button></div>
+          <p class="t-xs muted" style="padding:0 20px 16px;margin:0">Only add people who work for ${esc(pg.name)}. They'll be notified.</p>` : ''}</div>`;
+      if (!owner) return;
+      $('aAdd').onclick = async (e) => {
+        const u = $('aU').value.trim(); if (!u) return;
+        FL.busy(e.target, true, 'Adding…');
+        const r = await FL.call('set_page_admin', { p_page: pg.page_id, p_username: u, p_role: $('aR').value });
+        FL.busy(e.target, false);
+        if (r) { FL.toast('Added to the page team', 'ok'); admins(el); }
+      };
+      el.querySelectorAll('[data-rm]').forEach((b) => { b.onclick = async () => {
+        if (!(await FL.confirm('Remove from the page team?', `@${b.dataset.rm} will no longer be able to manage ${pg.name}.`, 'Remove', true))) return;
+        const r = await FL.call('set_page_admin', { p_page: pg.page_id, p_username: b.dataset.rm, p_role: 'none' });
+        if (r) admins(el);
+      }; });
+    }
+
+    function editPage() {
+      FL.form({ title: 'Edit page', wide: true, values: pg, fields: [
+        { k: 'name', label: 'Organisation name', req: true, max: 120 },
+        { k: 'kind', label: 'Type', type: 'select', options: KINDS, half: true },
+        { k: 'size', label: 'Team size', type: 'select', options: SIZES, half: true },
+        { k: 'tagline', label: 'Tagline', max: 160 },
+        { k: 'website', label: 'Website', type: 'url', max: 200, ph: 'https://', help: pg.website_verified ? 'Changing the website means proving ownership again.' : '' },
+        { k: 'address', label: 'Address', max: 300, help: 'Shown on the page. No phone numbers.' },
+        { k: 'city', label: 'City', max: 80, half: true }, { k: 'state', label: 'State', max: 80, half: true },
+        { k: 'founded', label: 'Year founded', type: 'number', min: 1900, maxv: new Date().getFullYear(), half: true }, { html: '<div></div>', half: true },
+        { k: 'about', label: 'About', type: 'textarea', max: 3000, rows: 160 }],
+        onSave: async (v) => {
+          if (v.website && !/^https?:\/\/[^\s/]+\.[^\s]+$/i.test(v.website)) throw new Error('Enter the website as a full link, like https://yourgym.in');
+          const r = await FL.call('update_page', { p_page: pg.page_id, p: v });
+          if (!r) return false;
+          FL.toast('Page updated', 'ok'); await load(); render();
+        } });
+    }
+
+    async function upload(kind) {
+      const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/jpeg,image/png,image/webp';
+      inp.onchange = async () => {
+        const f = inp.files[0]; if (!f) return;
+        FL.toast(kind === 'logo' ? 'Uploading logo…' : 'Uploading cover…');
+        try {
+          const url = await FL.uploadImage(f, kind === 'logo' ? { bucket: 'page-media', path: `${pg.page_id}/logo.jpg`, square: true, max: 600 }
+                                                             : { bucket: 'page-media', path: `${pg.page_id}/cover.jpg`, aspect: 4, max: 1600 });
+          const r = await FL.call('update_page', { p_page: pg.page_id, p: kind === 'logo' ? { logo_url: url } : { cover_url: url } });
+          if (r) { FL.toast('Updated', 'ok'); await load(); render(); }
+        } catch (e) { FL.toast(FL.friendly(e), 'err'); }
+      };
+      inp.click();
+    }
+
+    function moreMenu(btn) {
+      const old = document.querySelector('.menu-pop'); if (old) { old.remove(); return; }
+      const pop = document.createElement('div'); pop.className = 'menu-pop'; pop.style.left = '0'; pop.style.right = 'auto'; pop.style.top = '40px';
+      pop.innerHTML = `<button data-m="share">${I('link', 18)}Copy link to page</button>
+        ${pg.open_jobs ? `<a href="jobs.html?page=${pg.page_id}">${I('briefcase', 18)}See open jobs</a>` : ''}
+        ${isAdmin() ? `<a href="verification.html?page=${pg.page_id}">${I('tick', 18)}${pg.verified ? 'Verified page' : 'Get the verified tick'}</a>` : ''}
+        ${me && !isTeam() ? `<button data-m="report" class="danger">${I('flag', 18)}Report page</button>` : ''}`;
+      btn.parentElement.appendChild(pop);
+      pop.onclick = async (e) => {
+        const b = e.target.closest('[data-m]'); if (!b) return; pop.remove();
+        if (b.dataset.m === 'share') { const link = location.origin + location.pathname + '?p=' + encodeURIComponent(pg.slug);
+          try { await navigator.clipboard.writeText(link); FL.toast('Link copied', 'ok'); } catch (_) { prompt('Copy this link', link); } }
+        if (b.dataset.m === 'report') FL.report('page', pg.page_id);
+      };
+    }
+
+    async function side() {
+      let h = '';
+      if (me) {
+        const { data } = await sb.rpc('suggested_pages', { p_limit: 4 });
+        const list = (data || []).filter((x) => x.page_id !== pg.page_id);
+        if (list.length) h += `<div class="box"><div class="box-head"><h3>Pages you may like</h3></div>${list.map((p) => `<div class="ent">
+          <a href="company.html?p=${encodeURIComponent(p.slug)}">${FL.pageLogo(p, 'co-logo sm')}</a><div class="ent-main"><a class="ent-name" href="company.html?p=${encodeURIComponent(p.slug)}" style="font-size:14px">${esc(p.name)}${FL.tick(p.verified, 14)}</a>
+          <div class="ent-meta">${esc(p.kind_label)} · ${plural(p.followers, 'follower')}</div>
+          <div class="ent-act"><button class="pill sm" data-sfollow="${p.page_id}">${I('plus', 14)}Follow</button></div></div></div>`).join('')}
+          <div class="box-foot"><a href="company.html">Browse all pages →</a></div></div>`;
+      } else {
+        h += `<div class="box box-pad"><b>Join The Fit Lab</b><p class="t-sm muted" style="margin:6px 0 12px;line-height:1.5">Follow ${esc(pg.name)}, apply to jobs and connect with the team.</p><a class="pill solid sm" href="index.html">Sign in or join</a></div>`;
+      }
+      $('side').innerHTML = h + sideFoot();
+      FL.wireCommon($('side'));
+      $('side').querySelectorAll('[data-sfollow]').forEach((b) => { b.onclick = async () => { const r = await FL.call('follow_page', { p_page: b.dataset.sfollow }); if (r) { b.textContent = r.following ? 'Following' : 'Follow'; b.classList.toggle('ghost', r.following); } }; });
+    }
+
+    function render() {
+      $('main').innerHTML = header() + banners() + '<div class="stack" id="body"></div>';
+      body();
+    }
+
+    $('main').addEventListener('click', async (e) => {
+      const t = e.target.closest('[data-t]');
+      if (t && t.closest('#tabs')) { tab = t.dataset.t; const u = new URL(location.href); u.searchParams.set('tab', tab); u.searchParams.delete('welcome'); history.replaceState(null, '', u);
+        document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', b === t)); body(); return; }
+      const go = e.target.closest('[data-go]');
+      if (go) { const b = document.querySelector(`#tabs [data-t="${go.dataset.go}"]`); if (b) b.click(); return; }
+      const a = e.target.closest('[data-a]'); if (!a) return;
+      const act = a.dataset.a;
+      if (act === 'follow') { if (!me) return login(); const r = await FL.call('follow_page', { p_page: pg.page_id }); if (r) { pg.is_following = r.following; pg.followers = r.followers; render(); } }
+      if (act === 'edit') editPage();
+      if (act === 'logo' || act === 'cover') upload(act);
+      if (act === 'more') moreMenu(a);
+      if (act === 'post') FLPosts.composer(me, { page: pg, onDone: () => { if (tab !== 'posts') { const b = document.querySelector('#tabs [data-t="posts"]'); if (b) b.click(); } else body(); } });
+    });
+    document.addEventListener('click', (e) => { const pop = document.querySelector('.menu-pop'); if (pop && !pop.contains(e.target) && !e.target.closest('[data-a="more"]')) pop.remove(); });
+    render(); side();
+  }
+})();
+</script>
+</body>
+</html>

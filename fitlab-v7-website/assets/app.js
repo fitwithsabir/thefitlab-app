@@ -66,6 +66,21 @@
     sparkles: '<path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>',
     help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.6 2.6 0 0 1 5 1c0 1.8-2.5 2.2-2.5 3.8M12 17.3v.2"/>',
     eye: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
+    tick: '<path d="M12 2.5l2.4 1.7 2.9-.2 1 2.8 2.4 1.7-.9 2.8.9 2.8-2.4 1.7-1 2.8-2.9-.2L12 21.5l-2.4-1.7-2.9.2-1-2.8L3.3 15.5l.9-2.8-.9-2.8 2.4-1.7 1-2.8 2.9.2z" fill="currentColor" stroke="none"/><path d="m8.4 12.2 2.4 2.4 4.8-4.8" stroke="var(--on-tick,#fff)" stroke-width="2.2"/>',
+    crown: '<path d="M3 8l4.5 4L12 5l4.5 7L21 8l-1.8 10H4.8z" fill="currentColor" stroke="none"/>',
+    building: '<rect x="4" y="3" width="11" height="18" rx="1"/><path d="M15 9h4a1 1 0 0 1 1 1v11H15M8 7h3M8 11h3M8 15h3M9.5 21v-3"/>',
+    pin: '<path d="M12 21s-6.5-6.2-6.5-11.2a6.5 6.5 0 0 1 13 0C18.5 14.8 12 21 12 21z"/><circle cx="12" cy="9.8" r="2.3"/>',
+    rupee: '<path d="M7 4h10M7 8.5h10M9 4c4.5 0 6 1.6 6 4.5S12.5 13 9 13H7l7.5 7"/>',
+    bookmark: '<path d="M6 3.5h12v17l-6-4.2-6 4.2z"/>',
+    chart: '<path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/>',
+    upload: '<path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/>',
+    external: '<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+    mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/>',
+    inbox: '<path d="M3 13l2.5-8h13L21 13v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M3 13h5l1.5 2.5h5L16 13h5"/>',
+    zap: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+    file: '<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>',
+    filter: '<path d="M4 5h16l-6 7.5V19l-4 1.5v-8z"/>',
+    target: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".8" fill="currentColor"/>',
     hire: '<path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6M8 10h.01M12 10h.01M16 10h.01"/>',
   };
   const icon = (name, size = 22, extra = '') =>
@@ -251,6 +266,86 @@
     // same, but nothing at all for members without stars yet (social pages)
     starsIf(count, tier) { return count > 0 ? this.starBadge(count, tier) : ''; },
 
+    // ---------------------------------------------------------------- v8: ticks, badges, rings
+    tick(on, size = 16) { return on ? `<span class="vtick" title="Verified by The Fit Lab" aria-label="Verified">${icon('tick', size)}</span>` : ''; },
+    PLAN_NAMES: { pro: 'Pro', business: 'Business', recruiter: 'Recruiter' },
+    prem(plan) { return plan ? `<span class="pbadge" title="${this.PLAN_NAMES[plan] || 'Premium'} member" aria-label="Premium">${icon('crown', 11)}</span>` : ''; },
+    tags(c) { return c ? this.tick(c.verified) + this.prem(c.premium) : ''; },
+    // avatar with the #OpenToWork (green) / #Hiring (purple) frame
+    ringAvatar(c, cls = 'avatar') {
+      const ring = c && c.hiring ? 'hiring' : c && c.open_to_work ? 'otw' : '';
+      const a = this.avatarHtml(c, cls);
+      return ring ? `<span class="ring ${ring}" title="${ring === 'hiring' ? '#Hiring' : '#OpenToWork'}">${a}</span>` : a;
+    },
+    inr(rupees) { return '₹' + Number(rupees || 0).toLocaleString('en-IN'); },
+    paise(p) { return '₹' + (Number(p || 0) / 100).toLocaleString('en-IN', { maximumFractionDigits: 0 }); },
+    PERIOD: { month: 'month', year: 'year', hour: 'hour', session: 'session' },
+    pay(j) {
+      if (!j || j.salary_min == null) return '';
+      const a = this.inr(j.salary_min), b = this.inr(j.salary_max);
+      return `${a === b ? a : a + '–' + b.slice(1)} / ${this.PERIOD[j.salary_period] || j.salary_period}`;
+    },
+    JOB_TYPES: { full_time: 'Full-time', part_time: 'Part-time', contract: 'Contract', freelance: 'Freelance', internship: 'Internship', per_session: 'Per session' },
+    WORKPLACES: { on_site: 'On-site', hybrid: 'Hybrid', remote: 'Remote', home_visits: 'Home visits' },
+    PAGE_KINDS: { gym: 'Gym', studio: 'Fitness studio', clinic: 'Clinic', hospital: 'Hospital', academy: 'Academy / Institute', brand: 'Brand',
+                  sports_club: 'Sports club', wellness: 'Wellness centre', association: 'Association', other: 'Other organisation' },
+    async professions() {
+      if (this._prof) return this._prof;
+      const { data } = await sb.from('professions').select('code,label,category,requires_licence,sort').order('sort');
+      this._prof = data || [];
+      return this._prof;
+    },
+    professionOptions(list, selected, placeholder = 'Choose a profession') {
+      const cats = [...new Set(list.map((p) => p.category))];
+      return `<option value="">${esc(placeholder)}</option>` + cats.map((c) => `<optgroup label="${esc(c)}">${list.filter((p) => p.category === c)
+        .map((p) => `<option value="${p.code}" ${p.code === selected ? 'selected' : ''}>${esc(p.label)}</option>`).join('')}</optgroup>`).join('');
+    },
+    pageLogo(pg, cls = 'co-logo') {
+      if (pg && pg.logo_url) return `<img class="${cls}" src="${esc(pg.logo_url)}" alt="" loading="lazy">`;
+      return `<span class="${cls}">${icon('building', cls === 'co-logo' ? 22 : 30)}</span>`;
+    },
+    // Premium upsell — shown whenever a Premium feature is tapped
+    upsell(title, text, plan = 'pro') {
+      const m = this.modal({ title: title || 'Premium feature', body: `<div class="upsell">${icon('crown', 28)}
+          <p style="margin:10px 0 0;line-height:1.55">${esc(text || 'This is part of Fit Lab Premium.')}</p>
+          <p class="t-sm muted" style="margin:10px 0 0">Try it free for 14 days — no card needed for the trial.</p></div>`,
+        foot: `<button class="pill ghost" data-no>Not now</button><a class="pill solid gold" href="premium.html?plan=${plan}">See Premium plans</a>` });
+      m.q('[data-no]').onclick = m.close;
+    },
+    // job-related InMail (employers ↔ applicants / open-to-work members; Pro → hiring managers)
+    inmail(c, ctx = null) {
+      return new Promise((resolve) => {
+        let done = false;
+        const cost = ctx && ctx.cost ? `<p class="t-xs muted" style="margin:8px 0 0">${icon('mail', 13)} Uses 1 InMail credit · ${ctx.credits_left} left this month</p>`
+                                     : `<p class="t-xs muted" style="margin:8px 0 0">${icon('mail', 13)} Free — job-related message</p>`;
+        const m = this.modal({ title: `InMail ${c.full_name || '@' + c.username}`, body: `
+          <p class="t-sm muted" style="margin:0 0 12px;line-height:1.5">InMail is for jobs and hiring only. Say who you are and why you're reaching out — they can accept or decline.</p>
+          <div class="field"><label for="imS">Subject</label><input id="imS" maxlength="120" placeholder="e.g. Strength coach role at Shaan Fitness"></div>
+          <div class="field"><label for="imB">Message</label><textarea id="imB" maxlength="2000" style="min-height:130px" placeholder="Hi ${esc((c.full_name || '').split(' ')[0])}, …"></textarea></div>${cost}`,
+          foot: `<button class="pill ghost" data-no>Cancel</button><button class="pill solid" data-ok>Send InMail</button>`,
+          onClose: () => { if (!done) resolve(null); } });
+        m.q('[data-no]').onclick = m.close;
+        m.q('[data-ok]').onclick = async (e) => {
+          const body = m.q('#imB').value.trim();
+          if (body.length < 20) return this.toast('Write at least a couple of sentences.', 'err');
+          this.busy(e.target, true, 'Sending…');
+          const r = await this.call('send_inmail', { p_recipient: c.user_id, p_subject: m.q('#imS').value.trim() || null, p_body: body });
+          this.busy(e.target, false);
+          if (!r) return;
+          done = true; m.close(); this.toast('InMail sent', 'ok'); resolve(r);
+        };
+      });
+    },
+    // generic upload (PDF or image) to a bucket path — returns the storage path
+    async uploadFile(bucket, path, file, maxMB = 8) {
+      if (!file) return null;
+      if (file.size > maxMB * 1024 * 1024) throw new Error(`Files can be up to ${maxMB} MB`);
+      if (!/^(image\/(jpeg|png|webp)|application\/pdf)$/.test(file.type)) throw new Error('Upload a PDF, JPG or PNG');
+      const { error } = await sb.storage.from(bucket).upload(path, file, { upsert: true, contentType: file.type });
+      if (error) throw error;
+      return path;
+    },
+
     // ---------------------------------------------------------------- modals
     modal({ title = '', body = '', foot = '', wide = false, onClose } = {}) {
       const el = document.createElement('div');
@@ -269,6 +364,67 @@
       const first = el.querySelector('input:not([type=hidden]),textarea,select');
       if (first && window.matchMedia('(min-width:768px)').matches) setTimeout(() => first.focus(), 60);
       return { el, close, q: (s) => el.querySelector(s), qa: (s) => el.querySelectorAll(s) };
+    },
+
+    // generic form in a modal. fields: {k, label, type, req, max, ph, help, half, options:[[v,l]], html}
+    // onSave(values, modal) may throw an Error (shown in the form) or return false to keep it open.
+    form({ title, fields, values = {}, onSave, onDelete, wide = false, saveLabel = 'Save', note = '* Indicates required' }) {
+      const fieldHtml = (f) => {
+        if (f.html) return f.html;
+        const v = values[f.k] ?? f.def ?? '';
+        const lbl = `<label for="f_${f.k}" class="${f.req ? 'req' : ''}">${esc(f.label)}</label>`;
+        let input;
+        if (f.type === 'textarea') input = `<textarea id="f_${f.k}" maxlength="${f.max || 2000}" placeholder="${esc(f.ph || '')}" style="min-height:${f.rows || 120}px">${esc(v)}</textarea>`;
+        else if (f.type === 'select') input = `<select id="f_${f.k}">${f.optionsHtml || (f.options || []).map(([ov, ol]) => `<option value="${esc(ov)}" ${String(v) === String(ov) ? 'selected' : ''}>${esc(ol)}</option>`).join('')}</select>`;
+        else if (f.type === 'checkbox') return `<label class="check" style="margin-bottom:12px;color:var(--bone)"><input type="checkbox" id="f_${f.k}" ${v ? 'checked' : ''}><span>${esc(f.label)}</span></label>`;
+        else input = `<input id="f_${f.k}" type="${f.type || 'text'}" value="${esc(v)}" maxlength="${f.max || 200}" placeholder="${esc(f.ph || '')}" ${f.min != null ? `min="${f.min}"` : ''} ${f.maxv != null ? `max="${f.maxv}"` : ''} ${f.type === 'number' ? 'inputmode="numeric"' : ''}>`;
+        return `<div class="field">${lbl}${input}${f.help ? `<span class="help">${esc(f.help)}</span>` : ''}</div>`;
+      };
+      let body = '', buf = [];
+      const flush = () => { if (buf.length) { body += `<div class="row2">${buf.join('')}</div>`; buf = []; } };
+      for (const f of fields) { if (f.half) { buf.push(fieldHtml(f)); if (buf.length === 2) flush(); } else { flush(); body += fieldHtml(f); } }
+      flush();
+      const m = this.modal({ title, wide, body: `${note ? `<p class="t-xs muted" style="margin:0 0 12px">${esc(note)}</p>` : ''}${body}<div class="err hidden" id="fErr"></div>`,
+        foot: `${onDelete ? `<button class="pill ghost left" data-del style="color:var(--danger-text);border-color:var(--line-2)">Delete</button>` : ''}<button class="pill solid" data-save>${esc(saveLabel)}</button>` });
+      const read = () => Object.fromEntries(fields.filter((f) => f.k).map((f) => { const el = m.q('#f_' + f.k); return [f.k, !el ? null : f.type === 'checkbox' ? el.checked : el.value.trim()]; }));
+      const err = m.q('#fErr');
+      const showErr = (t) => { err.textContent = t; err.classList.remove('hidden'); err.scrollIntoView({ block: 'nearest' }); };
+      m.q('[data-save]').onclick = async (e) => {
+        const vals = read();
+        const missing = fields.find((f) => f.req && f.k && !vals[f.k]);
+        if (missing) return showErr(`${missing.label} is required.`);
+        err.classList.add('hidden');
+        this.busy(e.target, true, 'Saving…');
+        try { const ok = await onSave(vals, m); if (ok !== false) m.close(); }
+        catch (ex) { showErr(this.friendly(ex)); }
+        finally { this.busy(e.target, false); }
+      };
+      if (onDelete) m.q('[data-del]').onclick = async () => {
+        if (!(await this.confirm('Delete?', 'This will be removed.', 'Delete', true))) return;
+        try { await onDelete(); m.close(); } catch (ex) { this.toast(this.friendly(ex), 'err'); }
+      };
+      return m;
+    },
+
+    // GST number check (same rule as the database) — instant feedback while typing
+    gstinValid(g) {
+      const c = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'; g = String(g || '').toUpperCase().replace(/\s/g, '');
+      if (!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(g)) return false;
+      let s = 0;
+      for (let i = 0; i < 14; i++) { const p = c.indexOf(g[i]) * (i % 2 === 0 ? 1 : 2); s += Math.floor(p / 36) + (p % 36); }
+      return c[(36 - (s % 36)) % 36] === g[14];
+    },
+
+    // Edge Function call with the member's login; returns {data} or {error}
+    async fn(name, body) {
+      try {
+        const { data, error } = await sb.functions.invoke(name, { body });
+        if (error) {
+          try { const j = await error.context.json(); if (j && j.message) return { data: j }; } catch (_) {}
+          return { error: { message: error.message } };
+        }
+        return { data };
+      } catch (e) { return { error: e }; }
     },
 
     confirm(title, text, okLabel = 'Confirm', danger = false) {
@@ -291,10 +447,10 @@
     },
 
     GUIDELINES: `
-      <p style="margin-top:0">The Fit Lab is a <b>professional network</b> for coaches, trainers and learners. These rules keep it useful and safe for everyone — women and men alike.</p>
+      <p style="margin-top:0">The Fit Lab is a <b>professional network</b> for the health and fitness industry — trainers, coaches, physios, doctors, dietitians, gyms, clinics and learners. These rules keep it useful and safe for everyone — women and men alike.</p>
       <h4>1 · Keep it professional</h4>
-      <ul><li>Talk coaching, training, nutrition, health science, careers and courses.</li>
-      <li>Use your real name and a clear, professional headshot.</li></ul>
+      <ul><li>Talk training, rehab, nutrition, health science, careers, hiring and courses.</li>
+      <li>Use your real name and a clear, professional headshot. Pages must represent a real organisation you're authorised to act for.</li></ul>
       <h4>2 · This is not a dating space</h4>
       <ul><li>No romantic or flirty messages, compliments on looks, or asking whether someone is single.</li>
       <li>No requests for personal photos. Connect only for professional reasons.</li></ul>
@@ -302,8 +458,8 @@
       <ul><li>No abuse, profanity, slurs, harassment or threats — in any language.</li>
       <li>Disagree with ideas, never attack people.</li></ul>
       <h4>4 · Keep contact on The Fit Lab</h4>
-      <ul><li>Phone numbers, emails and social handles can't be shared in messages, comments or profiles.</li>
-      <li>Gyms hire coaches through the Hire-a-Coach portal, which the Academy team handles.</li></ul>
+      <ul><li>Phone numbers, emails and social handles can't be shared in messages, comments, profiles, pages or jobs.</li>
+      <li>InMail is for jobs and hiring only. Jobs must show their pay and can never ask applicants for a fee or deposit.</li></ul>
       <h4>How this is enforced</h4>
       <ul><li>Automatic checks block abusive, sexual, dating-style and contact-sharing text before it is sent.</li>
       <li>A serious breach, or three in 30 days, pauses messaging and posting until the Academy team reviews it.</li>
@@ -346,6 +502,7 @@
         }
         if (data.blocked) { this.notice(data.category === 'contact' ? 'Keep contact details off the network' : 'Not sent', data.message); return null; }
         if (data.code === 'suspended' || data.code === 'banned') { this.notice('Community access paused', data.message); return null; }
+        if (data.code === 'premium') { this.upsell('Premium feature', data.message, /Recruiter/.test(data.message || '') ? 'recruiter' : 'pro'); return null; }
         if (!quiet) this.toast(data.message || 'That isn\'t allowed.', 'err');
         return null;
       }
@@ -442,19 +599,20 @@
       if (!p) return '';
       return `<div class="box mini">
         <div class="cov" ${p.cover_url ? `style="background-image:url('${esc(p.cover_url)}')"` : ''}></div>
-        <a href="profile.html?u=${encodeURIComponent(p.username || '')}">${this.avatarHtml(p, 'avatar')}</a>
-        <h3><a href="profile.html?u=${encodeURIComponent(p.username || '')}" style="color:var(--bone)">${esc(p.full_name || 'Member')}</a></h3>
+        <a href="profile.html?u=${encodeURIComponent(p.username || '')}">${this.ringAvatar(p, 'avatar')}</a>
+        <h3><a href="profile.html?u=${encodeURIComponent(p.username || '')}" style="color:var(--bone)">${esc(p.full_name || 'Member')}</a>${this.tick(p.verified || p.is_owner, 15)}</h3>
         <p>${esc(p.headline || p.occupation || 'Add a headline to your profile')}</p>
         <div class="divider"></div>
         <a class="stat" href="network.html#connections"><span>Connections</span><b>${counts.connections ?? '—'}</b></a>
         <a class="stat" href="courses.html"><span>Courses</span><b>${counts.courses ?? '—'}</b></a>
+        <a class="stat" href="insights.html"><span>Profile insights</span><b>→</b></a>
         <div class="divider" style="margin-top:6px"></div>
         <a class="stat" href="profile.html?u=${encodeURIComponent(p.username || '')}"><span class="mono" style="font-size:11px">${esc(p.unique_id || '')}</span>${this.starsIf(p.star_count || 0, p.star_tier)}</a>
       </div>`;
     },
 
     siteFootHtml(compact = false) {
-      const links = `<a href="hire.html">Hire a coach</a><a href="verify.html">Verify a certificate</a><a href="#" data-guidelines>Community guidelines</a><a href="settings.html">Settings</a><a href="mailto:${esc(cfg.SUPPORT_EMAIL || '')}">Help</a>`;
+      const links = `<a href="jobs.html">Jobs</a><a href="company.html">Pages</a><a href="premium.html">Premium</a><a href="hire.html">Hire a coach</a><a href="verify.html">Verify a certificate</a><a href="#" data-guidelines>Community guidelines</a><a href="settings.html">Settings</a><a href="mailto:${esc(cfg.SUPPORT_EMAIL || '')}">Help</a>`;
       return `<div class="${compact ? 'right-foot' : 'site-foot'}">${links}<span>The Fit Lab © ${new Date().getFullYear()}</span></div>`;
     },
 
@@ -515,7 +673,8 @@
       const f = (location.pathname.split('/').pop() || 'index.html').replace('.html', '');
       return ({ feed: 'home', network: 'network', connections: 'network', members: 'network', courses: 'courses', dashboard: 'courses',
                 lesson: 'courses', exam: 'courses', messaging: 'messages', chat: 'messages', notifications: 'notifications',
-                profile: 'profile', settings: 'me', search: 'search', admin: 'admin' })[f] || f;
+                profile: 'profile', settings: 'me', search: 'search', admin: 'admin', jobs: 'jobs', hiring: 'jobs',
+                company: 'network', premium: 'me', verification: 'me', insights: 'me' })[f] || f;
     },
 
     renderHeader(profile) {
@@ -527,6 +686,7 @@
       const tabs = [
         ['home', 'feed.html', 'Home', 'home', null],
         ['network', 'network.html', 'My Network', 'network', 'invitations'],
+        ['jobs', 'jobs.html', 'Jobs', 'briefcase', null],
         ['courses', 'courses.html', 'Courses', 'courses', null],
         ['messages', 'messaging.html', 'Messaging', 'messages', 'messages'],
         ['notifications', 'notifications.html', 'Notifications', 'bell', 'notifications'],
@@ -538,13 +698,14 @@
         bar.innerHTML = `<div class="topbar-in">
           <a class="tb-logo" href="feed.html" aria-label="The Fit Lab — home"><img class="logo-d" src="assets/logo-600.png" alt="The Fit Lab"><img class="logo-l" src="assets/logo-600-light.png" alt="" aria-hidden="true"></a>
           <form class="tb-search" action="search.html" role="search">${icon('search', 17)}
-            <input name="q" type="search" placeholder="Search coaches, trainers, skills" value="${esc(q)}" aria-label="Search"></form>
+            <input name="q" type="search" placeholder="Search people, jobs, pages" value="${esc(q)}" aria-label="Search"></form>
           <nav class="tb-tabs">
             ${tabs.map(([k, href, label, ic, cnt]) => `<a class="tb-tab ${k === 'messages' ? 'tb-msg' : ''} ${page === k ? 'on' : ''}" href="${href}">
               <span class="ic">${icon(ic, 24)}${cnt ? `<span class="cnt" data-cnt="${cnt}"></span>` : ''}</span><span class="lbl">${label}</span></a>`).join('')}
             <button class="tb-tab tb-me ${page === 'me' || (page === 'profile' && this.param('u') === profile.username) ? 'on' : ''}" type="button" aria-haspopup="true" aria-expanded="false">
               <span class="ic">${this.avatarHtml(profile, 'ava avatar')}</span><span class="lbl">Me ${icon('down', 12)}</span></button>
-            ${profile.is_admin ? `<span class="tb-sep"></span><a class="tb-tab ${location.pathname.endsWith('admin.html') ? 'on' : ''}" href="admin.html"><span class="ic">${icon('shield', 24)}</span><span class="lbl">Admin</span></a>` : ''}
+            ${(profile.is_admin || profile.is_owner) ? `<span class="tb-sep"></span><a class="tb-tab ${location.pathname.endsWith('admin.html') ? 'on' : ''}" href="admin.html"><span class="ic">${icon('shield', 24)}</span><span class="lbl">Admin</span></a>` : ''}
+            <a class="tb-prem" href="premium.html">${icon('crown', 15)}<span id="tbPremLbl">Try Premium</span></a>
           </nav></div>`;
       } else {
         bar.innerHTML = `<div class="topbar-in">
@@ -561,7 +722,7 @@
       const mobileTabs = [
         ['home', 'feed.html', 'Home', 'home', null],
         ['network', 'network.html', 'Network', 'network', 'invitations'],
-        ['post', 'feed.html#compose', 'Post', 'plus', null],
+        ['jobs', 'jobs.html', 'Jobs', 'briefcase', null],
         ['courses', 'courses.html', 'Courses', 'courses', null],
         ['notifications', 'notifications.html', 'Alerts', 'bell', 'notifications'],
       ];
@@ -574,8 +735,17 @@
       const menu = document.createElement('div');
       menu.className = 'me-menu';
       menu.innerHTML = `
-        <div class="me-head">${this.avatarHtml(profile, 'avatar')}<div><b>${esc(profile.full_name || 'Member')}</b><span>${esc(profile.headline || profile.occupation || profile.unique_id || '')}</span></div></div>
+        <div class="me-head">${this.avatarHtml(profile, 'avatar')}<div><b>${esc(profile.full_name || 'Member')} ${this.tick(profile.verified || profile.is_owner, 15)}</b><span>${esc(profile.headline || profile.occupation || profile.unique_id || '')}</span></div></div>
         <a class="pill btn-view" href="profile.html?u=${encodeURIComponent(profile.username || '')}">View profile</a>
+        <div class="me-sec"><h6>Premium &amp; trust</h6>
+          <a href="premium.html" class="gold-lnk">${icon('crown', 18)}<span id="mePremLbl">Try Premium free for 14 days</span></a>
+          ${(profile.verified || profile.is_owner) ? `<a href="verification.html">${icon('tick', 18)}You're verified</a>` : `<a href="verification.html">${icon('tick', 18)}Get the verified tick</a>`}
+          <a href="insights.html">${icon('chart', 18)}Profile insights</a></div>
+        <div class="me-sec"><h6>Jobs &amp; pages</h6>
+          <a href="jobs.html?tab=applied">${icon('briefcase', 18)}My jobs</a>
+          <a href="hiring.html">${icon('userplus', 18)}Hiring &amp; job posts</a>
+          <div id="meMyPages"></div>
+          <a href="company.html?new=1">${icon('building', 18)}Create a page</a></div>
         <div class="me-sec"><h6>Appearance</h6>${this.themeSwitchHtml()}</div>
         <div class="me-sec"><h6>Account</h6>
           <a href="settings.html">${icon('settings', 18)}Settings &amp; privacy</a>
@@ -583,7 +753,7 @@
           <button class="lnk" type="button" data-guidelines>${icon('shield', 18)}Community guidelines</button>
           <a href="mailto:${esc(cfg.SUPPORT_EMAIL || '')}">${icon('help', 18)}Help</a></div>
         <div class="me-sec"><h6>For gyms &amp; studios</h6><a href="hire.html">${icon('hire', 18)}Hire a coach</a>
-          ${profile.is_admin ? `<a href="admin.html">${icon('shield', 18)}Admin control room</a>` : ''}</div>
+          ${(profile.is_admin || profile.is_owner) ? `<a href="admin.html">${icon('shield', 18)}Admin control room</a>` : ''}</div>
         <div class="me-sec"><button class="lnk" type="button" id="btnSignOut">${icon('logout', 18)}Sign out</button></div>`;
       document.body.appendChild(menu);
 
@@ -593,6 +763,19 @@
       document.addEventListener('click', (e) => { if (!menu.contains(e.target) && !meBtn.contains(e.target)) toggle(false); });
       document.addEventListener('keydown', (e) => { if (e.key === 'Escape') toggle(false); });
       menu.querySelector('#btnSignOut').onclick = () => this.signOut();
+      // Premium + my pages in the menu (non-blocking)
+      sb.rpc('my_premium').then(({ data }) => {
+        this._prem = data;
+        if (data && data.plan) {
+          const t = `${this.PLAN_NAMES[data.plan]}${data.source === 'trial' ? ' trial' : ''}`;
+          const a = document.getElementById('tbPremLbl'); if (a) a.textContent = t;
+          const b = document.getElementById('mePremLbl'); if (b) b.textContent = `Premium: ${t}`;
+        }
+      }).catch(() => {});
+      sb.rpc('my_pages').then(({ data }) => {
+        const el = document.getElementById('meMyPages');
+        if (el && data && data.length) el.innerHTML = data.slice(0, 3).map((p) => `<a href="company.html?p=${encodeURIComponent(p.slug)}">${icon('building', 18)}${esc(p.name)}</a>`).join('');
+      }).catch(() => {});
       this.wireCommon(document);
       this.refreshCounts();
       clearInterval(this._cntTimer);

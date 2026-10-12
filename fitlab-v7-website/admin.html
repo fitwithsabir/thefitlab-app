@@ -67,6 +67,9 @@
       <button class="tab" data-tab="broadcast">Announcements</button>
       <button class="tab" data-tab="moderation">Moderation <span class="cnt" id="modCnt" style="position:static;margin-left:6px;box-shadow:none"></span></button>
       <button class="tab" data-tab="conduct">Conduct rules</button>
+      <button class="tab" data-tab="verify">Verification <span class="cnt" id="verCnt" style="position:static;margin-left:6px;box-shadow:none"></span></button>
+      <button class="tab" data-tab="pages">Pages</button>
+      <button class="tab" data-tab="premium">Premium</button>
       <button class="tab hidden" data-tab="admins" id="tabAdmins">Administrators</button>
     </div>
 
@@ -142,6 +145,51 @@
       <div id="mlist"><p class="ash">Loading…</p></div>
     </section>
 
+    <!-- VERIFICATION -->
+    <section id="t-verify" class="hidden">
+      <div class="card" style="padding:18px 20px;margin-bottom:16px;display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+        <div style="max-width:620px"><b>Automatic approval</b>
+          <p class="ash small" style="margin:4px 0 0">When on, requests are approved instantly only when a computer can check the proof: a page that proved it owns its website <b>and</b> has a valid GST number, or a member with an approved Fit Lab certificate and a clean record. Licensed professions (doctors, physios, dietitians…) always come here. Everything else waits in this queue, <b>highest trust score first</b>.</p></div>
+        <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+          <label class="ash small" for="vMin">Minimum score</label><input id="vMin" type="number" min="0" max="100" style="width:80px">
+          <label class="check" style="font-size:14px;color:var(--bone)"><input type="checkbox" id="vAuto"><span>On</span></label></div>
+      </div>
+      <div class="chipbar" id="vfilter">
+        <button class="chipbtn on" data-f="pending">Waiting</button><button class="chipbtn" data-f="needs_info">Asked for info</button>
+        <button class="chipbtn" data-f="approved">Approved</button><button class="chipbtn" data-f="rejected">Not approved</button><button class="chipbtn" data-f="all">All</button>
+      </div>
+      <form id="vDirect" style="display:flex;gap:10px;max-width:560px;margin:4px 0 16px;flex-wrap:wrap">
+        <input id="vUser" placeholder="Give the tick directly: @username or Unique ID" style="flex:1;min-width:220px"><button class="btn btn-ghost small" type="submit">Verify member</button></form>
+      <div id="vlist"><p class="ash">Loading…</p></div>
+    </section>
+
+    <!-- PAGES -->
+    <section id="t-pages" class="hidden">
+      <form id="pgSearch" style="display:flex;gap:10px;max-width:560px;margin-bottom:14px"><input id="pgQ" placeholder="Search pages by name" style="flex:1"><button class="btn btn-ghost small" type="submit">Search</button></form>
+      <div class="tblwrap"><table><thead><tr><th>Page</th><th>Owner</th><th>Proof</th><th>Followers</th><th>Status</th><th></th></tr></thead>
+        <tbody id="pgbody"><tr><td colspan="6" class="ash">Loading…</td></tr></tbody></table></div>
+    </section>
+
+    <!-- PREMIUM -->
+    <section id="t-premium" class="hidden">
+      <div id="prKpis" class="grid grid-3" style="gap:12px;margin-bottom:16px"></div>
+      <div class="card" style="padding:16px 18px;margin-bottom:16px">
+        <b>Plans &amp; prices</b><p class="ash small" style="margin:4px 0 10px">Prices in rupees. Changes apply to new purchases straight away. Members are never charged automatically.</p>
+        <div class="tblwrap"><table><thead><tr><th>Plan</th><th>₹ / month</th><th>₹ / year</th><th>InMail / month</th><th>On sale</th><th></th></tr></thead><tbody id="plbody"></tbody></table></div></div>
+      <div class="card" style="padding:16px 18px;margin-bottom:16px">
+        <b>Give Premium</b><p class="ash small" style="margin:4px 0 10px">For partners, staff or as a thank-you. Adds to any time they already have.</p>
+        <form id="grant" style="display:flex;gap:10px;flex-wrap:wrap"><input id="gUser" placeholder="@username or Unique ID" style="flex:1;min-width:180px">
+          <select id="gPlan" style="width:140px"><option value="pro">Pro</option><option value="business">Business</option><option value="recruiter">Recruiter</option></select>
+          <select id="gDays" style="width:120px"><option value="30">30 days</option><option value="90">90 days</option><option value="365">1 year</option></select>
+          <button class="btn btn-primary small" type="submit">Give</button></form></div>
+      <div class="card" style="padding:14px 18px;margin-bottom:16px;font-size:13px" id="rzNote"><b>Razorpay</b>
+        <p class="ash small" style="margin:4px 0 0">Online payments switch on when the <span class="mono">RAZORPAY_KEY_ID</span> and <span class="mono">RAZORPAY_KEY_SECRET</span> secrets are added to Supabase Edge Functions. Until then, members can start the free trial and you can give Premium here.</p></div>
+      <div class="eyebrow" style="margin:6px 0 8px">Members with Premium</div>
+      <div class="tblwrap"><table><thead><tr><th>Member</th><th>Plan</th><th>Source</th><th>Until</th><th></th></tr></thead><tbody id="sbbody"></tbody></table></div>
+      <div class="eyebrow" style="margin:20px 0 8px">Payments</div>
+      <div class="tblwrap"><table><thead><tr><th>Date</th><th>Member</th><th>Plan</th><th>Amount</th><th>Status</th><th>Razorpay IDs</th></tr></thead><tbody id="paybody"></tbody></table></div>
+    </section>
+
     <!-- CONDUCT -->
     <section id="t-conduct" class="hidden">
       <p class="ash small" style="margin-bottom:12px">Words and phrases blocked in messages, posts, comments, invitations and profiles. A plain word or phrase matches whole words (and disguised spellings like “f u c k” or “s3xy”). Use <span class="mono">%</span> for a partial match — e.g. <span class="mono">%telegram%</span>.
@@ -174,6 +222,8 @@
       <label class="check"><input type="checkbox" data-right="announcements"><span>Announcements — send site-wide notices</span></label>
       <label class="check"><input type="checkbox" data-right="moderation"><span>Moderation — manage chat conduct rules</span></label>
       <label class="check"><input type="checkbox" data-right="content"><span>Content — manage courses and lessons</span></label>
+      <label class="check"><input type="checkbox" data-right="verification"><span>Verification &amp; pages — review ticks, manage organisation pages</span></label>
+      <label class="check"><input type="checkbox" data-right="premium"><span>Premium — prices, give Premium, see payments</span></label>
     </div>
     <div id="raErr" class="err hidden" style="margin-top:12px"></div>
     <div class="btn-row" style="margin-top:18px;justify-content:flex-end">
@@ -254,7 +304,7 @@
 
   // ---- tabs (only the ones this admin holds a right for) ----
   const tabRight = { members:'members', certs:'certificates', broadcast:'announcements', moderation:'moderation',
-                     conduct:'moderation', admins:'admins' };
+                     conduct:'moderation', admins:'admins', verify:'verification', pages:'verification', premium:'premium' };
   const sections = Object.keys(tabRight);
   document.querySelectorAll('.tab').forEach((t) => {
     t.classList.toggle('hidden', !rights[tabRight[t.dataset.tab]]);
@@ -264,7 +314,7 @@
       try { sessionStorage.setItem('fl:admintab', t.dataset.tab); } catch (_) {}
     };
   });
-  let savedTab = null; try { savedTab = sessionStorage.getItem('fl:admintab'); } catch (_) {}
+  let savedTab = (location.hash || '').slice(1).replace(/[^a-z]/g, '') || null; if (!savedTab) try { savedTab = sessionStorage.getItem('fl:admintab'); } catch (_) {}
   const firstTab = document.querySelector(`.tab[data-tab="${savedTab}"]:not(.hidden)`) || document.querySelector('.tab:not(.hidden)');
   if (firstTab) firstTab.click();
   else { sections.forEach((s) => $('t-' + s).classList.add('hidden')); $('sub').textContent = 'You are an administrator, but no areas have been assigned to you yet.'; }
@@ -637,10 +687,191 @@
     FL.toast('Rights updated', 'ok'); $('rightsModal').classList.remove('on'); loadAdmins(); loadMembers();
   };
 
+  // ---- verification queue (most authentic first) ----
+  const E = FL.esc;
+  let vFilter = 'pending', vreqs = [];
+  async function findMember(handle) {
+    const h = (handle || '').trim(); if (!h) return null;
+    const { data } = await sb.rpc('find_member', { p_handle: h });
+    if (data && data.user_id) return data;
+    if (rights.members) {
+      const { data: rows } = await sb.rpc('admin_list_members', { p_search: h.replace(/^@/, '') });
+      const m = (rows || []).find((x) => [x.username, (x.unique_id || '').toLowerCase()].includes(h.replace(/^@/, '').toLowerCase())) || (rows || [])[0];
+      if (m) return { user_id: m.id, full_name: m.full_name, username: m.username };
+    }
+    return null;
+  }
+  async function loadVerifySettings() {
+    const { data } = await sb.rpc('admin_verification_settings', { p_auto: null, p_min: null });
+    if (!data) return;
+    $('vAuto').checked = data.auto === 'on'; $('vMin').value = data.min;
+    $('vAuto').onchange = async (e) => {
+      const { error } = await sb.rpc('admin_verification_settings', { p_auto: e.target.checked ? 'on' : 'off', p_min: null });
+      if (error) { e.target.checked = !e.target.checked; return FL.toast(FL.friendly(error), 'err'); }
+      FL.toast(e.target.checked ? 'Automatic approval is on' : 'Automatic approval is off — every request comes here', 'ok');
+    };
+    $('vMin').onchange = async (e) => {
+      const v = Math.max(0, Math.min(100, +e.target.value || 0));
+      const { error } = await sb.rpc('admin_verification_settings', { p_auto: null, p_min: v });
+      if (error) return FL.toast(FL.friendly(error), 'err'); FL.toast('Minimum score saved', 'ok');
+    };
+  }
+  async function loadVerify() {
+    $('vlist').innerHTML = '<p class="ash">Loading…</p>';
+    const { data, error } = await sb.rpc('admin_verification_queue', { p_status: vFilter });
+    if (error) { $('vlist').innerHTML = `<p class="ash">${E(FL.friendly(error))}</p>`; return; }
+    vreqs = data || [];
+    if (vFilter === 'pending') $('verCnt').textContent = vreqs.length || '';
+    $('vlist').innerHTML = vreqs.length ? vreqs.map((r) => {
+      const sj = r.subject || {}, ev = r.evidence || {}, live = r.live || { score: 0, detail: [] };
+      const who = r.subject_type === 'user'
+        ? `<div style="display:flex;gap:12px;align-items:center">${FL.avatarHtml(sj, 'avatar')}<div><a href="profile.html?u=${encodeURIComponent(sj.username || '')}" target="_blank" rel="noopener"><strong>${E(sj.full_name || 'Member')}</strong></a>
+            <div class="ash" style="font-size:12px">${E(sj.profession_label || 'No profession set')}${sj.requires_licence ? ' · <b style="color:var(--warn)">licensed profession</b>' : ''} · @${E(sj.username || '')} · ${E(sj.unique_id || '')}</div></div></div>`
+        : `<div style="display:flex;gap:12px;align-items:center">${FL.pageLogo(sj, 'co-logo sm')}<div><a href="company.html?p=${encodeURIComponent(sj.slug || '')}" target="_blank" rel="noopener"><strong>${E(sj.name || 'Page')}</strong></a>
+            <div class="ash" style="font-size:12px">${E(sj.kind_label || '')}${sj.city ? ' · ' + E(sj.city) : ''} · ${sj.followers || 0} followers</div>
+            <div class="ash" style="font-size:12px">${sj.website ? `<a href="${E(sj.website)}" target="_blank" rel="noopener nofollow">${E(sj.website)}</a> ${sj.website_verified ? '<b style="color:var(--lime)">· owner proven</b>' : '· not proven'}` : 'No website'}
+              ${sj.gstin ? ` · GST ${E(sj.gstin)} ${sj.gstin_valid ? '<b style="color:var(--lime)">✓ valid</b>' : '<b style="color:#f87171">✗ fails check</b>'}` : ''}</div></div></div>`;
+      const evRows = [['Licence body', ev.licence_body], ['Licence / registration no.', ev.licence_number], ['Registration no.', ev.registration_no], ['GSTIN', ev.gstin], ['Notes', ev.notes]].filter((x) => x[1]);
+      const docs = Array.isArray(ev.documents) ? ev.documents : [];
+      const st = { pending: 'st-pending', needs_info: 'st-rejected', approved: 'st-approved', rejected: 'st-revoked' }[r.status] || '';
+      return `<div class="card" style="padding:16px 18px;margin-bottom:12px" data-vr="${r.id}">
+        <div style="display:flex;gap:12px;justify-content:space-between;flex-wrap:wrap;align-items:flex-start">${who}
+          <div style="text-align:right;min-width:150px"><div style="font:700 26px/1 var(--body)">${live.score}<span class="ash" style="font-size:12px"> / 100</span></div>
+            <div class="meter" style="width:150px;margin:6px 0 6px auto"><i style="width:${live.score}%"></i></div>
+            <span class="st ${st}">${E(r.status.replace('_', ' '))}${r.auto ? ' · auto' : ''}</span><div class="ash" style="font-size:11px;margin-top:4px">${fmt(r.created_at)}</div></div></div>
+        <details style="margin-top:10px"><summary class="ash small" style="cursor:pointer">Why this score · ${E(live.auto_reason || '')}</summary>
+          <ul class="checklist" style="max-width:520px">${(live.detail || []).map((d) => `<li class="${d.points < 0 ? 'neg' : ''}">${E(d.label)}<span class="pts">${d.points > 0 ? '+' : ''}${d.points}</span></li>`).join('')}</ul></details>
+        ${evRows.length ? `<div style="margin-top:10px;display:grid;gap:4px">${evRows.map(([k, v]) => `<div style="font-size:13px"><span class="ash">${k}:</span> ${E(v)}</div>`).join('')}</div>` : ''}
+        ${docs.length ? `<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">${docs.map((d, i) => `<button class="btn btn-ghost small" data-doc="${E(d)}">📄 Document ${i + 1}</button>`).join('')}</div>` : ''}
+        ${r.note ? `<div class="ash" style="font-size:12px;margin-top:8px">Note: ${E(r.note)}</div>` : ''}
+        ${['pending', 'needs_info'].includes(r.status) ? `<div class="acts" style="justify-content:flex-start;margin-top:12px">
+            <button class="btn btn-primary small" data-vd="approve">Approve tick</button><button class="btn btn-ghost small" data-vd="needs_info">Ask for more info</button>
+            <button class="btn btn-ghost small danger" data-vd="reject">Not approved</button></div>`
+          : r.status === 'approved' ? `<div class="acts" style="justify-content:flex-start;margin-top:12px"><button class="btn btn-ghost small danger" data-vd="remove">Remove tick</button></div>` : ''}
+      </div>`;
+    }).join('') : `<p class="ash">${vFilter === 'pending' ? 'No one is waiting for verification.' : 'Nothing here.'}</p>`;
+  }
+  $('vfilter').addEventListener('click', (e) => { const b = e.target.closest('[data-f]'); if (!b) return; vFilter = b.dataset.f;
+    document.querySelectorAll('#vfilter .chipbtn').forEach((x) => x.classList.toggle('on', x === b)); loadVerify(); });
+  $('vlist').addEventListener('click', async (e) => {
+    const d = e.target.closest('[data-doc]');
+    if (d) { const { data, error } = await sb.storage.from('verification-docs').createSignedUrl(d.dataset.doc, 600);
+      if (error || !data) return FL.toast('Couldn\'t open that document', 'err'); window.open(data.signedUrl, '_blank', 'noopener'); return; }
+    const b = e.target.closest('[data-vd]'); if (!b) return;
+    const r = vreqs.find((x) => x.id === b.closest('[data-vr]').dataset.vr); if (!r) return;
+    const name = r.subject_type === 'user' ? (r.subject.full_name || 'Member') : (r.subject.name || 'Page');
+    const act = b.dataset.vd;
+    if (act === 'remove') {
+      if (!(await FL.confirm('Remove the tick?', `${name} will no longer show as verified.`, 'Remove tick', true))) return;
+      const { error } = await sb.rpc('admin_set_verified', { p_type: r.subject_type, p_id: r.subject_id, p_on: false, p_note: null });
+      if (error) return FL.toast(FL.friendly(error), 'err'); FL.toast('Tick removed', 'ok'); return loadVerify();
+    }
+    const n = await askNote({ eyebrow: 'Verification', title: name,
+      help: act === 'approve' ? 'Optional note sent with the approval.' : act === 'needs_info' ? 'Tell them exactly what to add — they\'ll see this note.' : 'Say briefly why — they can apply again in 7 days.',
+      okLabel: { approve: 'Approve', needs_info: 'Ask for info', reject: 'Not approved' }[act], danger: act === 'reject' });
+    if (!n) return;
+    if (act !== 'approve' && !n.note) return FL.toast('Add a short note so they know what to do', 'err');
+    const { error } = await sb.rpc('admin_decide_verification', { p_req: r.id, p_decision: act, p_note: n.note || null });
+    if (error) return FL.toast(FL.friendly(error), 'err');
+    FL.toast(act === 'approve' ? 'Verified — they\'ve been notified' : 'Sent', 'ok'); loadVerify();
+  });
+  $('vDirect').onsubmit = async (e) => {
+    e.preventDefault();
+    const m = await findMember($('vUser').value); if (!m) return FL.toast('No member found with that username or ID', 'err');
+    if (!(await FL.confirm('Give the verified tick?', `${m.full_name} (@${m.username}) will show as verified.`, 'Verify'))) return;
+    const { error } = await sb.rpc('admin_set_verified', { p_type: 'user', p_id: m.user_id, p_on: true, p_note: null });
+    if (error) return FL.toast(FL.friendly(error), 'err'); FL.toast(`${m.full_name} is verified`, 'ok'); $('vUser').value = '';
+  };
+
+  // ---- pages ----
+  let pageRows = [];
+  async function loadPages(q) {
+    const { data, error } = await sb.rpc('admin_list_pages', { p_q: q || null });
+    if (error) { $('pgbody').innerHTML = `<tr><td colspan="6" class="ash">${E(FL.friendly(error))}</td></tr>`; return; }
+    pageRows = data || [];
+    $('pgbody').innerHTML = pageRows.length ? pageRows.map((g) => `<tr data-pg="${g.page_id}">
+        <td><div style="display:flex;gap:10px;align-items:center">${FL.pageLogo(g, 'co-logo xs')}<div><a href="company.html?p=${encodeURIComponent(g.slug)}" target="_blank" rel="noopener"><strong>${E(g.name)}</strong></a>${FL.tick(g.verified, 13)}
+          <div class="ash" style="font-size:11px">${E(g.kind_label)}${g.city ? ' · ' + E(g.city) : ''} · ${fmt(g.created_at)}</div></div></div></td>
+        <td style="font-size:12px">${g.owner ? `<a href="profile.html?u=${encodeURIComponent(g.owner.username)}">${E(g.owner.full_name)}</a>` : '—'}</td>
+        <td style="font-size:11.5px">${g.website_verified ? '<b style="color:var(--lime)">Website ✓</b>' : g.website ? 'Website' : '—'}${g.gstin ? `<br>GST ${g.gstin_valid ? '<b style="color:var(--lime)">✓</b>' : '<b style="color:#f87171">✗</b>'}` : ''}</td>
+        <td>${g.followers}${g.open_jobs ? `<div class="ash" style="font-size:11px">${g.open_jobs} jobs</div>` : ''}${g.reports ? `<div style="font-size:11px;color:#f87171">${g.reports} report${g.reports === 1 ? '' : 's'}</div>` : ''}</td>
+        <td><span class="st ${g.status === 'active' ? 'st-approved' : g.status === 'suspended' ? 'st-rejected' : 'st-revoked'}">${E(g.status)}</span></td>
+        <td><div class="acts"><button class="btn btn-ghost small" data-pv="${g.verified ? 'off' : 'on'}">${g.verified ? 'Remove tick' : 'Verify'}</button>
+          ${g.status === 'active' ? `<button class="btn btn-ghost small" data-ps="suspended">Suspend</button>` : `<button class="btn btn-ghost small" data-ps="active">Restore</button>`}
+          ${g.status !== 'removed' ? `<button class="btn btn-ghost small danger" data-ps="removed">Remove</button>` : ''}</div></td></tr>`).join('')
+      : '<tr><td colspan="6" class="ash">No pages yet.</td></tr>';
+  }
+  $('pgSearch').onsubmit = (e) => { e.preventDefault(); loadPages($('pgQ').value.trim()); };
+  $('pgbody').addEventListener('click', async (e) => {
+    const tr = e.target.closest('[data-pg]'); if (!tr) return;
+    const g = pageRows.find((x) => x.page_id === tr.dataset.pg); if (!g) return;
+    const v = e.target.closest('[data-pv]'), st = e.target.closest('[data-ps]');
+    if (v) {
+      const { error } = await sb.rpc('admin_set_verified', { p_type: 'page', p_id: g.page_id, p_on: v.dataset.pv === 'on', p_note: null });
+      if (error) return FL.toast(FL.friendly(error), 'err'); FL.toast('Updated', 'ok'); return loadPages($('pgQ').value.trim());
+    }
+    if (st) {
+      const to = st.dataset.ps;
+      if (to !== 'active' && !(await FL.confirm(to === 'removed' ? 'Remove this page?' : 'Suspend this page?', `${g.name} will be hidden and its open jobs paused.`, to === 'removed' ? 'Remove' : 'Suspend', true))) return;
+      const { error } = await sb.rpc('admin_set_page_status', { p_page: g.page_id, p_status: to });
+      if (error) return FL.toast(FL.friendly(error), 'err'); FL.toast('Updated', 'ok'); loadPages($('pgQ').value.trim());
+    }
+  });
+
+  // ---- premium ----
+  let premData = null;
+  async function loadPremium() {
+    const { data, error } = await sb.rpc('admin_list_premium');
+    if (error) { $('prKpis').innerHTML = `<p class="ash">${E(FL.friendly(error))}</p>`; return; }
+    premData = data;
+    const subs = data.subscriptions || [], active = subs.filter((x) => x.active);
+    $('prKpis').innerHTML = [[FL.paise(data.revenue_paid), 'Paid through Razorpay'], [active.length, 'Active Premium members'],
+      [active.filter((x) => x.source === 'trial').length, 'On a free trial']]
+      .map(([v, l]) => `<div class="card" style="padding:14px 16px"><div style="font:700 24px var(--body)">${v}</div><div class="ash small">${l}</div></div>`).join('');
+    $('plbody').innerHTML = (data.plans || []).map((p) => `<tr data-plan="${p.code}"><td><strong>${E(p.name)}</strong></td>
+      <td><input type="number" min="0" data-k="price_month" value="${Math.round(p.price_month / 100)}" style="width:100px"></td>
+      <td><input type="number" min="0" data-k="price_year" value="${Math.round(p.price_year / 100)}" style="width:110px"></td>
+      <td><input type="number" min="0" max="500" data-k="inmail_month" value="${p.inmail_month}" style="width:80px"></td>
+      <td><input type="checkbox" data-k="active" ${p.active ? 'checked' : ''} aria-label="On sale"></td>
+      <td><button class="btn btn-ghost small" data-saveplan="${p.code}">Save</button></td></tr>`).join('');
+    $('sbbody').innerHTML = subs.length ? subs.map((x) => `<tr><td><a href="profile.html?u=${encodeURIComponent(x.username)}"><strong>${E(x.full_name)}</strong></a><div class="ash" style="font-size:11px">@${E(x.username)}</div></td>
+        <td>${E(FL.PLAN_NAMES[x.plan] || x.plan)}</td><td class="ash" style="font-size:12px">${E(x.source)}</td>
+        <td style="font-size:12px">${fmt(x.expires_at)} ${x.active ? '' : '<span class="ash">(ended)</span>'}</td>
+        <td>${x.active ? `<button class="btn btn-ghost small danger" data-revoke="${x.user_id}">End now</button>` : ''}</td></tr>`).join('')
+      : '<tr><td colspan="5" class="ash">No Premium members yet.</td></tr>';
+    $('paybody').innerHTML = (data.payments || []).length ? data.payments.map((y) => `<tr><td style="font-size:12px">${fmt(y.created_at)}</td>
+        <td style="font-size:12px">${y.member ? E(y.member.full_name) : '—'}</td><td style="font-size:12px">${E(FL.PLAN_NAMES[y.plan] || y.plan)} · ${y.period === 'year' ? 'yearly' : 'monthly'}</td>
+        <td>${FL.paise(y.amount)}</td><td><span class="st ${y.status === 'paid' ? 'st-approved' : y.status === 'failed' ? 'st-revoked' : 'st-pending'}">${E(y.status)}</span></td>
+        <td class="mono" style="font-size:10.5px">${E(y.order_id || '')}<br>${E(y.payment_id || '')}</td></tr>`).join('')
+      : '<tr><td colspan="6" class="ash">No payments yet.</td></tr>';
+  }
+  $('plbody').addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-saveplan]'); if (!b) return;
+    const tr = b.closest('tr'); const v = (k) => tr.querySelector(`[data-k="${k}"]`);
+    const p = { price_month: String(Math.round(+v('price_month').value * 100)), price_year: String(Math.round(+v('price_year').value * 100)),
+      inmail_month: String(+v('inmail_month').value || 0), active: v('active').checked };
+    const { error } = await sb.rpc('admin_update_plan', { p_code: b.dataset.saveplan, p });
+    if (error) return FL.toast(FL.friendly(error), 'err'); FL.toast('Plan saved', 'ok'); loadPremium();
+  });
+  $('sbbody').addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-revoke]'); if (!b) return;
+    if (!(await FL.confirm('End Premium now?', 'Their Premium features stop straight away. No refund is made automatically.', 'End Premium', true))) return;
+    const { error } = await sb.rpc('admin_grant_premium', { p_user: b.dataset.revoke, p_plan: null, p_days: 0 });
+    if (error) return FL.toast(FL.friendly(error), 'err'); FL.toast('Premium ended', 'ok'); loadPremium();
+  });
+  $('grant').onsubmit = async (e) => {
+    e.preventDefault();
+    const m = await findMember($('gUser').value); if (!m) return FL.toast('No member found with that username or ID', 'err');
+    const { error } = await sb.rpc('admin_grant_premium', { p_user: m.user_id, p_plan: $('gPlan').value, p_days: +$('gDays').value });
+    if (error) return FL.toast(FL.friendly(error), 'err'); FL.toast(`${m.full_name} now has ${FL.PLAN_NAMES[$('gPlan').value]}`, 'ok'); $('gUser').value = ''; loadPremium();
+  };
+
   if (rights.members) loadMembers(); else if (document.querySelector('.tab:not(.hidden)')) $('sub').textContent = 'Signed in as administrator';
   if (rights.certificates) loadCerts();
   if (rights.moderation) { loadRules(); loadCases(); loadAiSetting(); }
   if (rights.admins) loadAdmins();
+  if (rights.verification) { loadVerify(); loadVerifySettings(); loadPages(); }
+  if (rights.premium) loadPremium();
   $('noteModal').onclick = (e) => { if (e.target === $('noteModal')) $('nmCancel').click(); };
 })();
 </script>

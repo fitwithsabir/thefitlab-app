@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Hiring — The Fit Lab</title>
+<script src="assets/theme.js"></script>
+<link rel="icon" href="assets/favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+  .hjob{display:flex;gap:12px;padding:14px 20px;border-top:1px solid var(--line);align-items:flex-start}
+  .hjob b.t{color:var(--bone);font-size:15px;display:block}
+  .hjob .st{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--ash);vertical-align:2px;margin-left:6px}
+  .hjob .st.open{border-color:var(--accent-line);color:var(--lime);background:var(--accent-soft)}
+  .hjob .st.hold{border-color:var(--warn);color:var(--warn)}
+  .newb{display:inline-block;min-width:20px;padding:0 6px;border-radius:99px;background:var(--danger);color:#fff;font:700 11px/18px var(--body);text-align:center;margin-left:6px}
+  .jform{padding:6px 24px 24px}
+  .jform h3{font:700 16px var(--body);margin:20px 0 10px;letter-spacing:0;text-transform:none;color:var(--bone)}
+  .payrow{display:grid;grid-template-columns:1fr 1fr 150px;gap:10px}
+  @media (max-width:560px){ .payrow{grid-template-columns:1fr 1fr} .payrow .per{grid-column:1/-1} }
+  .qrow{display:grid;grid-template-columns:1fr 130px 36px;gap:8px;margin-bottom:8px;align-items:center}
+  @media (max-width:560px){ .qrow{grid-template-columns:1fr 36px} .qrow select{grid-column:1/2} }
+  .paypv{font:700 15px var(--body);color:var(--lime);margin-top:4px;min-height:20px}
+  .apl{border-top:1px solid var(--line)}
+  .apl-head{display:flex;gap:12px;padding:14px 20px;cursor:pointer;align-items:flex-start}
+  .apl-head:hover{background:var(--hover)}
+  .apl.open .apl-head{background:var(--accent-soft)}
+  .apl-body{padding:0 20px 18px 80px}
+  @media (max-width:560px){ .apl-body{padding:0 16px 16px} }
+  .mscore{font:700 13px var(--body);color:var(--lime);white-space:nowrap}
+  .feat-chip{display:inline-flex;gap:4px;align-items:center;font-size:11px;font-weight:700;color:var(--gold);border:1px solid var(--gold);border-radius:999px;padding:1px 8px}
+  .stagebar{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+  .stagebar .pill.on{background:var(--lime);color:var(--on-lime);border-color:var(--lime)}
+  .cfilters{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;padding:6px 20px 6px}
+  .cfilters input,.cfilters select{height:38px}
+  .cchecks{display:flex;gap:16px;flex-wrap:wrap;padding:6px 20px 14px;font-size:14px}
+</style>
+</head>
+<body data-page="jobs">
+<main class="page">
+  <div class="layout l-main-side">
+    <section class="stack" id="main"><div class="box skeleton" style="height:300px"></div></section>
+    <aside><div class="sticky-col" id="side"></div></aside>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(async () => {
+  const $ = (id) => document.getElementById(id);
+  const esc = FL.esc, I = FL.icon;
+  const session = await FL.requireAuth(); if (!session) return;
+  let me; try { me = await FL.getProfile(); } catch (e) { return FL.toast(FL.friendly(e), 'err'); }
+  if (!me.profile_completed) return location.replace('register.html');
+  FL.renderHeader(me);
+  const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+  const [{ data: pagesRaw }, profs] = await Promise.all([sb.rpc('my_pages'), FL.professions()]);
+  const pages = pagesRaw || [];
+  const STAGES = [['submitted', 'New'], ['viewed', 'Viewed'], ['shortlisted', 'Shortlisted'], ['interview', 'Interview'], ['offered', 'Offered'], ['hired', 'Hired'], ['not_selected', 'Not selected']];
+  const STAGE_LBL = Object.fromEntries(STAGES);
+
+  side();
+  if (FL.param('new') || FL.param('edit')) return jobForm(FL.param('edit'));
+  if (FL.param('job')) return applicants(FL.param('job'));
+  if (FL.param('tab') === 'candidates') return candidates();
+  return dashboard();
+
+  function side() {
+    $('side').innerHTML = `
+      <div class="box"><div class="box-head"><h3>Your pages</h3><a class="txt-btn" href="company.html?new=1">${I('plus', 15)}New</a></div>
+        ${pages.length ? pages.map((p) => `<div class="ent"><a href="company.html?p=${encodeURIComponent(p.slug)}">${FL.pageLogo(p, 'co-logo sm')}</a>
+          <div class="ent-main"><a class="ent-name" href="company.html?p=${encodeURIComponent(p.slug)}" style="font-size:14px">${esc(p.name)}${FL.tick(p.verified, 14)}</a>
+          <div class="ent-meta">${plural(p.open_jobs, 'open job')}${p.verified ? '' : ' · <a href="verification.html?page=' + p.page_id + '">Get verified</a>'}</div></div></div>`).join('')
+        : `<p class="t-sm muted" style="padding:0 20px 16px;margin:0;line-height:1.5">Jobs are posted by organisation pages. Create your gym, studio or clinic's page first — it takes a minute.</p>`}</div>
+      <div class="box box-pad"><b style="display:flex;gap:8px;align-items:center">${I('search', 18)}Find candidates</b>
+        <p class="t-sm muted" style="margin:8px 0 12px;line-height:1.5">Search open-to-work trainers, physios and coaches by profession, city, certifications and experience — then InMail them.</p>
+        <a class="pill sm" href="hiring.html?tab=candidates">Search candidates</a></div>
+      <div class="box box-pad"><b>Good job posts get better applicants</b>
+        <ul class="checklist" style="margin-top:10px"><li>${I('check', 15)}Pay is required — be specific</li><li>${I('check', 15)}List the shift timings</li>
+        <li>${I('check', 15)}Name 3–5 must-have skills</li><li>${I('check', 15)}Reply to everyone — your response rate is public</li></ul></div>
+      ${FL.siteFootHtml(true)}`;
+    FL.wireCommon($('side'));
+  }
+
+  // =========================================================== dashboard
+  async function dashboard() {
+    document.title = 'Hiring — The Fit Lab';
+    $('main').innerHTML = `<div class="box"><div class="box-head"><div><h2>Hiring</h2><div class="sub">Your job posts and applicants</div></div>
+        ${pages.length ? `<a class="pill solid sm" href="hiring.html?new=1">${I('plus', 15)}Post a job</a>` : ''}</div>
+      <div id="jl"><div class="skeleton" style="height:70px;margin:14px"></div></div></div>`;
+    if (!pages.length) {
+      $('jl').innerHTML = `<div class="empty"><b>Create a page to start hiring</b>Gyms, studios and clinics post jobs from their page, so applicants know exactly who's hiring.
+        <div style="margin-top:14px"><a class="pill solid" href="company.html?new=1">${I('building', 16)}Create a page</a></div></div>`;
+      return;
+    }
+    const { data, error } = await sb.rpc('my_hiring');
+    if (error) { $('jl').innerHTML = `<div class="empty">${esc(FL.friendly(error))}</div>`; return; }
+    const list = data || [];
+    $('jl').innerHTML = list.length ? list.map((j) => {
+      const expired = j.status === 'open' && !j.open && !j.hold;
+      const st = j.hold ? ['hold', 'On hold — reported'] : expired ? ['', 'Expired'] : j.status === 'open' ? ['open', 'Open'] : [j.status, j.status === 'paused' ? 'Paused' : 'Closed'];
+      const days = Math.ceil((new Date(j.expires_at) - Date.now()) / 864e5);
+      return `<div class="hjob">${FL.pageLogo(j.page, 'co-logo sm')}<div style="flex:1;min-width:0">
+          <b class="t">${esc(j.title)}<span class="st ${st[0]}">${st[1]}</span>${j.promoted ? `<span class="st" style="color:var(--gold);border-color:var(--gold)">Promoted</span>` : ''}</b>
+          <div class="t-sm muted">${esc(j.page.name)} · ${esc([j.city, j.type_label].filter(Boolean).join(' · '))} · ${FL.pay(j)}</div>
+          <div class="t-xs muted" style="margin-top:3px">${plural(j.applicants, 'applicant')}${j.new_applicants ? `<span class="newb">${j.new_applicants} new</span>` : ''}
+            · ${j.status === 'open' && days > 0 ? `closes in ${plural(days, 'day')}` : 'posted ' + FL.timeAgo(j.created_at) + ' ago'}</div>
+          <div class="ent-act"><a class="pill solid sm" href="hiring.html?job=${j.id}">Applicants</a><a class="pill ghost sm" href="hiring.html?edit=${j.id}">Edit</a>
+            ${j.status === 'open' && !expired ? `<button class="pill ghost sm" data-js="paused" data-id="${j.id}">Pause</button>` : ''}
+            ${j.status === 'paused' ? `<button class="pill ghost sm" data-js="open" data-id="${j.id}">Reopen</button>` : ''}
+            ${expired || (j.status === 'open' && days <= 5) ? `<button class="pill ghost sm" data-js="renew" data-id="${j.id}">Renew 30 days</button>` : ''}
+            ${j.status !== 'closed' ? `<button class="pill ghost sm" data-js="closed" data-id="${j.id}">Close</button>` : ''}</div></div></div>`;
+    }).join('') : `<div class="empty"><b>No job posts yet</b>Post your first job — it's free, and pay is always shown so you attract serious applicants.</div>`;
+    $('jl').onclick = async (e) => {
+      const b = e.target.closest('[data-js]'); if (!b) return;
+      if (b.dataset.js === 'closed' && !(await FL.confirm('Close this job?', 'Everyone still waiting will be told the role is closed, so no one is left without an answer.', 'Close job'))) return;
+      const r = await FL.call('set_job_status', { p_job: b.dataset.id, p_status: b.dataset.js });
+      if (r) { FL.toast('Updated', 'ok'); dashboard(); }
+    };
+  }
+
+  // =========================================================== post / edit a job
+  async function jobForm(editId) {
+    if (!pages.length) return dashboard();
+    let j = null;
+    if (editId) {
+      const { data } = await sb.rpc('get_job', { p_job: editId });
+      if (!data || !data.my_role) { $('main').innerHTML = `<div class="box"><div class="empty"><b>Job not found</b><a href="hiring.html">Back to hiring</a></div></div>`; return; }
+      j = data;
+    }
+    document.title = (j ? 'Edit job' : 'Post a job') + ' — The Fit Lab';
+    const want = FL.param('page');
+    const opt = (o, v) => o.map(([k, l]) => `<option value="${k}" ${String(v) === String(k) ? 'selected' : ''}>${esc(l)}</option>`).join('');
+    const TITLES = ['Personal Trainer', 'Strength & Conditioning Coach', 'Group Fitness Instructor', 'Yoga Instructor', 'Pilates Instructor', 'Physiotherapist',
+      'Sports Physiotherapist', 'Dietitian', 'Nutritionist', 'Massage Therapist', 'Gym Manager', 'Front Desk Executive', 'Fitness Sales Executive', 'Head Coach', 'Swimming Coach', 'Zumba Instructor'];
+    $('main').innerHTML = `<div class="box">
+      <div class="box-head"><div><h2>${j ? 'Edit job' : 'Post a job'}</h2><div class="sub">Free · pay is shown on every job · closes after 30 days unless you renew</div></div>
+        <a class="txt-btn" href="hiring.html">${I('back', 16)}Hiring</a></div>
+      <form class="jform" id="jf" novalidate>
+        <div class="field"><label for="jPage" class="req">Hiring organisation</label><select id="jPage" ${j ? 'disabled' : ''}>${pages.map((p) => `<option value="${p.page_id}" ${(j ? j.page.page_id : want) === p.page_id ? 'selected' : ''}>${esc(p.name)}${p.verified ? ' ✓' : ''}</option>`).join('')}</select></div>
+        <div class="field"><label for="jTitle" class="req">Job title</label><input id="jTitle" maxlength="120" list="jTitles" value="${esc(j ? j.title : '')}" placeholder="e.g. Personal Trainer"><datalist id="jTitles">${TITLES.map((t) => `<option value="${t}">`).join('')}</datalist></div>
+        <div class="field"><label for="jProf">Profession</label><select id="jProf">${FL.professionOptions(profs, j ? j.profession : '', 'Choose — helps the right people find it')}</select></div>
+        <div class="row2"><div class="field"><label for="jType" class="req">Job type</label><select id="jType">${opt([['', 'Choose']].concat(Object.entries(FL.JOB_TYPES)), j ? j.employment_type : '')}</select></div>
+          <div class="field"><label for="jWork" class="req">Workplace</label><select id="jWork">${opt([['', 'Choose']].concat(Object.entries(FL.WORKPLACES)), j ? j.workplace : 'on_site')}</select></div></div>
+        <div class="row2"><div class="field"><label for="jCity" id="jCityL" class="req">City</label><input id="jCity" maxlength="80" value="${esc(j ? j.city || '' : (pages.find((p) => p.page_id === want) || pages[0]).city || '')}"></div>
+          <div class="field"><label for="jState">State</label><input id="jState" maxlength="80" value="${esc(j ? j.state || '' : '')}"></div></div>
+
+        <h3>Pay ${I('rupee', 15)}</h3>
+        <div class="payrow"><div class="field"><label for="jMin" class="req">Minimum (₹)</label><input id="jMin" type="number" inputmode="numeric" min="1" value="${j ? j.salary_min : ''}" placeholder="20000"></div>
+          <div class="field"><label for="jMax" class="req">Maximum (₹)</label><input id="jMax" type="number" inputmode="numeric" min="1" value="${j ? j.salary_max : ''}" placeholder="30000"></div>
+          <div class="field per"><label for="jPer" class="req">Per</label><select id="jPer">${opt([['month', 'Month'], ['year', 'Year'], ['hour', 'Hour'], ['session', 'Session']], j ? j.salary_period : 'month')}</select></div></div>
+        <div class="paypv" id="payPv"></div>
+        <p class="t-xs muted" style="margin:0">Pay is required on The Fit Lab. Jobs can never ask applicants for a fee or deposit.</p>
+
+        <h3>The role</h3>
+        <div class="row2"><div class="field"><label for="jExp">Experience needed</label><select id="jExp">${opt([[0, 'Freshers welcome'], [1, '1+ year'], [2, '2+ years'], [3, '3+ years'], [5, '5+ years'], [8, '8+ years'], [10, '10+ years']], j ? j.experience_years : 0)}</select></div>
+          <div class="field"><label for="jOpen">Openings</label><input id="jOpen" type="number" inputmode="numeric" min="1" max="100" value="${j ? j.openings : 1}"></div></div>
+        <div class="field"><label for="jTime">Timings</label><input id="jTime" maxlength="160" value="${esc(j ? j.timings || '' : '')}" placeholder="e.g. 6–11 am and 5–9 pm, Sunday off"></div>
+        <div class="field"><label for="jDesc" class="req">Description</label>
+          <textarea id="jDesc" maxlength="6000" style="min-height:220px" placeholder="What the person will do, who they'll work with, and what you offer.">${esc(j ? j.description : '')}</textarea>
+          <span class="help"><button type="button" class="txt-btn" id="tpl" style="padding:0;color:var(--lime)">Use a template</button> · at least 50 characters</span></div>
+        <div class="field"><label for="jSkills">Must-have skills</label><input id="jSkills" maxlength="400" value="${esc(j ? (j.skills || []).join(', ') : '')}" placeholder="e.g. Strength Training, Client Assessment, Program Design">
+          <span class="help">Separate with commas, up to 10. Applicants see how many they match.</span></div>
+        <div class="field"><label for="jCerts">Certifications required</label><input id="jCerts" maxlength="300" value="${esc(j ? (j.certifications || []).join(', ') : '')}" placeholder="e.g. Fit Lab Certified, CPR & First Aid">
+          <span class="help">Separate with commas, up to 5.</span></div>
+
+        <h3>Screening questions <span class="t-xs muted" style="font-weight:500">optional, up to 3</span></h3>
+        <div id="qs"></div><button type="button" class="pill ghost sm" id="addQ">${I('plus', 14)}Add a question</button>
+
+        <div class="err hidden" id="jErr" style="margin-top:16px"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px"><a class="pill ghost" href="hiring.html">Cancel</a><button class="pill solid lg" id="jGo">${j ? 'Save changes' : 'Post job'}</button></div>
+      </form></div>`;
+
+    const qs = $('qs');
+    const addQ = (q = { q: '', type: 'text' }) => {
+      if (qs.children.length >= 3) return;
+      const row = document.createElement('div'); row.className = 'qrow';
+      row.innerHTML = `<input maxlength="200" placeholder="e.g. Can you work early mornings?" value="${esc(q.q)}" aria-label="Question">
+        <select aria-label="Answer type"><option value="text" ${q.type !== 'yesno' ? 'selected' : ''}>Short answer</option><option value="yesno" ${q.type === 'yesno' ? 'selected' : ''}>Yes / No</option></select>
+        <button type="button" class="icon-btn" aria-label="Remove question">${I('trash', 17)}</button>`;
+      row.querySelector('button').onclick = () => { row.remove(); $('addQ').hidden = false; };
+      qs.appendChild(row); $('addQ').hidden = qs.children.length >= 3;
+    };
+    ((j && j.questions) || []).forEach(addQ);
+    $('addQ').onclick = () => addQ();
+    const pv = () => {
+      const a = +$('jMin').value, b = +$('jMax').value;
+      $('payPv').textContent = a > 0 && b >= a ? 'Shown as: ' + FL.pay({ salary_min: a, salary_max: b, salary_period: $('jPer').value }) : '';
+    };
+    ['jMin', 'jMax', 'jPer'].forEach((id) => $(id).addEventListener('input', pv)); pv();
+    const cityReq = () => { $('jCityL').classList.toggle('req', $('jWork').value !== 'remote'); };
+    $('jWork').onchange = cityReq; cityReq();
+    $('tpl').onclick = () => {
+      if ($('jDesc').value.trim() && !confirm('Replace your description with the template?')) return;
+      const org = ($('jPage').selectedOptions[0] || {}).textContent || 'our team';
+      $('jDesc').value = `About the role\nWe're looking for a ${$('jTitle').value.trim() || 'coach'} to join ${org.replace(' ✓', '')}.\n\nWhat you'll do\n• \n• \n• \n\nWhat we're looking for\n• \n• \n\nWhat we offer\n• Pay as shown above\n• \n• `;
+      $('jDesc').focus();
+    };
+    const list = (v, n) => v.split(',').map((s) => s.trim()).filter(Boolean).slice(0, n);
+    $('jf').onsubmit = async (e) => {
+      e.preventDefault();
+      const err = $('jErr'); const show = (t) => { err.textContent = t; err.classList.remove('hidden'); err.scrollIntoView({ block: 'center' }); };
+      const p = { title: $('jTitle').value.trim(), profession: $('jProf').value, employment_type: $('jType').value, workplace: $('jWork').value,
+        city: $('jCity').value.trim(), state: $('jState').value.trim(), salary_min: $('jMin').value.trim(), salary_max: $('jMax').value.trim(),
+        salary_period: $('jPer').value, experience_years: $('jExp').value, openings: $('jOpen').value.trim() || '1', timings: $('jTime').value.trim(),
+        description: $('jDesc').value.trim(), skills: list($('jSkills').value, 10), certifications: list($('jCerts').value, 5),
+        questions: [...qs.children].map((r) => ({ q: r.querySelector('input').value.trim(), type: r.querySelector('select').value })).filter((q) => q.q) };
+      if (p.title.length < 3) return show('Add a job title.');
+      if (!p.employment_type) return show('Choose the job type.');
+      if (!p.workplace) return show('Choose the workplace.');
+      if (p.workplace !== 'remote' && p.city.length < 2) return show('Add the city for this job.');
+      if (!(+p.salary_min > 0) || !(+p.salary_max >= +p.salary_min)) return show('Enter the pay range — the maximum must be at least the minimum.');
+      if (p.description.length < 50) return show('Describe the role in at least 50 characters.');
+      if (p.questions.some((q) => q.q.length < 5)) return show('Screening questions need at least 5 characters.');
+      err.classList.add('hidden');
+      FL.busy($('jGo'), true, j ? 'Saving…' : 'Posting…');
+      const r = await FL.call('save_job', { p_page: j ? null : $('jPage').value, p_job: j ? j.id : null, p });
+      FL.busy($('jGo'), false);
+      if (r) { FL.toast(j ? 'Job updated' : 'Job posted — followers and matching job alerts are notified', 'ok'); location.href = 'hiring.html?job=' + r.id; }
+    };
+  }
+
+  // =========================================================== applicants
+  async function applicants(jobId) {
+    const { data: j } = await sb.rpc('get_job', { p_job: jobId });
+    if (!j || !j.my_role) { $('main').innerHTML = `<div class="box"><div class="empty"><b>Job not found</b>Only the page's team can see applicants. <a href="hiring.html">Back to hiring</a></div></div>`; return; }
+    document.title = `Applicants · ${j.title} — The Fit Lab`;
+    let filter = FL.param('s') || '', all = [], openId = null;
+    const head = () => `<div class="box"><div class="box-head" style="align-items:flex-start"><div style="display:flex;gap:12px">${FL.pageLogo(j.page, 'co-logo sm')}
+        <div><h2 style="font-size:18px">${esc(j.title)}</h2><div class="sub">${esc(j.page.name)} · ${FL.pay(j)} · ${j.open ? 'Open' : j.hold ? 'On hold' : 'Not accepting applications'}</div></div></div>
+        <a class="txt-btn" href="hiring.html">${I('back', 16)}All jobs</a></div>
+      <div class="ent-act" style="padding:0 20px 14px"><a class="pill ghost sm" href="jobs.html?job=${j.id}">View listing</a><a class="pill ghost sm" href="hiring.html?edit=${j.id}">Edit</a>
+        ${j.open ? `<button class="pill ghost sm" id="promote">${I('zap', 14)}${j.promoted ? 'Promoted' : 'Promote'}</button>` : ''}
+        ${j.status !== 'closed' ? `<button class="pill ghost sm" id="closeJ">Close job</button>` : ''}</div>
+      <div class="utabs" id="stabs"></div><div id="al"><div class="skeleton" style="height:80px;margin:14px"></div></div></div>`;
+    $('main').innerHTML = head();
+    const pr = $('promote'); if (pr) pr.onclick = async () => { if (j.promoted) return; const r = await FL.call('promote_job', { p_job: j.id }); if (r) { FL.toast('Promoted for 14 days — shown first in search', 'ok'); pr.innerHTML = I('zap', 14) + 'Promoted'; j.promoted = true; } };
+    const cj = $('closeJ'); if (cj) cj.onclick = async () => {
+      if (!(await FL.confirm('Close this job?', 'Everyone still waiting will be told the role is closed.', 'Close job'))) return;
+      const r = await FL.call('set_job_status', { p_job: j.id, p_status: 'closed' }); if (r) location.reload(); };
+
+    async function load() {
+      const { data, error } = await sb.rpc('job_applicants', { p_job: j.id, p_status: null });
+      if (error) { $('al').innerHTML = `<div class="empty">${esc(FL.friendly(error))}</div>`; return; }
+      all = data || [];
+      draw();
+    }
+    function draw() {
+      const n = (s) => all.filter((a) => a.status === s).length;
+      $('stabs').innerHTML = [['', `All (${all.length})`]].concat(STAGES.map(([k, l]) => [k, `${l}${n(k) ? ' (' + n(k) + ')' : ''}`]))
+        .map(([k, l]) => `<button data-s="${k}" class="${filter === k ? 'on' : ''}">${l}</button>`).join('');
+      const list = all.filter((a) => !filter || a.status === filter);
+      $('al').innerHTML = list.length ? list.map((a) => `<div class="apl ${openId === a.application_id ? 'open' : ''}" data-app="${a.application_id}">
+          <div class="apl-head" tabindex="0" role="button" aria-expanded="${openId === a.application_id}">${FL.ringAvatar(a, 'avatar')}
+            <div style="flex:1;min-width:0"><b class="ent-name">${esc(a.full_name)}${FL.tags(a)}</b>
+              <div class="ent-sub">${esc(a.headline || a.profession_label || '')}</div>
+              <div class="ent-meta">${esc([a.profession_label, a.city, a.experience_years ? a.experience_years + ' yrs experience' : 'New to the field'].filter(Boolean).join(' · '))} · applied ${FL.timeAgo(a.created_at)} ago</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;align-items:center">${a.premium ? `<span class="feat-chip">${I('crown', 11)}Featured</span>` : ''}
+                <span class="chip ${a.status === 'submitted' ? 'acc' : ''}">${STAGE_LBL[a.status] || a.status}</span></div></div>
+            ${a.match && a.match.total ? `<span class="mscore">${a.match.met}/${a.match.total} match</span>` : ''}</div>
+          ${openId === a.application_id ? detail(a) : ''}</div>`).join('')
+        : `<div class="empty"><b>${all.length ? 'No one at this stage' : 'No applicants yet'}</b>${all.length ? '' : 'You\'ll be notified when someone applies. Promoting the job or sharing its link helps.'}</div>`;
+    }
+    function detail(a) {
+      const m = a.match || { items: [] };
+      return `<div class="apl-body">
+        ${(m.items || []).length ? `<ul class="checklist">${m.items.map((x) => `<li><span style="color:${x.ok ? 'var(--lime)' : 'var(--ash)'}">${I(x.ok ? 'check' : 'close', 15)}</span>${esc(x.label)}</li>`).join('')}</ul>` : ''}
+        ${a.note ? `<div class="qa"><b>Note from ${esc(a.full_name.split(' ')[0])}</b>${FL.linkify(a.note)}</div>` : ''}
+        ${(a.answers || []).map((x) => `<div class="qa"><b>${esc(x.q)}</b>${esc(x.a)}</div>`).join('')}
+        ${a.employer_note ? `<div class="qa"><b>Your team's note (private)</b>${esc(a.employer_note)}</div>` : ''}
+        <div class="stagebar">${STAGES.filter(([k]) => !['submitted', 'viewed'].includes(k)).map(([k, l]) => `<button class="pill sm ${a.status === k ? 'on' : k === 'not_selected' ? 'ghost' : ''}" data-st="${k}">${l}</button>`).join('')}</div>
+        <div class="ent-act"><a class="pill ghost sm" href="profile.html?u=${encodeURIComponent(a.username)}" target="_blank" rel="noopener">${I('eye', 15)}Full profile</a>
+          <button class="pill ghost sm" data-msg="1">${I('mail', 15)}Message</button></div>
+        <p class="t-xs muted" style="margin:10px 0 0">${esc(a.full_name.split(' ')[0])} sees each stage you choose. “Not selected” sends a kind, final update — no one is left waiting.</p></div>`;
+    }
+    $('stabs').onclick = (e) => { const b = e.target.closest('[data-s]'); if (!b) return; filter = b.dataset.s; draw(); };
+    $('al').addEventListener('click', async (e) => {
+      const card = e.target.closest('[data-app]'); if (!card) return;
+      const a = all.find((x) => x.application_id === card.dataset.app);
+      const st = e.target.closest('[data-st]');
+      if (st) {
+        if (st.dataset.st === a.status) return;
+        if (st.dataset.st === 'not_selected' && !(await FL.confirm('Not moving forward?', `${a.full_name} will be told kindly that you've decided not to move forward.`, 'Send update'))) return;
+        const r = await FL.call('set_application_status', { p_app: a.application_id, p_status: st.dataset.st, p_note: null });
+        if (r) { a.status = st.dataset.st; FL.toast(`Moved to ${STAGE_LBL[a.status]} — ${a.full_name.split(' ')[0]} has been notified`, 'ok'); draw(); }
+        return;
+      }
+      if (e.target.closest('[data-msg]')) {
+        const { data: ok } = await sb.rpc('inmail_allowed', { p_from: me.id, p_to: a.user_id });
+        if (ok && (ok.connected || ok.existing)) return location.href = 'messaging.html?u=' + encodeURIComponent(a.username);
+        if (ok && ok.ok) return FL.inmail(a, ok);
+        return FL.toast((ok && ok.reason) || 'You can\'t message this member.', 'err');
+      }
+      if (e.target.closest('a,button')) return;
+      if (e.target.closest('.apl-head')) {
+        openId = openId === a.application_id ? null : a.application_id;
+        if (openId && a.status === 'submitted') {
+          const r = await FL.call('set_application_status', { p_app: a.application_id, p_status: 'viewed', p_note: null }, { quiet: true });
+          if (r) a.status = 'viewed';
+        }
+        draw();
+      }
+    });
+    $('al').addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.classList.contains('apl-head')) e.target.click(); });
+    load();
+  }
+
+  // =========================================================== candidate search (Recruiter)
+  async function candidates() {
+    document.title = 'Find candidates — The Fit Lab';
+    $('main').innerHTML = `<div class="box"><div class="box-head"><div><h2>Find candidates ${I('crown', 16)}</h2><div class="sub">Recruiter Premium · open-to-work members by default</div></div>
+        <a class="txt-btn" href="hiring.html">${I('back', 16)}Hiring</a></div>
+      <form id="cf"><div class="cfilters">
+          <input id="cq" type="search" placeholder="Name or headline" aria-label="Name or headline">
+          <select id="cp" aria-label="Profession">${FL.professionOptions(profs, '', 'Any profession')}</select>
+          <input id="cc" type="search" placeholder="City" aria-label="City" value="${esc(me.city || '')}">
+          <input id="cs" placeholder="Skills, comma separated" aria-label="Skills">
+          <select id="cy" aria-label="Experience"><option value="0">Any experience</option><option value="1">1+ year</option><option value="3">3+ years</option><option value="5">5+ years</option></select></div>
+        <div class="cchecks"><label class="check"><input type="checkbox" id="co" checked><span>Open to work only</span></label>
+          <label class="check"><input type="checkbox" id="cv"><span>Verified only</span></label><label class="check"><input type="checkbox" id="ct"><span>Fit Lab certified only</span></label>
+          <button class="pill solid sm" style="margin-left:auto">Search</button></div></form>
+      <div id="cr"></div></div>`;
+    const run = async () => {
+      $('cr').innerHTML = '<div class="skeleton" style="height:70px;margin:14px"></div>';
+      const { data, error } = await sb.rpc('search_candidates', { p: { q: $('cq').value.trim(), profession: $('cp').value, city: $('cc').value.trim(),
+        skills: $('cs').value.split(',').map((s) => s.trim()).filter(Boolean), min_years: $('cy').value, open_to_work: $('co').checked,
+        verified: $('cv').checked, certified: $('ct').checked } });
+      if (error) { $('cr').innerHTML = `<div class="empty">${esc(FL.friendly(error))}</div>`; return; }
+      if (data && data.ok === false) {
+        $('cr').innerHTML = `<div class="prem-box" style="margin:6px 20px 20px"><h3>${I('crown', 16)}Candidate search is part of Recruiter</h3>
+          <div class="t-sm" style="line-height:1.55">Search every open-to-work trainer, physio, dietitian and coach by profession, city, skills, experience and certification — and InMail them directly. Try it free for 14 days.</div>
+          <a class="pill gold sm" href="premium.html?plan=recruiter" style="margin-top:10px">Try Recruiter free</a></div>`;
+        return;
+      }
+      const list = (data && data.results) || [];
+      $('cr').innerHTML = list.length ? list.map((c) => `<div class="ent"><a href="profile.html?u=${encodeURIComponent(c.username)}" target="_blank" rel="noopener">${FL.ringAvatar(c, 'avatar')}</a>
+          <div class="ent-main"><a class="ent-name" href="profile.html?u=${encodeURIComponent(c.username)}" target="_blank" rel="noopener">${esc(c.full_name)}${FL.tags(c)}</a>
+            <div class="ent-sub">${esc(c.headline || '')}</div>
+            <div class="ent-meta">${esc([c.profession_label, c.city, c.experience_years ? c.experience_years + ' yrs' : 'Fresher'].filter(Boolean).join(' · '))}${c.certified ? ' · Fit Lab certified' : ''}</div>
+            ${(c.skills || []).length ? `<div class="ph-badges" style="margin-top:6px">${c.skills.map((s) => `<span class="chip">${esc(s)}</span>`).join('')}</div>` : ''}
+            <div class="ent-act">${c.can_inmail && (c.can_inmail.connected || c.can_inmail.existing) ? `<a class="pill sm" href="messaging.html?u=${encodeURIComponent(c.username)}">Message</a>`
+              : c.can_inmail && c.can_inmail.ok ? `<button class="pill sm" data-im="${c.user_id}">${I('mail', 14)}InMail</button>` : `<span class="t-xs muted">${esc((c.can_inmail && c.can_inmail.reason) || '')}</span>`}</div></div></div>`).join('')
+        : `<div class="empty"><b>No candidates match</b>Try fewer filters or a nearby city.</div>`;
+      $('cr').querySelectorAll('[data-im]').forEach((b) => { b.onclick = () => { const c = list.find((x) => x.user_id === b.dataset.im); FL.inmail(c, c.can_inmail).then((r) => { if (r) { b.disabled = true; b.textContent = 'InMail sent'; } }); }; });
+    };
+    $('cf').onsubmit = (e) => { e.preventDefault(); run(); };
+    run();
+  }
+})();
+</script>
+</body>
+</html>

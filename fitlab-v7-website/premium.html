@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Premium — The Fit Lab</title>
+<meta name="description" content="Fit Lab Premium: get hired faster, grow your practice, or hire the right people. 14-day free trial, no automatic renewals.">
+<script src="assets/theme.js"></script>
+<link rel="icon" href="assets/favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+  .p-hero{padding:26px 24px 8px;text-align:center}
+  .p-hero .crown{display:inline-grid;place-items:center;width:56px;height:56px;border-radius:14px;background:var(--gold);color:var(--gold-ink)}
+  .p-hero h1{font:700 clamp(24px,3.4vw,32px)/1.2 var(--body);margin:12px 0 6px;letter-spacing:0;text-transform:none}
+  .p-hero p{margin:0 auto;max-width:560px;color:var(--ash);line-height:1.55}
+  .seg2{display:inline-flex;border:1px solid var(--line-2);border-radius:999px;padding:3px;margin:18px auto 4px;gap:2px;background:var(--panel-2)}
+  .seg2 button{border:0;background:none;color:var(--ash);font:600 14px var(--body);padding:7px 16px;border-radius:999px;cursor:pointer}
+  .seg2 button.on{background:var(--lime);color:var(--on-lime)}
+  .save-tag{font-size:11px;font-weight:700;color:var(--gold);margin-left:4px}
+  .plan .cta{display:grid;gap:8px;margin-top:6px}
+  .plan .note{font-size:12px;color:var(--ash);text-align:center}
+  .mine{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:16px 20px}
+  .mine .ic{width:44px;height:44px;border-radius:12px;background:var(--gold);color:var(--gold-ink);display:grid;place-items:center;flex:none}
+  .freebox ul{list-style:none;padding:0 20px 18px;margin:0;display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+  .freebox li{display:flex;gap:8px;font-size:13.5px;line-height:1.4}
+  .freebox li svg{color:var(--lime);flex:none;margin-top:1px}
+  .faq details{border-top:1px solid var(--line);padding:12px 20px}
+  .faq summary{cursor:pointer;font-weight:700;font-size:14.5px;list-style:none;display:flex;justify-content:space-between;gap:10px}
+  .faq summary::-webkit-details-marker{display:none}
+  .faq details p{margin:8px 0 0;color:var(--ash);font-size:14px;line-height:1.6}
+  .switch{position:relative;width:46px;height:26px;flex:none}
+  .switch input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:1}
+  .switch span{position:absolute;inset:0;border-radius:99px;background:var(--line-2);transition:.2s}
+  .switch span::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+  .switch input:checked + span{background:var(--gold)}
+  .switch input:checked + span::after{transform:translateX(20px)}
+</style>
+</head>
+<body data-page="me">
+<main class="page" style="max-width:1080px">
+  <div class="stack" id="main"><div class="box skeleton" style="height:420px"></div></div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(async () => {
+  const $ = (id) => document.getElementById(id);
+  const esc = FL.esc, I = FL.icon;
+  const session = await FL.session();
+  let me = null;
+  if (session) {
+    try { me = await FL.getProfile(); } catch (e) { return FL.toast(FL.friendly(e), 'err'); }
+    if (!me.profile_completed) return location.replace('register.html');
+  }
+  FL.renderHeader(me);
+  const [{ data: plans }, prem] = await Promise.all([sb.rpc('premium_plans_list'), me ? sb.rpc('my_premium').then((r) => r.data) : Promise.resolve(null)]);
+  let st = prem, period = 'month';
+  const want = FL.param('plan');
+  // suggest a plan from the member's situation
+  const suggested = want || (me && ['recruiter', 'gym_owner', 'gym_manager'].includes(me.profession) ? 'recruiter'
+    : me && me.open_to_work ? 'pro' : me && me.profession && !['student', 'athlete'].includes(me.profession) ? 'business' : 'pro');
+  const login = () => { location.href = 'index.html?next=' + encodeURIComponent('premium.html' + location.search); };
+  const fmtDay = (d) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+
+  function mine() {
+    if (!me || !st) return '';
+    if (st.active) {
+      const trial = st.source === 'trial';
+      return `<div class="box"><div class="mine"><span class="ic">${I('crown', 24)}</span>
+        <div style="flex:1;min-width:200px"><b style="font-size:16px">You're on ${esc(st.name)}${trial ? ' (free trial)' : ''}</b>
+          <div class="t-sm muted">${trial ? 'Trial ends' : 'Active until'} ${fmtDay(st.expires_at)} · InMail: ${Math.max(0, st.inmail_total - st.inmail_used)} of ${st.inmail_total} left this month</div></div>
+        <label class="check" style="gap:10px;color:var(--bone)"><span class="t-sm">Show Premium badge</span>
+          <span class="switch"><input type="checkbox" id="badge" ${st.show_badge ? 'checked' : ''} aria-label="Show my Premium badge"><span></span></span></label></div>
+        ${trial ? `<div class="notice" style="margin:0 20px 16px">${I('clock', 18)}<div class="t-sm">Your trial doesn't renew by itself and nothing will be charged. Buy a month or a year below to keep Premium after ${fmtDay(st.expires_at)}.</div></div>` : ''}</div>`;
+    }
+    if (st.last_plan) return `<div class="box"><div class="mine"><span class="ic" style="background:var(--line-2);color:var(--bone)">${I('crown', 24)}</span>
+      <div><b style="font-size:16px">Your Premium ended on ${fmtDay(st.expires_at)}</b><div class="t-sm muted">Pick a plan below to switch it back on — your InMail threads and insights are still here.</div></div></div></div>`;
+    return '';
+  }
+
+  function planCard(p) {
+    const yearly = period === 'year';
+    const price = yearly ? p.price_year : p.price_month;
+    const perMonth = yearly ? Math.round(p.price_year / 12) : p.price_month;
+    const current = st && st.active && st.plan === p.code;
+    const canTrial = !me || (st && st.trial_available && !st.active);
+    return `<div class="plan ${p.code === suggested ? 'best' : ''}">${p.code === suggested ? `<span class="tag">${want ? 'Selected' : 'Recommended for you'}</span>` : ''}
+      <h3>${I('crown', 20)}${esc(p.name)}</h3><div class="t-sm muted" style="margin-top:-4px">${esc(p.tagline || '')}</div>
+      <div class="price">${FL.paise(price)}<small> / ${yearly ? 'year' : 'month'}</small></div>
+      ${yearly ? `<div class="t-xs muted" style="margin-top:-6px">${FL.paise(perMonth)} a month, paid yearly</div>` : ''}
+      <ul>${(p.features || []).map((f) => `<li>${I('check', 16)}<span>${esc(f)}</span></li>`).join('')}</ul>
+      <div class="cta">
+        ${current ? `<button class="pill gold-o block" disabled>Your current plan</button><button class="pill ghost block" data-buy="${p.code}">Extend by a ${yearly ? 'year' : 'month'}</button>`
+          : canTrial ? `<button class="pill gold block lg" data-trial="${p.code}">Start 14-day free trial</button><button class="pill ghost block" data-buy="${p.code}">Buy now · ${FL.paise(price)}</button>`
+          : `<button class="pill gold block lg" data-buy="${p.code}">${st && st.active ? 'Switch to ' + esc(p.name) : 'Get ' + esc(p.name)} · ${FL.paise(price)}</button>`}
+        <div class="note">${canTrial ? 'No card needed for the trial · ' : ''}No automatic renewal</div></div></div>`;
+  }
+
+  function render() {
+    const saving = (plans || []).length ? Math.round(100 - (plans[0].price_year / (plans[0].price_month * 12)) * 100) : 0;
+    $('main').innerHTML = `${mine()}
+      <div class="box"><div class="p-hero"><span class="crown">${I('crown', 30)}</span>
+        <h1>Fit Lab Premium</h1>
+        <p>Get hired faster, grow your coaching or clinical practice, or hire the right people — built for the health and fitness industry.</p>
+        <div class="seg2" role="group" aria-label="Billing period"><button data-per="month" class="${period === 'month' ? 'on' : ''}">Monthly</button>
+          <button data-per="year" class="${period === 'year' ? 'on' : ''}">Yearly${saving > 0 ? `<span class="save-tag">save ${saving}%</span>` : ''}</button></div></div>
+        <div class="plans" id="plans">${(plans || []).map(planCard).join('')}</div></div>
+
+      <div class="box freebox"><div class="box-head"><div><h2>Free for everyone, always</h2><div class="sub">The basics that other networks charge for, or don't do at all</div></div></div>
+        <ul><li>${I('rupee', 16)}<span>Pay is shown on every job — no guessing</span></li>
+          <li>${I('shield', 16)}<span>No job can ask you for a fee or deposit</span></li>
+          <li>${I('check', 16)}<span>Live status on every application: Viewed → Shortlisted → Interview → Offer</span></li>
+          <li>${I('clock', 16)}<span>Jobs close after 30 days, and closing tells every applicant — no ghosting</span></li>
+          <li>${I('tick', 16)}<span>Apply for the verified tick — free, with no ID documents stored</span></li>
+          <li>${I('briefcase', 16)}<span>Post jobs from your page — 2 free, 10 once your page is verified</span></li>
+          <li>${I('network', 16)}<span>Connect, message your connections, post and follow pages</span></li>
+          <li>${I('courses', 16)}<span>Fit Lab Academy courses and QR-verified certificates</span></li></ul></div>
+
+      <div class="box faq"><div class="box-head"><h2>Questions</h2></div>
+        <details><summary>Will I be charged automatically? ${I('down', 16)}</summary><p>No. You pay for one month or one year at a time — nothing renews by itself, so there are no surprise charges. Your plan simply ends on its date, and you can buy again whenever you like.</p></details>
+        <details><summary>Do I need a card for the free trial? ${I('down', 16)}</summary><p>No. Start the 14-day trial with one tap. Each member gets one trial.</p></details>
+        <details><summary>How do I pay? ${I('down', 16)}</summary><p>Payments are handled securely by Razorpay — UPI, debit and credit cards, net banking and wallets. The Fit Lab never sees your card details.</p></details>
+        <details><summary>Who can see that I viewed their profile? ${I('down', 16)}</summary><p>Premium members see the names of verified employers and recruiters who viewed them. Everyone else appears only as numbers — profession and city — so you can browse freely and no one is followed around.</p></details>
+        <details><summary>What is InMail? ${I('down', 16)}</summary><p>InMail lets you message someone you aren't connected to — for jobs only. Pro reaches people who are hiring; Business and Recruiter can also reach members who are open to work. They can accept or decline, and replies are free. Messaging an employer about a job you've applied to is always free.</p></details>
+        <details><summary>Can I switch plans? ${I('down', 16)}</summary><p>Yes — buying a different plan switches you to it straight away, and any paid time left is added on.</p></details>
+      </div>`;
+  }
+  render();
+
+  async function checkout(plan) {
+    if (!me) return login();
+    const btns = document.querySelectorAll(`[data-buy="${plan}"]`); btns.forEach((b) => FL.busy(b, true, 'Opening…'));
+    const { data, error } = await FL.fn('premium-checkout', { action: 'order', plan, period });
+    btns.forEach((b) => FL.busy(b, false));
+    if (error) return FL.toast('Payments couldn\'t be opened. Please try again.', 'err');
+    if (!data || !data.ok) {
+      if (data && data.code === 'not_configured') {
+        const m = FL.modal({ title: 'Online payments are coming soon', body: `<p style="margin:0;line-height:1.55">${esc(data.message)}</p>`,
+          foot: st && st.trial_available ? `<button class="pill ghost" data-no>Close</button><button class="pill gold" data-t>Start free trial</button>` : `<button class="pill solid" data-no>OK</button>` });
+        m.q('[data-no]').onclick = m.close;
+        const t = m.q('[data-t]'); if (t) t.onclick = () => { m.close(); trial(plan); };
+        return;
+      }
+      return FL.toast((data && data.message) || 'Payments couldn\'t be opened.', 'err');
+    }
+    try { await loadRazorpay(); } catch (e) { return FL.toast('Couldn\'t load the payment window. Check your connection and try again.', 'err'); }
+    const rz = new window.Razorpay({
+      key: data.key_id, amount: data.amount, currency: data.currency, order_id: data.order_id,
+      name: 'The Fit Lab', description: `${data.name} · ${data.description}`, prefill: data.prefill,
+      theme: { color: getComputedStyle(document.documentElement).getPropertyValue('--gold').trim() || '#e0b341' },
+      handler: async (resp) => {
+        FL.toast('Confirming your payment…');
+        const v = await FL.fn('premium-checkout', { action: 'verify', order_id: resp.razorpay_order_id, payment_id: resp.razorpay_payment_id, signature: resp.razorpay_signature });
+        if (v.data && v.data.ok) { FL.toast('Welcome to Premium!', 'ok'); st = (await sb.rpc('my_premium')).data; FL.renderHeader(me); render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        else FL.toast((v.data && v.data.message) || 'We couldn\'t confirm the payment yet. If money was taken, Premium switches on within a few minutes.', 'err');
+      },
+    });
+    rz.on('payment.failed', (r) => FL.toast((r && r.error && r.error.description) || 'Payment failed. No money was taken.', 'err'));
+    rz.open();
+  }
+  function loadRazorpay() {
+    if (window.Razorpay) return Promise.resolve();
+    return new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://checkout.razorpay.com/v1/checkout.js'; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+  }
+  async function trial(plan) {
+    if (!me) return login();
+    const r = await FL.call('start_trial', { p_plan: plan });
+    if (!r) return;
+    st = (await sb.rpc('my_premium')).data;
+    FL.toast('Your 14-day trial has started', 'ok'); FL.renderHeader(me); render(); window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  $('main').addEventListener('click', (e) => {
+    const p = e.target.closest('[data-per]'); if (p) { period = p.dataset.per; render(); return; }
+    const b = e.target.closest('[data-buy]'); if (b) return checkout(b.dataset.buy);
+    const t = e.target.closest('[data-trial]'); if (t) return trial(t.dataset.trial);
+  });
+  $('main').addEventListener('change', async (e) => {
+    if (e.target.id !== 'badge') return;
+    const on = e.target.checked;
+    const { error } = await sb.from('profiles').update({ show_premium_badge: on }).eq('id', me.id);
+    if (error) { e.target.checked = !on; return FL.toast(FL.friendly(error), 'err'); }
+    FL.toast(on ? 'Your Premium badge is showing' : 'Premium badge hidden', 'ok');
+  });
+})();
+</script>
+</body>
+</html>

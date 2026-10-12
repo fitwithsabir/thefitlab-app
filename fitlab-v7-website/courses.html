@@ -103,7 +103,7 @@
         ${c.description ? `<p class="desc">${esc(c.description)}</p>` : ''}
       </div></div>
       <div class="box"><div class="box-head"><h2>Course content</h2><span class="sub">${days.length} of ${c.total_days} days published</span></div>
-        <p class="t-sm muted" style="margin:0 20px 8px">${me.is_admin ? 'Admin view — every published day is open and timers are off.' : 'Completed days stay open to revise any time, with no reading timer. The next day unlocks when you finish the one before.'}</p>
+        <p class="t-sm muted" style="margin:0 20px 8px">${(me.is_admin || me.is_owner) ? 'Admin view — every published day is open and timers are off.' : 'Completed days stay open to revise any time, with no reading timer. The next day unlocks when you finish the one before.'}</p>
         <div class="syl" id="syl"></div>
         <div class="syl-day ${s.allDone ? 'next' : 'locked'}" style="border-top:1px solid var(--line)">
           <span class="syl-n">${FL.icon('award', 16)}</span><span class="meta"><b>Final exam</b><span>${c.exam_question_count} questions · ${c.exam_time_minutes} minutes · ${c.pass_percentage}% to pass</span></span>
@@ -115,7 +115,7 @@
       if (!d) return `<div class="syl-day locked"><span class="syl-n">${n}</span><span class="meta"><b>Day ${n}</b><span>Not published yet</span></span></div>`;
       const done = doneIds.has(d.id);
       const prevDone = n === 1 || days.some((x) => x.day_number === n - 1 && doneIds.has(x.id));
-      const open = e && (done || prevDone || me.is_admin);
+      const open = e && (done || prevDone || me.is_admin || me.is_owner);
       const isNext = e && !done && prevDone;
       const href = `lesson.html?course=${encodeURIComponent(c.slug)}&day=${n}`;
       const inner = `<span class="syl-n">${done ? FL.icon('check', 16) : n}</span>

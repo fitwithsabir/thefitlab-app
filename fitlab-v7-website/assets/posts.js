@@ -4,7 +4,7 @@
 
   function author(p) {
     const a = p.author || {};
-    const link = `profile.html?u=${encodeURIComponent(a.username || '')}`;
+    const link = p.page ? `company.html?p=${encodeURIComponent(p.page.slug)}` : `profile.html?u=${encodeURIComponent(a.username || '')}`;
     return { a, link };
   }
 
@@ -29,10 +29,13 @@
     return `<article class="box post" data-post="${p.id}">
       ${p.status === 'hidden' ? `<div class="notice warn" style="margin:12px 16px 0;font-size:13px">${icon('eye', 18)}<span>Only you can see this post while the Academy team reviews it.</span></div>` : ''}
       <div class="post-head">
-        <a href="${link}">${FL.avatarHtml(a, 'avatar')}</a>
-        <div class="who"><a href="${link}">${esc(a.full_name || a.username || 'Member')}</a>
+        ${p.page ? `<a href="${link}">${FL.pageLogo(p.page)}</a>
+        <div class="who"><a href="${link}">${esc(p.page.name)}</a>${FL.tick(p.page.verified, 15)}
+          <div class="ent-sub">${esc(p.page.kind_label || '')} · ${p.page.followers} follower${p.page.followers === 1 ? '' : 's'}</div>`
+        : `<a href="${link}">${FL.avatarHtml(a, 'avatar')}</a>
+        <div class="who"><a href="${link}">${esc(a.full_name || a.username || 'Member')}</a>${FL.tags(a)}
           ${a.level && a.level !== 'trainee' ? ` <span class="chip acc" style="padding:0 7px;font-size:10.5px;vertical-align:1px">${FL.levelLabel(a.level)}</span>` : ''}
-          <div class="ent-sub">${esc(a.headline || '')}</div>
+          <div class="ent-sub">${esc(a.headline || '')}</div>`}
           <div class="when">${FL.timeAgo(p.created_at)}${p.edited_at ? ' · Edited' : ''} · ${icon('globe', 12)}</div></div>
         <button class="icon-btn" data-act="menu" aria-label="More options">${icon('more', 20)}</button>
       </div>
@@ -42,7 +45,7 @@
         <button class="txt-btn ${mine ? 'on' : ''}" data-act="react" data-k="${p.my_reaction || 'like'}" aria-label="React">${icon(mine ? mine.icon : 'like', 20)}<span class="lbl">${mine ? mine.label : 'Like'}</span></button>
         <button class="txt-btn" data-act="comments">${icon('comment', 20)}<span class="lbl">Comment</span></button>
         <button class="txt-btn" data-act="share">${icon('link', 20)}<span class="lbl">Copy link</span></button>
-        <button class="txt-btn" data-act="message-author" ${p.is_mine ? 'hidden' : ''}>${icon('send', 20)}<span class="lbl">Send</span></button>
+        <button class="txt-btn" data-act="message-author" ${p.is_mine || p.page ? 'hidden' : ''}>${icon('send', 20)}<span class="lbl">Send</span></button>
       </div>
       <div class="comments" hidden></div>
     </article>`;
@@ -54,7 +57,7 @@
     return `<div class="c-item" data-comment="${c.id}">
       <a href="${link}">${FL.avatarHtml(a, 'avatar xs')}</a>
       <div class="bubble"><div style="display:flex;gap:6px;align-items:flex-start">
-        <div style="flex:1;min-width:0"><a href="${link}">${esc(a.full_name || a.username)}</a><div class="ent-sub">${esc(a.headline || '')}</div></div>
+        <div style="flex:1;min-width:0"><a href="${link}">${esc(a.full_name || a.username)}</a>${FL.tick(a.verified, 13)}<div class="ent-sub">${esc(a.headline || '')}</div></div>
         <span class="t-xs muted">${FL.timeAgo(c.created_at)}</span>
         <button class="icon-btn" style="width:26px;height:26px" data-act="cmenu" aria-label="Comment options">${icon('more', 16)}</button></div>
         <p>${FL.linkify(c.body)}</p>${c.status === 'hidden' ? '<span class="t-xs muted">Hidden while under review</span>' : ''}</div></div>`;
@@ -136,7 +139,7 @@
         const pop = document.createElement('div'); pop.className = 'menu-pop';
         pop.innerHTML = mine
           ? `<button data-act="edit">${icon('edit', 18)}Edit post</button><button data-act="delete" class="danger">${icon('trash', 18)}Delete post</button>`
-          : `<button data-act="report">${icon('flag', 18)}Report post</button>${me && me.is_admin ? `<button data-act="mod-remove" class="danger">${icon('trash', 18)}Remove (moderator)</button>` : ''}`;
+          : `<button data-act="report">${icon('flag', 18)}Report post</button>${me && (me.is_admin || me.is_owner) ? `<button data-act="mod-remove" class="danger">${icon('trash', 18)}Remove (moderator)</button>` : ''}`;
         art.appendChild(pop); return;
       }
       if (act === 'report') { closeMenus(root); return FL.report('post', art.dataset.post, { onDone: () => art.remove() }); }
@@ -203,11 +206,11 @@
   }
 
   // composer modal (new post or edit)
-  function composer(me, { editing = null, onDone } = {}) {
+  function composer(me, { editing = null, onDone, page = null } = {}) {
     let imgFile = null;
     const m = FL.modal({ title: editing ? 'Edit post' : 'Create a post', wide: true, body: `
-      <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px">${FL.avatarHtml(me, 'avatar md')}
-        <div><b>${esc(me.full_name || '')}</b><div class="t-xs muted">${icon('globe', 12)} Visible to Fit Lab members</div></div></div>
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px">${page ? FL.pageLogo(page) : FL.avatarHtml(me, 'avatar md')}
+        <div><b>${esc(page ? page.name : (me.full_name || ''))}</b><div class="t-xs muted">${icon('globe', 12)} ${page ? 'Posting as the page · followers see it in their feed' : 'Visible to Fit Lab members'}</div></div></div>
       <textarea id="pcBody" maxlength="3000" placeholder="Share a coaching insight, a client win, a question for other coaches…" style="min-height:160px;border:0;padding:4px 0;font-size:16px;box-shadow:none;background:transparent">${editing ? esc(editing.body) : ''}</textarea>
       <div id="pcImg"></div>
       <p class="t-xs muted" style="margin:10px 0 0">Keep it professional — no contact details, no personal photos of others without consent.</p>`,
@@ -241,8 +244,10 @@
         if (gate && gate.code === 'guidelines') { const ok = await FL.guidelines(); if (!ok) return; }
         else if (gate) { FL.notice('Can\'t post right now', gate.message); return; }
         let url = null;
-        if (imgFile) url = await FL.uploadImage(imgFile, { bucket: 'post-images', path: `${me.id}/${Date.now()}.jpg`, max: 1600 });
-        const r = await FL.call('create_post', { p_body: ta.value, p_image_url: url });
+        if (imgFile) url = await FL.uploadImage(imgFile, page ? { bucket: 'page-media', path: `${page.page_id}/posts/${Date.now()}.jpg`, max: 1600 }
+                                                         : { bucket: 'post-images', path: `${me.id}/${Date.now()}.jpg`, max: 1600 });
+        const r = page ? await FL.call('create_page_post', { p_page: page.page_id, p_body: ta.value, p_image_url: url })
+                       : await FL.call('create_post', { p_body: ta.value, p_image_url: url });
         if (r) { m.close(); FL.toast('Posted', 'ok'); if (onDone) onDone(r.post); }
       } catch (e) { FL.toast(FL.friendly(e), 'err'); }
       finally { FL.busy(btn, false); }

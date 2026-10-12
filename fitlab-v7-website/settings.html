@@ -34,7 +34,7 @@
   <div class="layout l-side-main">
     <aside><div class="sticky-col"><div class="box set-nav">
       <div class="box-head" style="padding-bottom:8px"><h3 style="font-size:16px">Settings</h3></div>
-      <a href="#appearance" id="nA"></a><a href="#account" id="nB"></a><a href="#privacy" id="nC"></a><a href="#community" id="nD"></a><a href="#blocked" id="nE"></a>
+      <a href="#appearance" id="nA"></a><a href="#account" id="nB"></a><a href="#premium" id="nF"></a><a href="#privacy" id="nC"></a><a href="#community" id="nD"></a><a href="#blocked" id="nE"></a>
     </div></div></aside>
     <section class="stack" id="main"></section>
   </div>
@@ -51,7 +51,8 @@
   let me; try { me = await FL.getProfile(); } catch (e) { return FL.toast(FL.friendly(e), 'err'); }
   FL.renderHeader(me);
   $('nA').innerHTML = I('sun', 18) + 'Appearance'; $('nB').innerHTML = I('settings', 18) + 'Account'; $('nC').innerHTML = I('eye', 18) + 'Visibility';
-  $('nD').innerHTML = I('shield', 18) + 'Community'; $('nE').innerHTML = I('block', 18) + 'Blocked members';
+  $('nD').innerHTML = I('shield', 18) + 'Community'; $('nE').innerHTML = I('block', 18) + 'Blocked members'; $('nF').innerHTML = I('crown', 18) + 'Premium & verification';
+  const { data: prem } = await sb.rpc('my_premium');
 
   const t = FL.theme.get();
   $('main').innerHTML = `
@@ -69,12 +70,22 @@
       <div class="set-row"><div><b>Member ID</b><div class="t-sm mono">${esc(me.unique_id || '')}</div></div></div>
       <div class="set-row"><div><b>Sign out</b><div class="t-sm">Sign out of The Fit Lab on this device.</div></div><button class="pill ghost sm" id="btnOut">Sign out</button></div></div>
 
+    <div class="box" id="premium"><div class="box-head"><h2>Premium &amp; verification</h2></div>
+      <div class="set-row"><div><b>Premium</b><div class="t-sm">${prem && prem.active ? `${esc(prem.name)}${prem.source === 'trial' ? ' trial' : ''} · until ${FL.fmtDate(prem.expires_at)} · no automatic renewal` : 'Not active. Try any plan free for 14 days.'}</div></div>
+        <a class="pill sm ${prem && prem.active ? '' : 'gold'}" href="premium.html">${prem && prem.active ? 'Manage' : 'See plans'}</a></div>
+      ${prem && prem.active ? `<div class="set-row"><div><b>Show my Premium badge</b><div class="t-sm">The gold badge next to your name.</div></div>
+        <label class="switch"><input type="checkbox" id="swPrem" ${me.show_premium_badge ? 'checked' : ''} aria-label="Show my Premium badge"><span></span></label></div>` : ''}
+      <div class="set-row"><div><b>Verified tick</b><div class="t-sm">${me.verified || me.is_owner ? 'You\'re verified.' : 'Free to apply — no ID documents needed.'}</div></div>
+        <a class="pill sm" href="verification.html">${me.verified || me.is_owner ? 'View' : 'Apply'}</a></div></div>
+
     <div class="box" id="privacy"><div class="box-head"><h2>Visibility</h2></div>
       <div class="set-row"><div><b>Show my profile in search and suggestions</b><div class="t-sm">When on, members can find you, and gyms can see you on the Hire-a-Coach portal once you're certified. Your phone, email and date of birth are never shown to anyone.</div></div>
         <label class="switch"><input type="checkbox" id="swVis" ${me.display_consent ? 'checked' : ''} aria-label="Show my profile in search"><span></span></label></div>
-      <div class="set-row"><div><b>Open to coaching roles</b><div class="t-sm">Shows a badge on your profile and puts you first on the hire portal.</div></div>
-        <label class="switch"><input type="checkbox" id="swOtw" ${me.open_to_work ? 'checked' : ''} aria-label="Open to coaching roles"><span></span></label></div>
-      <div class="set-row"><div><b>Who can message you</b><div class="t-sm">Only your accepted connections. This can't be changed — it keeps The Fit Lab professional and safe.</div></div><span class="chip">${I('lock', 13)}Connections only</span></div></div>
+      <div class="set-row"><div><b>#OpenToWork</b><div class="t-sm">A green frame on your photo, and employers with Recruiter Premium can find you and send job InMails. You can decline any InMail.</div></div>
+        <label class="switch"><input type="checkbox" id="swOtw" ${me.open_to_work ? 'checked' : ''} aria-label="Open to work"><span></span></label></div>
+      <div class="set-row"><div><b>#Hiring</b><div class="t-sm">A purple frame on your photo to show you're recruiting. It also shows automatically while you have an open job.</div></div>
+        <label class="switch"><input type="checkbox" id="swHire" ${me.hiring ? 'checked' : ''} aria-label="Hiring"><span></span></label></div>
+      <div class="set-row"><div><b>Who can message you</b><div class="t-sm">Your connections. Employers can also send a job-related InMail, which you accept or decline. This keeps The Fit Lab professional and safe.</div></div><span class="chip">${I('lock', 13)}Connections + job InMail</span></div></div>
 
     <div class="box" id="community"><div class="box-head"><h2>Community</h2></div>
       ${FL.communityNotice(me) ? `<div style="padding:0 20px">${FL.communityNotice(me)}</div>` : ''}
@@ -95,6 +106,8 @@
   };
   $('swVis').onchange = (e) => toggle(e.target, 'display_consent');
   $('swOtw').onchange = (e) => toggle(e.target, 'open_to_work');
+  $('swHire').onchange = (e) => toggle(e.target, 'hiring');
+  const sp = $('swPrem'); if (sp) sp.onchange = (e) => toggle(e.target, 'show_premium_badge');
   $('btnPw').onclick = () => {
     const m = FL.modal({ title: 'Change password', body: `<div class="field"><label for="pw1">New password</label><input id="pw1" type="password" autocomplete="new-password" minlength="8"></div>
       <div class="field"><label for="pw2">Confirm new password</label><input id="pw2" type="password" autocomplete="new-password"></div><div class="err hidden" id="pwErr"></div>`,
