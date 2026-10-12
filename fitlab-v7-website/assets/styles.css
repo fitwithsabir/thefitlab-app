@@ -993,3 +993,5 @@ label.pill{text-transform:none;letter-spacing:0;font:600 13px var(--body);margin
   .sfil select{max-width:100%}
   .sfil input{width:120px}
 }
+/* short dropdowns (filters, toolbars): keep the label vertically centred */
+select[style*="height:38px"],.adm-row select,.sfil select{padding-top:0;padding-bottom:0;line-height:normal}
