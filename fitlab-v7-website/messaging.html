@@ -6,6 +6,7 @@
 <title>Messaging — The Fit Lab</title>
 <script src="assets/theme.js"></script>
 <link rel="icon" href="assets/favicon.png">
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
 <style>
@@ -59,7 +60,7 @@
     const q = $('q').value.trim().toLowerCase();
     const list = convs.filter((c) => !q || (c.full_name || '').toLowerCase().includes(q) || (c.username || '').includes(q));
     $('convs').innerHTML = list.length ? list.map((c) => `<div class="conv ${active && active.user_id === c.user_id ? 'on' : ''} ${c.unread ? 'unread' : ''}" data-u="${c.user_id}" tabindex="0" role="button">
-        ${FL.avatarHtml(c, 'avatar')}<div class="meta"><div class="top"><b>${esc(c.full_name)}${FL.tick(c.verified, 13)}${c.inmail ? '<span class="im-tag">InMail</span>' : ''}</b><span>${c.last_at ? FL.timeAgo(c.last_at) : ''}</span></div>
+        ${FL.avatarHtml(c, 'avatar')}<div class="meta"><div class="top"><b>${esc(c.full_name)}${FL.tick(c.verified, 13)}${c.inmail ? `<span class="im-tag">${c.inmail.context === 'open' ? 'Open Profile' : 'InMail'}</span>` : ''}</b><span>${c.last_at ? FL.timeAgo(c.last_at) : ''}</span></div>
         <div class="prev">${c.last_body ? (c.last_mine ? 'You: ' : '') + esc(c.last_body) : `<span style="font-style:italic">${esc(c.headline || 'Say hello')}</span>`}</div></div>
         ${c.unread ? '<span class="dot" aria-label="unread"></span>' : ''}</div>`).join('')
       : `<div class="empty">${convs.length ? 'No matches.' : '<b>No connections yet</b>Connect with coaches on <a href="network.html">My Network</a> to message them.'}</div>`;
@@ -77,7 +78,7 @@
         <div style="position:relative"><button class="icon-btn" id="tmore" aria-label="Conversation options">${I('more', 20)}</button></div></div>
       ${imBanner(active)}
       <div class="msgs" id="msgs" aria-live="polite"><div class="skeleton" style="height:40px;width:60%"></div></div>
-      <div class="msg-guard">${I('shield', 13)}Professional conversations only. Contact details and inappropriate messages are blocked automatically.</div>
+      <div class="msg-guard">${I('shield', 13)}Keep it professional. Abusive, sexual and dating-style messages are blocked automatically.</div>
       <form class="composebar" id="comp"><textarea id="body" maxlength="2000" placeholder="Write a message…" aria-label="Message" rows="1"></textarea>
         <button class="pill solid" id="send" disabled>Send</button></form>`;
     const ia = $('imAcc'), id_ = $('imDec');
@@ -167,7 +168,18 @@
   const want = FL.param('u');
   const pre = want && convs.find((c) => c.username === want.replace(/^@/, ''));
   if (pre) open(pre.user_id);
-  else if (want) FL.toast('You can message members once you\'re connected', 'err');
+  else if (want) {
+    // Open Profile: start a conversation with someone you're not connected to
+    const m = await sb.rpc('find_member', { p_handle: want });
+    const who = m.data;
+    const ok = who ? (await sb.rpc('inmail_allowed', { p_from: me.id, p_to: who.user_id })).data : null;
+    if (who && ok && ok.ok && ok.context === 'open') {
+      convs.unshift({ user_id: who.user_id, username: who.username, full_name: who.full_name, headline: who.headline, photo_url: who.photo_url,
+        verified: who.verified, unread: 0, inmail: null });
+      drawConvs(); open(who.user_id);
+      FL.toast(`${who.full_name.split(' ')[0]} has an Open Profile — message them free`, 'ok');
+    } else FL.toast('You can message members once you\'re connected', 'err');
+  }
   else if (window.innerWidth >= 768 && convs.length && convs[0].last_at) open(convs[0].user_id);
 })();
 </script>

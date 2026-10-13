@@ -7,6 +7,7 @@
 <meta name="description" content="Fit Lab Premium: get hired faster, grow your practice, or hire the right people. 14-day free trial, no automatic renewals.">
 <script src="assets/theme.js"></script>
 <link rel="icon" href="assets/favicon.png">
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
 <style>
@@ -35,6 +36,13 @@
   .switch span::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
   .switch input:checked + span{background:var(--gold)}
   .switch input:checked + span::after{transform:translateX(20px)}
+  .work{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;padding:0 20px 14px}
+  .work a,.work div.k{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--panel-2);color:var(--bone);display:block}
+  .work a:hover{border-color:var(--gold);text-decoration:none}
+  .work b{display:block;font:700 22px/1.1 var(--body)}
+  .work span{font-size:12.5px;color:var(--ash)}
+  .perk-row{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:12px 20px;border-top:1px solid var(--line);flex-wrap:wrap}
+  .perk-row .t-sm{color:var(--ash)}
 </style>
 </head>
 <body data-page="me">
@@ -56,7 +64,9 @@
     if (!me.profile_completed) return location.replace('register.html');
   }
   FL.renderHeader(me);
-  const [{ data: plans }, prem] = await Promise.all([sb.rpc('premium_plans_list'), me ? sb.rpc('my_premium').then((r) => r.data) : Promise.resolve(null)]);
+  const [{ data: plans }, prem, use0] = await Promise.all([sb.rpc('premium_plans_list'), me ? sb.rpc('my_premium').then((r) => r.data) : Promise.resolve(null),
+    me ? sb.rpc('premium_usage').then((r) => r.data) : Promise.resolve(null)]);
+  let use = use0;
   let st = prem, period = 'month';
   const want = FL.param('plan');
   // suggest a plan from the member's situation
@@ -68,13 +78,31 @@
   function mine() {
     if (!me || !st) return '';
     if (st.active) {
-      const trial = st.source === 'trial';
+      const trial = st.source === 'trial', u = use || {}, rank = { pro: 1, business: 2, recruiter: 3 }[st.plan] || 0;
+      const left = Math.max(0, (u.inmail_total || 0) - (u.inmail_used || 0));
       return `<div class="box"><div class="mine"><span class="ic">${I('crown', 24)}</span>
         <div style="flex:1;min-width:200px"><b style="font-size:16px">You're on ${esc(st.name)}${trial ? ' (free trial)' : ''}</b>
-          <div class="t-sm muted">${trial ? 'Trial ends' : 'Active until'} ${fmtDay(st.expires_at)} · InMail: ${Math.max(0, st.inmail_total - st.inmail_used)} of ${st.inmail_total} left this month</div></div>
-        <label class="check" style="gap:10px;color:var(--bone)"><span class="t-sm">Show Premium badge</span>
-          <span class="switch"><input type="checkbox" id="badge" ${st.show_badge ? 'checked' : ''} aria-label="Show my Premium badge"><span></span></span></label></div>
-        ${trial ? `<div class="notice" style="margin:0 20px 16px">${I('clock', 18)}<div class="t-sm">Your trial doesn't renew by itself and nothing will be charged. Buy a month or a year below to keep Premium after ${fmtDay(st.expires_at)}.</div></div>` : ''}</div>`;
+          <div class="t-sm muted">${trial ? 'Trial ends' : 'Active until'} ${fmtDay(st.expires_at)}${u.days_left != null ? ` · ${u.days_left} day${u.days_left === 1 ? '' : 's'} left` : ''} · nothing renews automatically</div></div></div>
+        <div class="box-head" style="padding-top:0"><h3 style="font-size:15px">Your Premium at work · last 30 days</h3></div>
+        <div class="work">
+          <a href="insights.html"><b>${u.views_30d ?? 0}</b><span>profile views</span></a>
+          <a href="insights.html"><b>${u.employer_views_30d ?? 0}</b><span>verified employers &amp; recruiters viewed you — see who</span></a>
+          <a href="feed.html"><b>${u.post_views_30d ?? 0}</b><span>views on your posts</span></a>
+          <div class="k"><b>${left}<small style="font-size:13px;color:var(--ash)"> / ${u.inmail_total || 0}</small></b><span>InMail left this month</span></div>
+          <a href="messaging.html"><b>${u.open_profile_chats ?? 0}</b><span>people messaged you through Open Profile</span></a>
+          <a href="jobs.html?tab=applied"><b>${u.featured_applications ?? 0}</b><span>applications shown to employers first</span></a>
+          ${rank >= 3 ? `<a href="hiring.html?tab=pipeline"><b>${u.pipeline ?? 0}</b><span>candidates in your talent pipeline</span></a>` : ''}
+        </div>
+        <div class="perk-row"><div><b>Open Profile</b><div class="t-sm">Anyone on The Fit Lab can message you for free — great for winning new clients.</div></div>
+          <span class="switch"><input type="checkbox" id="openp" ${u.open_profile ? 'checked' : ''} aria-label="Open Profile"><span></span></span></div>
+        <div class="perk-row"><div><b>Premium badge</b><div class="t-sm">The ${esc(st.name)} badge next to your name.</div></div>
+          <span class="switch"><input type="checkbox" id="badge" ${st.show_badge ? 'checked' : ''} aria-label="Show my Premium badge"><span></span></span></div>
+        <div class="perk-row"><div><b>Shortcuts</b><div class="t-sm">Everything Premium unlocks, one tap away.</div></div>
+          <span style="display:flex;gap:8px;flex-wrap:wrap"><a class="pill sm" href="insights.html">${I('eye', 15)}Who viewed you</a>
+            <a class="pill sm" href="jobs.html">${I('briefcase', 15)}Jobs &amp; salary insights</a>
+            ${rank >= 3 ? `<a class="pill sm" href="hiring.html?tab=candidates">${I('search', 15)}Find candidates</a>` : ''}
+            ${rank >= 2 ? `<a class="pill sm" href="company.html">${I('chart', 15)}Page analytics</a>` : ''}</span></div>
+        ${trial ? `<div class="notice" style="margin:12px 20px 16px">${I('clock', 18)}<div class="t-sm">Your trial doesn't renew by itself and nothing will be charged. Buy a month or a year below to keep Premium after ${fmtDay(st.expires_at)}.</div></div>` : '<div style="height:8px"></div>'}</div>`;
     }
     if (st.last_plan) return `<div class="box"><div class="mine"><span class="ic" style="background:var(--line-2);color:var(--bone)">${I('crown', 24)}</span>
       <div><b style="font-size:16px">Your Premium ended on ${fmtDay(st.expires_at)}</b><div class="t-sm muted">Pick a plan below to switch it back on — your InMail threads and insights are still here.</div></div></div></div>`;
@@ -117,14 +145,19 @@
           <li>${I('tick', 16)}<span>Apply for the verified tick — free, with no ID documents stored</span></li>
           <li>${I('briefcase', 16)}<span>Post jobs from your page — 2 free, 10 once your page is verified</span></li>
           <li>${I('network', 16)}<span>Connect, message your connections, post and follow pages</span></li>
-          <li>${I('courses', 16)}<span>Fit Lab Academy courses and QR-verified certificates</span></li></ul></div>
+          <li>${I('courses', 16)}<span>Fit Lab Academy courses and QR-verified certificates</span></li>
+          <li>${I('bell', 16)}<span>Pop-up notifications on your phone and computer</span></li>
+          <li>${I('link', 16)}<span>Share your phone, WhatsApp, Instagram, YouTube and website on your profile</span></li>
+          <li>${I('chart', 16)}<span>See how many people viewed each of your posts</span></li>
+          <li>${I('tag', 16)}<span>Sort your connections by how you know them</span></li></ul></div>
 
       <div class="box faq"><div class="box-head"><h2>Questions</h2></div>
         <details><summary>Will I be charged automatically? ${I('down', 16)}</summary><p>No. You pay for one month or one year at a time — nothing renews by itself, so there are no surprise charges. Your plan simply ends on its date, and you can buy again whenever you like.</p></details>
         <details><summary>Do I need a card for the free trial? ${I('down', 16)}</summary><p>No. Start the 14-day trial with one tap. Each member gets one trial.</p></details>
         <details><summary>How do I pay? ${I('down', 16)}</summary><p>Payments are handled securely by Razorpay — UPI, debit and credit cards, net banking and wallets. The Fit Lab never sees your card details.</p></details>
         <details><summary>Who can see that I viewed their profile? ${I('down', 16)}</summary><p>Premium members see the names of verified employers and recruiters who viewed them. Everyone else appears only as numbers — profession and city — so you can browse freely and no one is followed around.</p></details>
-        <details><summary>What is InMail? ${I('down', 16)}</summary><p>InMail lets you message someone you aren't connected to — for jobs only. Pro reaches people who are hiring; Business and Recruiter can also reach members who are open to work. They can accept or decline, and replies are free. Messaging an employer about a job you've applied to is always free.</p></details>
+        <details><summary>What is InMail? ${I('down', 16)}</summary><p>InMail lets you message someone you aren't connected to about work. Pro reaches people who are hiring; Business and Recruiter can also reach members who are open to work. They can accept or decline, and replies are free. Messaging an employer about a job you've applied to is always free.</p></details>
+        <details><summary>What is Open Profile? ${I('down', 16)}</summary><p>With Premium you can switch on Open Profile so any member — a potential client, a gym, a patient's family — can message you for free without connecting first. You can switch it off any time, and you can still block or report anyone.</p></details>
         <details><summary>Can I switch plans? ${I('down', 16)}</summary><p>Yes — buying a different plan switches you to it straight away, and any paid time left is added on.</p></details>
       </div>`;
   }
@@ -154,7 +187,7 @@
       handler: async (resp) => {
         FL.toast('Confirming your payment…');
         const v = await FL.fn('premium-checkout', { action: 'verify', order_id: resp.razorpay_order_id, payment_id: resp.razorpay_payment_id, signature: resp.razorpay_signature });
-        if (v.data && v.data.ok) { FL.toast('Welcome to Premium!', 'ok'); st = (await sb.rpc('my_premium')).data; FL.renderHeader(me); render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        if (v.data && v.data.ok) { FL.toast('Welcome to Premium!', 'ok'); st = (await sb.rpc('my_premium')).data; use = (await sb.rpc('premium_usage')).data; FL.renderHeader(me); render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
         else FL.toast((v.data && v.data.message) || 'We couldn\'t confirm the payment yet. If money was taken, Premium switches on within a few minutes.', 'err');
       },
     });
@@ -169,7 +202,7 @@
     if (!me) return login();
     const r = await FL.call('start_trial', { p_plan: plan });
     if (!r) return;
-    st = (await sb.rpc('my_premium')).data;
+    st = (await sb.rpc('my_premium')).data; use = (await sb.rpc('premium_usage')).data;
     FL.toast('Your 14-day trial has started', 'ok'); FL.renderHeader(me); render(); window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -179,6 +212,11 @@
     const t = e.target.closest('[data-trial]'); if (t) return trial(t.dataset.trial);
   });
   $('main').addEventListener('change', async (e) => {
+    if (e.target.id === 'openp') {
+      const r = await FL.call('set_open_profile', { p_on: e.target.checked });
+      if (!r) { e.target.checked = !e.target.checked; return; }
+      FL.toast(r.open_profile ? 'Open Profile is on — anyone can message you free' : 'Open Profile is off', 'ok'); return;
+    }
     if (e.target.id !== 'badge') return;
     const on = e.target.checked;
     const { error } = await sb.from('profiles').update({ show_premium_badge: on }).eq('id', me.id);

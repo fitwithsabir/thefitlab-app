@@ -7,6 +7,7 @@
 <meta name="description" content="Jobs for trainers, coaches, physios, doctors, dietitians and everyone in health and fitness. Pay always shown. No fees, ever.">
 <script src="assets/theme.js"></script>
 <link rel="icon" href="assets/favicon.png">
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
 <style>
@@ -38,7 +39,7 @@
       </div>
     </div>
     <div class="utabs" id="tabs">
-      <button data-t="search" class="on">Search</button><button data-t="saved">Saved</button>
+      <button data-t="search" class="on">Search</button><button data-t="foryou" id="tFor" hidden>For you</button><button data-t="saved">Saved</button>
       <button data-t="applied">My applications</button><button data-t="alerts">Job alerts</button>
     </div>
     <div class="jobs-shell" id="shell">
@@ -71,7 +72,7 @@
   $('fProf').innerHTML = FL.professionOptions(profs, null, 'Any profession');
   $('fType').innerHTML += Object.entries(FL.JOB_TYPES).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
   $('fWork').innerHTML += Object.entries(FL.WORKPLACES).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
-  if (!me) { $('tabs').hidden = true; $('fAlert').hidden = true; }
+  if (!me) { $('tabs').hidden = true; $('fAlert').hidden = true; } else $('tFor').hidden = false;
 
   const st = { tab: FL.param('tab') || 'search', verified: false, list: [], cur: null };
   $('q').value = FL.param('q') || '';
@@ -100,6 +101,7 @@
         <div class="pay">${FL.pay(j)}</div>
         ${app ? steps(app.status) + (app.closed_without_reply ? '<div class="t-xs muted" style="margin-top:4px">Closed without a reply</div>' : '') : `
         <div class="foot">${j.promoted ? `<span class="promo">${I('zap', 13)} Promoted</span>` : ''}
+          ${j.why ? `<span class="mt">${I('sparkles', 13)} ${esc(j.why)}</span>` : ''}
           ${j.match && j.match.total ? `<span class="mt">${I('check', 13)} ${j.match.met} of ${j.match.total} match</span>` : ''}
           ${j.my_status ? `<span class="mt">Applied</span>` : ''}
           <span>${j.applicants} applicant${j.applicants === 1 ? '' : 's'}</span><span>${ago(j.created_at)}</span>
@@ -117,6 +119,7 @@
     if (st.tab === 'alerts') return alerts();
     let res;
     if (st.tab === 'saved') res = await sb.rpc('saved_jobs_list');
+    else if (st.tab === 'foryou') res = await sb.rpc('recommended_jobs', { p_limit: 20 });
     else if (st.tab === 'applied') res = await sb.rpc('my_applications');
     else res = await sb.rpc('search_jobs', { p_q: $('q').value.trim() || null, p_profession: $('fProf').value || null,
       p_city: $('city').value.trim() || null, p_type: $('fType').value || null, p_workplace: $('fWork').value || null,
@@ -125,6 +128,7 @@
     st.list = res.data || [];
     const empty = st.tab === 'saved' ? '<b>No saved jobs</b>Tap the bookmark on any job to keep it here.'
       : st.tab === 'applied' ? '<b>No applications yet</b>When you apply, you\'ll see each step here — Viewed, Shortlisted, Interview, Offer.'
+      : st.tab === 'foryou' ? '<b>No matches right now</b>Add your profession and city to <a href="profile.html">your profile</a> — we match new jobs to you every day.'
       : `<b>No jobs match yet</b>Try a wider search, or <a href="#" id="mkAlert">set a job alert</a> and we'll tell you when one is posted.`;
     $('list').innerHTML = st.list.length ? st.list.map(card).join('') : `<div class="empty">${empty}</div>`;
     const mk = $('mkAlert'); if (mk) mk.onclick = (e) => { e.preventDefault(); newAlert(); };

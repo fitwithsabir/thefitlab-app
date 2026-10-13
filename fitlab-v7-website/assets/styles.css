@@ -995,3 +995,33 @@ label.pill{text-transform:none;letter-spacing:0;font:600 13px var(--body);margin
 }
 /* short dropdowns (filters, toolbars): keep the label vertically centred */
 select[style*="height:38px"],.adm-row select,.sfil select{padding-top:0;padding-bottom:0;line-height:normal}
+
+/* ===================== v9 ===================== */
+/* social links on profiles */
+.socials{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 2px;align-items:center}
+.soc{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:999px;border:1px solid var(--line-2);background:var(--panel-2);color:var(--bone);font:600 13px var(--body)}
+.soc:hover{border-color:var(--lime);color:var(--lime);text-decoration:none}
+.tagbtn{display:inline-flex;align-items:center;gap:4px;padding:0;color:var(--lime);font-size:13px;font-weight:600}
+/* chips bars, small selects, notes (shared) */
+.catbar{display:flex;gap:8px;padding:0 20px 12px;overflow-x:auto;scrollbar-width:none}
+.catbar::-webkit-scrollbar{display:none}
+.catbar button{flex:none;height:32px;border-radius:999px;border:1px solid var(--line-2);background:var(--panel);color:var(--bone);font:600 13px var(--body);padding:0 12px;cursor:pointer;white-space:nowrap}
+.catbar button.on{background:var(--lime);border-color:var(--lime);color:var(--on-lime)}
+.catbar button i,.catbar button b{font-style:normal;opacity:.75;margin-left:4px}
+.inv-tag{height:32px;font-size:13px;width:auto;max-width:190px;padding-top:0;padding-bottom:0}
+.inv-note{margin-top:8px;padding:10px 12px;border-radius:10px;background:var(--panel-2);font-size:13.5px;line-height:1.5;border:1px solid var(--line)}
+/* hashtags and mentions in posts */
+.post-body a.hashtag,.post-body a.mention,.c-item a.hashtag,.c-item a.mention{color:var(--lime);font-weight:600}
+/* live pop-ups while the site is open */
+.live-toasts{position:fixed;right:16px;bottom:16px;z-index:90;display:flex;flex-direction:column;gap:10px;width:min(360px,calc(100vw - 32px));pointer-events:none}
+.live-toast{pointer-events:auto;display:flex;gap:12px;align-items:center;padding:12px 12px 12px 14px;border-radius:14px;background:var(--panel);border:1px solid var(--line-2);box-shadow:var(--shadow);color:var(--bone);animation:ltIn .25s ease-out}
+.live-toast:hover{text-decoration:none;border-color:var(--lime)}
+.live-toast .avatar{width:40px;height:40px;flex:none}
+.live-toast .lt-ic{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--accent-soft);color:var(--lime);flex:none}
+.live-toast .lt-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.live-toast .lt-tx b{font-size:14px;line-height:1.3}
+.live-toast .lt-tx span{font-size:13px;color:var(--ash);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.live-toast .lt-x{border:0;background:none;color:var(--ash);cursor:pointer;padding:4px;flex:none}
+.live-toast.out{opacity:0;transform:translateY(8px);transition:.35s}
+@keyframes ltIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (max-width:767px){.live-toasts{bottom:calc(76px + env(safe-area-inset-bottom));right:12px;width:calc(100vw - 24px)}}

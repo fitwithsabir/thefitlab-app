@@ -6,6 +6,7 @@
 <title>My Network — The Fit Lab</title>
 <script src="assets/theme.js"></script>
 <link rel="icon" href="assets/favicon.png">
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
 <style>
@@ -16,6 +17,17 @@
   .inv-note{margin-top:8px;padding:10px 12px;border-radius:10px;background:var(--panel-2);font-size:13.5px;line-height:1.5;border:1px solid var(--line)}
   .conn-tools{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:4px 20px 12px;flex-wrap:wrap}
   .conn-tools input{max-width:280px;height:36px;font-size:14px}
+  .catbar{display:flex;gap:8px;padding:0 20px 12px;overflow-x:auto;scrollbar-width:none}
+  .catbar::-webkit-scrollbar{display:none}
+  .catbar button{flex:none;height:32px;border-radius:999px;border:1px solid var(--line-2);background:var(--panel);color:var(--bone);font:600 13px var(--body);padding:0 12px;cursor:pointer;white-space:nowrap}
+  .catbar button.on{background:var(--lime);border-color:var(--lime);color:var(--on-lime)}
+  .catbar button i{font-style:normal;opacity:.7;margin-left:4px}
+  .pcard .x{position:absolute;top:8px;right:8px;z-index:2;width:28px;height:28px;border-radius:50%;border:0;background:rgba(0,0,0,.45);color:#fff;display:grid;place-items:center;cursor:pointer}
+  .pcard{position:relative}
+  .pcard .why{display:flex;flex-direction:column;gap:2px}
+  .pcard .why span{display:block}
+  .sug-sec h3{font-size:16px;margin:0}
+  .inv-tag{height:32px;font-size:13px;width:auto;max-width:190px;padding-top:0;padding-bottom:0}
   @media (max-width:767px){ .mn-mobile{display:block} .col-nav{display:none} }
   @media (min-width:768px){ .mn-mobile{display:none} }
 </style>
@@ -29,7 +41,7 @@
         <a href="#connections" data-v="connections">Connections <b id="nConn">0</b></a>
         <a href="#sent" data-v="sent">Sent <b id="nSent">0</b></a>
         <a href="#requests" data-v="requests">Service requests <b id="nReq">0</b></a>
-        <a href="#grow" data-v="grow">People you may know</a>
+        <a href="#grow" data-v="grow">Grow your network</a>
         <a href="company.html">Pages</a>
         <a href="settings.html#blocked">Blocked members</a>
       </div>
@@ -85,7 +97,7 @@
     if (v === 'invitations') {
       const inc = pending.filter((c) => c.direction === 'incoming');
       view.innerHTML = `<div class="box"><div class="box-head"><h2>Invitations</h2><span class="sub">${inc.length}</span></div>
-        ${inc.length ? inc.map((c) => row(c, `<button class="txt-btn" data-dec="${c.connection_id}">Ignore</button><button class="pill sm" data-acc="${c.connection_id}">Accept</button>`,
+        ${inc.length ? inc.map((c) => row(c, `<select class="inv-tag" data-invtag="${c.connection_id}" aria-label="How do you know them?">${FL.tagOptions('', 'How you know them')}</select><button class="txt-btn" data-dec="${c.connection_id}">Ignore</button><button class="pill sm" data-acc="${c.connection_id}" data-uid="${c.user_id}">Accept</button>`,
             c.note ? `<div class="inv-note">“${esc(c.note)}”</div>` : '')).join('')
           : '<div class="empty"><b>No pending invitations</b>When coaches invite you to connect, you\'ll see them here.</div>'}</div>`;
     } else if (v === 'requests') {
@@ -108,33 +120,79 @@
           : '<div class="empty"><b>No invitations waiting</b>Invitations you send appear here until they\'re answered.</div>'}</div>`;
     } else if (v === 'connections') {
       view.innerHTML = `<div class="box"><div class="box-head"><h2>${accepted.length} connection${accepted.length === 1 ? '' : 's'}</h2></div>
-        <div class="conn-tools"><input id="cq" type="search" placeholder="Search by name"><span class="t-xs muted">Sorted by recently added</span></div>
-        <div id="clist"></div></div>`;
-      const draw = (q) => {
-        const list = accepted.filter((c) => !q || (c.full_name || '').toLowerCase().includes(q) || (c.username || '').includes(q));
-        $('clist').innerHTML = list.length ? list.map((c) => row(c, `<a class="pill sm" href="messaging.html?u=${encodeURIComponent(c.username)}">Message</a>
-            <button class="icon-btn" data-cm="${c.connection_id}" data-name="${esc(c.full_name)}" aria-label="More">${FL.icon('more', 20)}</button>`)).join('')
-          : `<div class="empty">${q ? 'No connections match.' : '<b>No connections yet</b>Start with the suggestions under “People you may know”.'}</div>`;
+        <div class="catbar" id="cats"></div>
+        <div class="conn-tools"><input id="cq" type="search" placeholder="Search by name, city or headline">
+          <select id="csort" class="inv-tag" aria-label="Sort"><option value="recent">Recently added</option><option value="name">Name</option></select></div>
+        <div id="clist"><div class="skeleton" style="height:60px;margin:14px"></div></div></div>`;
+      let tag = null;
+      const drawCats = async () => {
+        const { data: ct } = await sb.rpc('connection_tag_counts');
+        const t = (ct && ct.tags) || {};
+        $('cats').innerHTML = [['', 'All', ct ? ct.all : accepted.length]].concat(FL.CONN_TAGS.filter(([k]) => t[k]).map(([k, l]) => [k, l, t[k]]))
+          .concat(ct && ct.none && ct.none !== ct.all ? [['none', 'No category', ct.none]] : [])
+          .map(([k, l, n]) => `<button data-cat="${k}" class="${(tag || '') === k ? 'on' : ''}">${esc(l)}<i>${n}</i></button>`).join('');
       };
-      draw(''); $('cq').oninput = (e) => draw(e.target.value.trim().toLowerCase());
+      const draw = async () => {
+        const { data } = await sb.rpc('list_network', { p_tag: tag, p_q: $('cq').value.trim() || null, p_sort: $('csort').value });
+        const list = data || [];
+        $('clist').innerHTML = list.length ? list.map((c) => `<div class="ent">
+            <a href="${plink(c.username)}">${FL.ringAvatar(c, 'avatar')}</a>
+            <div class="ent-main"><a class="ent-name" href="${plink(c.username)}">${esc(c.full_name)}${FL.tags(c)}</a>
+              <div class="ent-sub">${esc(c.headline || '')}</div>
+              <div class="ent-meta">${c.city ? esc(c.city) + ' · ' : ''}connected ${FL.timeAgo(c.since)} ago</div>
+              <button class="txt-btn tagbtn" data-settag="${c.user_id}" data-name="${esc(c.full_name)}" data-cur="${esc(c.tag || '')}">${FL.icon('tag', 13)}${c.tag_label ? esc(c.tag_label) : 'Add category'}</button></div>
+            <div class="ent-act" style="margin:0"><a class="pill sm" href="messaging.html?u=${encodeURIComponent(c.username)}">Message</a>
+              <button class="icon-btn" data-cm="${c.connection_id}" data-name="${esc(c.full_name)}" aria-label="Remove connection">${FL.icon('more', 20)}</button></div></div>`).join('')
+          : `<div class="empty">${tag || $('cq').value.trim() ? 'No connections match.' : '<b>No connections yet</b>Start with the suggestions under “Grow your network”.'}</div>`;
+      };
+      $('cats').onclick = (e) => { const b = e.target.closest('[data-cat]'); if (!b) return; tag = b.dataset.cat || null; drawCats(); draw(); };
+      let tmr; $('cq').oninput = () => { clearTimeout(tmr); tmr = setTimeout(draw, 250); };
+      $('csort').onchange = draw;
+      view._redraw = () => { drawCats(); draw(); };
+      drawCats(); draw();
     } else {
-      view.innerHTML = `<div class="box"><div class="box-head"><h2>People you may know</h2><span class="sub">People across health and fitness</span></div>
-        <div class="pgrid" id="pg">${'<div class="pcard skeleton" style="height:250px"></div>'.repeat(4)}</div></div>`;
-      const { data } = await sb.rpc('people_you_may_know', { p_limit: 24 });
+      view.innerHTML = `<div id="sugs"><div class="box"><div class="box-head"><h2>Grow your network</h2></div><div class="pgrid">${'<div class="pcard skeleton" style="height:250px"></div>'.repeat(4)}</div></div></div>
+        <div class="box" id="pagesBox" hidden><div class="box-head"><div><h2>Pages to follow</h2><div class="sub">Gyms, clinics and brands picked for you</div></div><a class="txt-btn" href="company.html">See all</a></div><div id="sugPages"></div></div>`;
+      const [{ data }, { data: pg }] = await Promise.all([sb.rpc('suggest_people', { p_limit: 40, p_offset: 0 }), sb.rpc('suggested_pages', { p_limit: 5 })]);
       const list = data || [];
-      $('pg').innerHTML = list.length ? list.map((p) => `<div class="pcard" data-card="${esc(p.username)}">
+      const GROUPS = [['candidates', 'Candidates for your open roles', 'Open to work and a fit for the jobs you\'re hiring for'],
+        ['hiring', 'Hiring in your field', 'Gyms, clinics and recruiters with roles that fit you'],
+        ['workplace', 'From your workplace', 'People at the gyms and clinics you work with'],
+        ['partners', 'Professionals to partner with', 'People whose work fits with yours — for referrals and teamwork'],
+        ['people', 'People you may know', 'Mutual connections, your city and the Academy']];
+      const card = (p) => `<div class="pcard" data-card="${esc(p.username)}">
+          <button class="x" data-dismiss="${p.user_id}" aria-label="Not now" title="Not now">${FL.icon('close', 15)}</button>
           <div class="cov" ${p.cover_url ? `style="background-image:url('${esc(p.cover_url)}')"` : ''}></div>
           <a href="${plink(p.username)}">${FL.ringAvatar(p, 'avatar')}</a>
           <a class="nm" href="${plink(p.username)}">${esc(p.full_name)}${FL.tags(p)}</a>
-          <p class="hl">${esc(p.headline || 'Fit Lab member')}</p>
-          <p class="why">${p.mutual ? FL.icon('network', 14) + ' ' : ''}${esc(p.reason)}</p>
+          <p class="hl">${esc(p.headline || p.profession_label || 'Fit Lab member')}</p>
+          <p class="why">${(p.reasons || []).slice(0, 2).map((r) => `<span>${esc(r)}</span>`).join('') || '<span>Fit Lab member</span>'}</p>
           <button class="pill" data-connect="${esc(p.username)}" data-name="${esc(p.full_name)}">${FL.icon('userplus', 17)}Connect</button>
-        </div>`).join('') : '<div class="empty" style="grid-column:1/-1"><b>No new suggestions</b>Use the search bar at the top to find coaches by name, city or skill.</div>';
+        </div>`;
+      const by = (g) => list.filter((p) => (['mutual', 'local', 'classmates', 'more'].includes(p.group) ? 'people' : p.group) === g);
+      const html = GROUPS.map(([g, h, sub]) => { const xs = by(g); return xs.length ? `<div class="box sug-sec"><div class="box-head"><div><h3>${h}</h3><div class="sub">${sub}</div></div></div>
+          <div class="pgrid">${xs.slice(0, g === 'people' ? 24 : 8).map(card).join('')}</div></div>` : ''; }).join('');
+      $('sugs').innerHTML = html || '<div class="box"><div class="empty"><b>No new suggestions</b>Use the search bar at the top to find people by name, profession, city or skill.</div></div>';
+      if ((pg || []).length) {
+        $('pagesBox').hidden = false;
+        $('sugPages').innerHTML = pg.map((g) => `<div class="ent"><a href="company.html?p=${encodeURIComponent(g.slug)}">${FL.pageLogo(g)}</a>
+          <div class="ent-main"><a class="ent-name" href="company.html?p=${encodeURIComponent(g.slug)}">${esc(g.name)}${FL.tick(g.verified, 14)}</a>
+            <div class="ent-sub">${esc(g.reason || '')}</div><div class="ent-meta">${esc([g.kind_label, g.city].filter(Boolean).join(' · '))} · ${g.followers} follower${g.followers === 1 ? '' : 's'}</div></div>
+          <div class="ent-act" style="margin:0"><button class="pill sm" data-follow="${g.page_id}">${FL.icon('plus', 15)}Follow</button>
+            <button class="icon-btn" data-dismiss="${g.page_id}" data-kind="page" aria-label="Not now">${FL.icon('close', 16)}</button></div></div>`).join('');
+      }
     }
   }
 
   view.addEventListener('click', async (e) => {
     const t = e.target.closest('button'); if (!t) return;
+    if (t.dataset.dismiss) {
+      await FL.call('dismiss_suggestion', { p_target: t.dataset.dismiss, p_kind: t.dataset.kind || 'person' }, { quiet: true });
+      const el = t.closest('.pcard,.ent'); if (el) { el.style.transition = 'opacity .25s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 250); }
+      return;
+    }
+    if (t.dataset.follow) { const r = await FL.call('follow_page', { p_page: t.dataset.follow }); if (r) { t.classList.toggle('ghost', r.following); t.innerHTML = r.following ? 'Following' : FL.icon('plus', 15) + 'Follow'; } return; }
+    if (t.dataset.settag) { const r = await FL.tagConnection(t.dataset.settag, t.dataset.name, t.dataset.cur || null); if (r && view._redraw) view._redraw(); return; }
     if (t.dataset.racc || t.dataset.rdec) {
       const accept = !!t.dataset.racc;
       FL.busy(t, true, '');
@@ -150,6 +208,7 @@
       const r = await FL.call('respond_connection_request', { p_id: t.dataset.acc || t.dataset.dec, p_accept: accept });
       FL.busy(t, false);
       if (!r) return;
+      if (accept) { const sel = view.querySelector(`[data-invtag="${t.dataset.acc}"]`); if (sel && sel.value) await FL.call('set_connection_tag', { p_other: t.dataset.uid, p_tag: sel.value }, { quiet: true }); }
       FL.toast(accept ? 'Connected' : 'Invitation ignored', 'ok');
       await loadLists(); show('invitations'); FL.refreshCounts();
     } else if (t.dataset.wd) {

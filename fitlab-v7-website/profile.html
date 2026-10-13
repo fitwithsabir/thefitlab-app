@@ -6,6 +6,7 @@
 <title>Profile — The Fit Lab</title>
 <script src="assets/theme.js"></script>
 <link rel="icon" href="assets/favicon.png">
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
 <style>
@@ -272,6 +273,19 @@
         if (r) { m.close(); FL.toast('Added to Featured', 'ok'); reload(); }
       };
     },
+    social() {
+      const cur = p.social || {};
+      formModal({ title: 'Contact & social links', wide: true,
+        values: Object.assign({ vis: p.social_visibility || 'everyone' }, Object.fromEntries(FL.SOCIAL.map(([k]) => [k, cur[k] || '']))),
+        fields: FL.SOCIAL.map(([k, l, , ph]) => ({ k, label: l, max: 300, ph, half: true }))
+          .concat([{ k: 'vis', label: 'Who can see these', type: 'select', options: [['everyone', 'Everyone on The Fit Lab'], ['connections', 'Only my connections']] }]),
+        onSave: async (v) => {
+          const links = Object.fromEntries(FL.SOCIAL.map(([k]) => [k, (v[k] || '').trim()]));
+          const { data, error } = await sb.rpc('save_social_links', { p: links, p_visibility: v.vis });
+          if (error) throw error;
+          if (!data.ok) throw new Error(data.message);
+        } });
+    },
     langs() {
       formModal({ title: 'Languages', values: { langs: (me.languages || []).join(', ') }, fields: [
         { k: 'langs', label: 'Languages you can coach in', max: 300, ph: 'e.g. English, Telugu, Hindi, Urdu', help: 'Separate with commas.' }],
@@ -315,7 +329,7 @@
       else if (c.state === 'outgoing') acts = `<button class="pill ghost" data-conn="withdraw">${I('clock', 16)}Pending · withdraw</button>`;
       else if (!p.blocked_by_me) acts = `<button class="pill solid" data-conn="connect">${I('userplus', 17)}Connect</button>`;
       if (c.state !== 'connected' && !p.blocked_by_me) {
-        if (im.existing) acts += `<a class="pill" href="messaging.html?u=${encodeURIComponent(p.username)}">${I('mail', 16)}Message</a>`;
+        if (im.existing || (im.ok && im.context === 'open')) acts += `<a class="pill" href="messaging.html?u=${encodeURIComponent(p.username)}">${I('send', 16)}Message${im.context === 'open' && !im.existing ? ' · free' : ''}</a>`;
         else if (im.ok) acts += `<button class="pill gold-o" id="btnInmail">${I('mail', 16)}${im.cost ? 'InMail' : 'Message about the job'}</button>`;
         else if (im.premium_needed && (p.hiring || p.open_to_work)) acts += `<button class="pill ghost" id="btnInmail">${I('lock', 15)}Message</button>`;
       }
@@ -335,7 +349,12 @@
           : self ? `<p class="ph-prof"><button class="txt-btn" data-ed="intro" style="color:var(--lime);padding:0">${I('plus', 15)}Add your profession</button></p>` : ''}
         ${(p.specialties || []).length ? `<div class="spec">${p.specialties.map((x) => `<span class="chip">${esc(x)}</span>`).join('')}</div>` : ''}
         <p class="ph-loc">${loc ? esc(loc) + ' · ' : ''}<span class="mono" style="font-size:12px">${esc(p.unique_id || '')}</span></p>
-        <p class="ph-loc"><a href="${self ? 'network.html#connections' : '#'}" ${self ? '' : 'onclick="return false"'}>${p.connections} connection${p.connections === 1 ? '' : 's'}</a>${!self && p.mutual ? ` · ${p.mutual} mutual` : ''}</p>
+        <p class="ph-loc"><a href="${self ? 'network.html#connections' : '#'}" ${self ? '' : 'onclick="return false"'}>${p.connections} connection${p.connections === 1 ? '' : 's'}</a>${!self && p.mutual ? ` · ${p.mutual} mutual` : ''}
+          ${!self && c.state === 'connected' ? ` · <button class="txt-btn tagbtn" data-tag="1">${I('tag', 13)}${p.my_tag ? esc((FL.CONN_TAGS.find((x) => x[0] === p.my_tag) || [])[1] || p.my_tag) : 'Add how you know them'}</button>` : ''}
+          ${!self && p.open_profile ? ` · <span class="chip acc" style="font-size:11px">${I('send', 12)}Open Profile</span>` : ''}</p>
+        ${p.social && Object.keys(p.social).length ? `<div class="socials">${FL.socialChips(p.social)}${self ? `<button class="txt-btn" data-ed="social">${I('edit', 14)}Edit</button>` : ''}</div>`
+          : self ? `<div class="socials"><button class="txt-btn" data-ed="social" style="color:var(--lime)">${I('plus', 15)}Add your Instagram, YouTube, WhatsApp or website</button></div>`
+          : p.social_hidden ? `<div class="socials"><span class="t-xs muted">${I('lock', 12)} Contact &amp; social links are visible to connections</span></div>` : ''}
         <div class="ph-badges">${FL.starsIf(p.star_count || 0, p.star_tier)}
           ${p.coach_level && p.coach_level !== 'trainee' ? `<span class="chip acc">${I('award', 13)}Certified ${FL.levelLabel(p.coach_level)}</span>` : ''}
           ${p.open_to_work ? `<span class="ring-lbl">${I('briefcase', 13)}#OpenToWork</span>` : ''}
@@ -557,7 +576,7 @@
   }
 
   async function reload() {
-    const { data, error } = await sb.rpc('get_profile_v8', { p_username: (FL.param('u') || me.username).replace(/^@/, '') });
+    const { data, error } = await sb.rpc('get_profile_v9', { p_username: (FL.param('u') || me.username).replace(/^@/, '') });
     if (error) { $('main').innerHTML = `<div class="box empty"><b>Member not found</b>${esc(FL.friendly(error))}<br><br><a class="pill sm" href="search.html">Search members</a></div>`; return; }
     const first = !p;
     p = data;
@@ -571,7 +590,7 @@
 
   // ------------------------------------------------------------ events
   const main = $('main');
-  FLPosts.mount(main, { me });
+  FLPosts.mount(main, { me }); FLPosts.trackViews(main);
   main.addEventListener('click', async (e) => {
     const ed = e.target.closest('[data-ed]');
     if (ed) { const k = ed.dataset.ed, id = ed.dataset.id || null;
@@ -585,6 +604,7 @@
       if (im.ok) { const r = await FL.inmail(p, im); if (r) reload(); return; }
       return FL.upsell('Message ' + p.full_name.split(' ')[0], im.reason || 'Connect first, or use Premium InMail for job-related messages.', 'pro');
     }
+    if (t.dataset.tag) { const r = await FL.tagConnection(p.user_id, p.full_name, p.my_tag); if (r) { p.my_tag = r.tag; render(); } return; }
     if (t.dataset.req) return requestService(t.dataset.req);
     if (t.id === 'btnPhoto') return uploadPic('photo');
     if (t.id === 'btnCover') return uploadPic('cover');
@@ -594,7 +614,7 @@
       const old = main.querySelector('.add-sec .menu-pop'); if (old) return old.remove();
       const pop = document.createElement('div'); pop.className = 'menu-pop'; pop.style.left = '0'; pop.style.right = 'auto';
       pop.innerHTML = [['about', 'About', 'edit'], ['exp', 'Experience', 'briefcase'], ['edu', 'Education', 'school'], ['cred', 'License or certification', 'award'],
-        ['skills', 'Skills', 'sparkles'], ['svc', 'Services', 'briefcase'], ['feat', 'Featured', 'bookmark'], ['langs', 'Languages', 'globe'], ['photo', 'Profile photo', 'camera'], ['cover', 'Cover image', 'image']]
+        ['skills', 'Skills', 'sparkles'], ['svc', 'Services', 'briefcase'], ['feat', 'Featured', 'bookmark'], ['langs', 'Languages', 'globe'], ['social', 'Contact & social links', 'link'], ['photo', 'Profile photo', 'camera'], ['cover', 'Cover image', 'image']]
         .map(([k, l, ic]) => `<button data-ed="${k}">${I(ic, 18)}${l}</button>`).join('');
       t.parentElement.appendChild(pop); return;
     }
@@ -644,6 +664,7 @@
   await reload();
   side();
   if (isSelf() && FL.param('edit') === '1') editors.intro();
+  if (isSelf() && FL.param('edit') === 'social') editors.social();
 })();
 </script>
 </body>

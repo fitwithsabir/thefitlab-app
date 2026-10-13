@@ -6,6 +6,7 @@
 <title>Notifications — The Fit Lab</title>
 <script src="assets/theme.js"></script>
 <link rel="icon" href="assets/favicon.png">
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
 </head>
@@ -39,15 +40,16 @@
   const { data: cnt } = await sb.rpc('connection_count', { p_user: me.id });
   $('left').innerHTML = FL.miniProfile(me, { connections: cnt ?? 0, courses: '—' });
   $('right').innerHTML = `<div class="box box-pad"><b style="font-size:15px">Stay in the loop</b>
-    <p class="t-sm muted" style="margin:8px 0 0;line-height:1.5">Reactions and comments on your posts, invitations, job updates, InMails and Academy announcements all arrive here. Course reminders also come by email.</p></div>${FL.siteFootHtml(true)}`;
+    <p class="t-sm muted" style="margin:8px 0 0;line-height:1.5">Reactions, comments and @mentions, invitations, job updates, InMails and Academy announcements all arrive here.</p>
+    <a class="pill ghost sm" href="settings.html#notifications" style="margin-top:12px">${I('bell', 15)}Pop-up settings</a></div>${FL.siteFootHtml(true)}`;
   FL.wireCommon($('right'));
 
   const { data, error } = await sb.rpc('list_notifications', { p_limit: 100 });
   if (error) { $('list').innerHTML = `<div class="empty">${esc(FL.friendly(error))}</div>`; return; }
   const all = data || [];
-  const group = (n) => ['reaction', 'comment'].includes(n.kind) ? 'posts' : ['connection', 'endorsement', 'inmail', 'service', 'page'].includes(n.kind) ? 'network' : n.kind === 'job' ? 'jobs' : 'academy';
+  const group = (n) => ['reaction', 'comment', 'mention'].includes(n.kind) ? 'posts' : ['connection', 'endorsement', 'inmail', 'service', 'page'].includes(n.kind) ? 'network' : n.kind === 'job' ? 'jobs' : 'academy';
   const icFor = (n) => ({ reaction: 'like', comment: 'comment', connection: 'userplus', endorsement: 'usercheck', launch: 'courses', system: 'shield', motivation: 'sparkles',
-    job: 'briefcase', page: 'building', premium: 'crown', verification: 'tick', inmail: 'mail', service: 'briefcase' })[n.kind] || 'bell';
+    job: 'briefcase', page: 'building', premium: 'crown', verification: 'tick', inmail: 'mail', service: 'briefcase', mention: 'at', test: 'bell' })[n.kind] || 'bell';
   let filter = 'all';
 
   function draw() {
@@ -57,7 +59,7 @@
         <div style="flex:1;min-width:0"><p>${n.actor ? `<b>${esc(n.actor.full_name)}</b> ` + esc(n.title.replace(/^@\S+\s/, '')) : `<b>${esc(n.title)}</b>`}</p>
           ${n.body ? `<span class="q">${esc(n.body)}</span>` : ''}</div>
         <time datetime="${n.created_at}">${FL.timeAgo(n.created_at)}</time></a>`).join('')
-      : `<div class="empty"><b>Nothing here yet</b>${filter === 'posts' ? 'Reactions and comments on your posts will show up here.' : filter === 'network' ? 'Invitations, endorsements, InMails and service requests will show up here.' : filter === 'jobs' ? 'Application updates, new applicants and jobs from pages you follow will show up here.' : 'You\'re all caught up.'}</div>`;
+      : `<div class="empty"><b>Nothing here yet</b>${filter === 'posts' ? 'Reactions, comments and @mentions will show up here.' : filter === 'network' ? 'Invitations, endorsements, InMails and service requests will show up here.' : filter === 'jobs' ? 'Application updates, new applicants and jobs from pages you follow will show up here.' : 'You\'re all caught up.'}</div>`;
   }
   $('tabs').onclick = (e) => { const b = e.target.closest('[data-f]'); if (!b) return; filter = b.dataset.f;
     document.querySelectorAll('#tabs button').forEach((x) => x.classList.toggle('on', x === b)); draw(); };

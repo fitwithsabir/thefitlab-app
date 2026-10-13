@@ -82,6 +82,15 @@
     filter: '<path d="M4 5h16l-6 7.5V19l-4 1.5v-8z"/>',
     target: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".8" fill="currentColor"/>',
     hire: '<path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6M8 10h.01M12 10h.01M16 10h.01"/>',
+    play: '<rect x="2.5" y="5" width="19" height="14" rx="4"/><path d="m10 9 5 3-5 3z" fill="currentColor"/>',
+    at: '<circle cx="12" cy="12" r="3.8"/><path d="M15.8 12v1.5a2.5 2.5 0 0 0 5 0V12a8.8 8.8 0 1 0-3.4 6.9"/>',
+    tag: '<path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="8" cy="8" r="1.6"/>',
+    phone: '<rect x="6.5" y="2.5" width="11" height="19" rx="2.2"/><path d="M11 18.5h2"/>',
+    download: '<path d="M12 4v12M7 11l5 5 5-5M4 20h16"/>',
+    grid: '<rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/>',
+    activity: '<path d="M3 12h4l3-7 4 14 3-7h4"/>',
+    users: '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3 2.8-5 5.5-5s4.9 2 5.5 5"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.2c2.4.3 4.2 2.1 4.7 4.8"/>',
+    hash: '<path d="M9 3 7 21M17 3l-2 18M4 8.5h17M3 15.5h17"/>',
   };
   const icon = (name, size = 22, extra = '') =>
     `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}>${P[name] || ''}</svg>`;
@@ -457,11 +466,11 @@
       <h4>3 · Respect everyone</h4>
       <ul><li>No abuse, profanity, slurs, harassment or threats — in any language.</li>
       <li>Disagree with ideas, never attack people.</li></ul>
-      <h4>4 · Keep contact on The Fit Lab</h4>
-      <ul><li>Phone numbers, emails and social handles can't be shared in messages, comments, profiles, pages or jobs.</li>
-      <li>InMail is for jobs and hiring only. Jobs must show their pay and can never ask applicants for a fee or deposit.</li></ul>
+      <h4>4 · Sharing contact details</h4>
+      <ul><li>You're free to share your phone number, email, website or social media — in messages, on your profile and on your page. Only share what you're comfortable with.</li>
+      <li>InMail is for jobs and hiring. Jobs must show their pay and can never ask applicants for a fee or deposit.</li></ul>
       <h4>How this is enforced</h4>
-      <ul><li>Automatic checks block abusive, sexual, dating-style and contact-sharing text before it is sent.</li>
+      <ul><li>Automatic checks block abusive, sexual and dating-style text before it is sent.</li>
       <li>A serious breach, or three in 30 days, pauses messaging and posting until the Academy team reviews it.</li>
       <li>Anyone can report or block a member at any time. Members under 18 can't message or connect.</li>
       <li>Your courses and certificates are never affected by community decisions.</li></ul>`,
@@ -534,12 +543,20 @@
       };
     },
 
-    // LinkedIn-style invite: send with or without a short professional note
+    // invite: optional note + how you know them (private category)
+    CONN_TAGS: [['colleague', 'Colleague'], ['client', 'Client'], ['coach', 'My coach / trainer'], ['mentor', 'Mentor'], ['mentee', 'Mentee / student'],
+      ['referral', 'Referral partner'], ['business', 'Business contact'], ['classmate', 'Classmate'], ['event', 'Met at an event'], ['friend', 'Friend'], ['other', 'Other']],
+    tagOptions(sel = '', empty = 'Choose (optional)') {
+      return `<option value="">${esc(empty)}</option>` + this.CONN_TAGS.map(([k, l]) => `<option value="${k}" ${k === sel ? 'selected' : ''}>${esc(l)}</option>`).join('');
+    },
     connect(username, name) {
       return new Promise((resolve) => {
         let done = false;
         const m = this.modal({ title: `Invite ${name || '@' + username} to connect`, body: `
-          <p class="t-sm" style="margin:0 0 10px;line-height:1.55">Add a short note about why you'd like to connect — coaches are more likely to accept invitations with a professional note.</p>
+          <div class="field" style="margin-bottom:12px"><label for="cnTag">How do you know ${esc(name || 'them')}?</label>
+            <select id="cnTag">${this.tagOptions()}</select>
+            <div class="t-xs muted" style="margin-top:4px">Only you see this — it helps you sort your network.</div></div>
+          <p class="t-sm" style="margin:0 0 10px;line-height:1.55">A short note about why you'd like to connect makes people more likely to accept.</p>
           <div id="cnNoteWrap" hidden><textarea id="cnNote" maxlength="300" placeholder="e.g. Hi, I saw your post on PCOS programming — I coach similar clients in Kakinada and would love to connect."></textarea>
           <div class="t-xs muted" style="text-align:right;margin-top:4px" id="cnCount">0 / 300</div></div>`,
           foot: `<button class="pill ghost" id="cnAdd">Add a note</button><button class="pill solid" id="cnSend">Send without a note</button>`,
@@ -549,7 +566,7 @@
         ta.oninput = () => { m.q('#cnCount').textContent = `${ta.value.length} / 300`; };
         send.onclick = async () => {
           this.busy(send, true, 'Sending…');
-          const r = await this.call('send_connection_request', { p_username: username, p_note: ta.value.trim() || null });
+          const r = await this.call('send_invite', { p_username: username, p_note: ta.value.trim() || null, p_tag: m.q('#cnTag').value || null });
           this.busy(send, false);
           if (!r) return;
           done = true; m.close();
@@ -557,6 +574,33 @@
           resolve(r);
         };
       });
+    },
+
+    // pick or change the private category of a connection
+    async tagConnection(userId, name, current) {
+      return new Promise((resolve) => {
+        const m = this.modal({ title: `How do you know ${name || 'this member'}?`, body: `
+          <div class="radio-list">${this.CONN_TAGS.map(([k, l]) => `<label><input type="radio" name="ct" value="${k}" ${k === current ? 'checked' : ''}>${esc(l)}</label>`).join('')}</div>
+          <p class="t-xs muted" style="margin:10px 0 0">Only you see this.</p>`,
+          foot: `${current ? '<button class="pill ghost" data-clear>Remove</button>' : ''}<button class="pill solid" data-ok>Save</button>`,
+          onClose: () => resolve(null) });
+        const save = async (tag) => {
+          const r = await this.call('set_connection_tag', { p_other: userId, p_tag: tag });
+          if (!r) return; m.close(); this.toast(tag ? 'Saved' : 'Removed', 'ok'); resolve(r);
+        };
+        m.q('[data-ok]').onclick = () => { const c = m.q('input[name=ct]:checked'); if (!c) return this.toast('Choose one', 'err'); save(c.value); };
+        const cl = m.q('[data-clear]'); if (cl) cl.onclick = () => save(null);
+      });
+    },
+
+    // social links shown on profiles (labelled chips, no brand logos)
+    SOCIAL: [['instagram', 'Instagram', 'camera', '@yourname'], ['youtube', 'YouTube', 'play', '@yourchannel'], ['facebook', 'Facebook', 'users', 'facebook.com/yourpage'],
+      ['linkedin', 'LinkedIn', 'briefcase', 'linkedin.com/in/yourname'], ['x', 'X (Twitter)', 'at', '@yourname'], ['threads', 'Threads', 'at', '@yourname'],
+      ['whatsapp', 'WhatsApp', 'messages', 'Your number, e.g. 98765 43210'], ['telegram', 'Telegram', 'send', '@yourname'], ['website', 'Website', 'globe', 'yourgym.in']],
+    socialChips(links) {
+      if (!links) return '';
+      return this.SOCIAL.filter(([k]) => links[k] && /^https:\/\//.test(links[k]))
+        .map(([k, l, ic]) => `<a class="soc" href="${esc(links[k])}" target="_blank" rel="noopener nofollow ugc">${icon(ic, 15)}${esc(l)}</a>`).join('');
     },
 
     // resize + upload an image to Storage, returns its public URL
@@ -749,6 +793,8 @@
         <div class="me-sec"><h6>Appearance</h6>${this.themeSwitchHtml()}</div>
         <div class="me-sec"><h6>Account</h6>
           <a href="settings.html">${icon('settings', 18)}Settings &amp; privacy</a>
+          <a href="settings.html#notifications">${icon('bell', 18)}Pop-up notifications</a>
+          <button class="lnk" type="button" id="meInstall" hidden>${icon('phone', 18)}Install the app</button>
           <a href="courses.html">${icon('award', 18)}Courses &amp; certificates</a>
           <button class="lnk" type="button" data-guidelines>${icon('shield', 18)}Community guidelines</button>
           <a href="mailto:${esc(cfg.SUPPORT_EMAIL || '')}">${icon('help', 18)}Help</a></div>
@@ -763,6 +809,7 @@
       document.addEventListener('click', (e) => { if (!menu.contains(e.target) && !meBtn.contains(e.target)) toggle(false); });
       document.addEventListener('keydown', (e) => { if (e.key === 'Escape') toggle(false); });
       menu.querySelector('#btnSignOut').onclick = () => this.signOut();
+      menu.querySelector('#meInstall').onclick = () => { toggle(false); this.installApp(); };
       // Premium + my pages in the menu (non-blocking)
       sb.rpc('my_premium').then(({ data }) => {
         this._prem = data;
@@ -779,7 +826,13 @@
       this.wireCommon(document);
       this.refreshCounts();
       clearInterval(this._cntTimer);
-      this._cntTimer = setInterval(() => { if (document.visibilityState === 'visible') this.refreshCounts(); }, 45000);
+      this._cntTimer = setInterval(() => { if (document.visibilityState === 'visible') this.refreshCounts(); }, 25000);
+      // app install, device pop-ups, daily housekeeping (all non-blocking)
+      this.push.reg().then(() => this.push.sync()).catch(() => {});
+      if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', (e) => { if (e.data && e.data.type === 'fl-push') this.refreshCounts(); });
+      window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); this._installEvt = e; const a = document.getElementById('meInstall'); if (a) a.hidden = false; });
+      if (!this.isStandalone() && this.isIOS()) { const a = document.getElementById('meInstall'); if (a) a.hidden = false; }
+      if (profile.id) this.dailyTick(profile.id);
       document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') this.refreshCounts(); });
     },
 
@@ -793,7 +846,8 @@
       try {
         const { data } = await sb.rpc('unread_counts');
         if (!data) return;
-        this.counts = data;
+        const prev = this.counts; this.counts = data;
+        this.liveCheck(prev, data);
         document.querySelectorAll('[data-cnt]').forEach((el) => {
           const n = data[el.dataset.cnt] || 0;
           el.dataset.n = n; el.textContent = n ? (n > 99 ? '99+' : n) : '';
@@ -828,6 +882,122 @@
       }
       flushPara(); flushList();
       return html;
+    },
+
+    // ---------------------------------------------------------------- app + pop-up notifications
+    isIOS() { return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); },
+    isStandalone() { return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; },
+
+    push: {
+      supported() { return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && !!cfg.VAPID_PUBLIC_KEY; },
+      async reg() {
+        if (!('serviceWorker' in navigator)) return null;
+        try { return await navigator.serviceWorker.register('sw.js', { scope: './' }); } catch (_) { return null; }
+      },
+      async current() {
+        if (!this.supported()) return null;
+        const r = await this.reg(); if (!r) return null;
+        try { return await r.pushManager.getSubscription(); } catch (_) { return null; }
+      },
+      // { supported, permission, on, needsInstall }
+      async status() {
+        const needsInstall = FL.isIOS() && !FL.isStandalone();
+        if (!this.supported()) return { supported: false, permission: 'unsupported', on: false, needsInstall };
+        const sub = await this.current();
+        return { supported: true, permission: Notification.permission, on: !!sub && Notification.permission === 'granted', needsInstall };
+      },
+      key() {
+        const b = cfg.VAPID_PUBLIC_KEY.replace(/-/g, '+').replace(/_/g, '/');
+        const raw = atob(b + '==='.slice((b.length + 3) % 4));
+        return Uint8Array.from(raw, (c) => c.charCodeAt(0));
+      },
+      async save(sub) {
+        const j = sub.toJSON();
+        const { data, error } = await sb.rpc('save_push_subscription', { p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth,
+          p_user_agent: (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || null });
+        if (error || !data || data.ok === false) throw new Error((data && data.message) || (error && error.message) || 'Could not save');
+        try { localStorage.setItem('fl:pushsync', String(Date.now())); } catch (_) {}
+        return data;
+      },
+      // must be called from a click
+      async enable() {
+        if (!this.supported()) throw new Error(FL.isIOS() && !FL.isStandalone()
+          ? 'On iPhone and iPad, first add The Fit Lab to your Home Screen (Share → Add to Home Screen), then open it from there and turn notifications on.'
+          : 'This browser doesn\'t support pop-up notifications. Try Chrome, Edge, Firefox or Safari.');
+        const perm = await Notification.requestPermission();
+        if (perm !== 'granted') throw new Error(perm === 'denied'
+          ? 'Notifications are blocked for this site. Allow them in your browser\'s site settings, then try again.'
+          : 'Notifications weren\'t allowed.');
+        const r = await this.reg(); if (!r) throw new Error('Couldn\'t start notifications on this device.');
+        await navigator.serviceWorker.ready;
+        let sub = await r.pushManager.getSubscription();
+        if (!sub) sub = await r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: this.key() });
+        await this.save(sub);
+        FL._pushOn = true;
+        return true;
+      },
+      async disable() {
+        const sub = await this.current();
+        if (sub) { try { await sb.rpc('remove_push_subscription', { p_endpoint: sub.endpoint }); } catch (_) {} try { await sub.unsubscribe(); } catch (_) {} }
+        FL._pushOn = false;
+      },
+      // keep this device's address fresh (once a day)
+      async sync() {
+        if (!this.supported() || Notification.permission !== 'granted') { FL._pushOn = false; return; }
+        const sub = await this.current(); FL._pushOn = !!sub;
+        if (!sub) return;
+        let last = 0; try { last = +localStorage.getItem('fl:pushsync') || 0; } catch (_) {}
+        if (Date.now() - last > 86400000) { try { await this.save(sub); } catch (_) {} }
+      },
+    },
+
+    // install the site as an app (Android / desktop Chrome & Edge)
+    _installEvt: null,
+    async installApp() {
+      if (this._installEvt) { this._installEvt.prompt(); const c = await this._installEvt.userChoice; this._installEvt = null; return c.outcome === 'accepted'; }
+      if (this.isIOS()) { const m = this.modal({ title: 'Add The Fit Lab to your Home Screen', body: `<ol style="line-height:1.7;margin:0;padding-left:20px"><li>Tap the <b>Share</b> button in Safari.</li><li>Choose <b>Add to Home Screen</b>.</li><li>Open The Fit Lab from your Home Screen — then turn on notifications in Settings.</li></ol>`, foot: '<button class="pill solid" data-ok>OK</button>' }); m.q('[data-ok]').onclick = m.close; return false; }
+      this.toast('Use your browser menu → "Install app" or "Add to Home screen".');
+      return false;
+    },
+
+    // pop-ups inside the site while it's open (for devices without system pop-ups)
+    liveToast(n) {
+      let host = document.querySelector('.live-toasts');
+      if (!host) { host = document.createElement('div'); host.className = 'live-toasts'; host.setAttribute('aria-live', 'polite'); document.body.appendChild(host); }
+      const el = document.createElement('a');
+      el.className = 'live-toast'; el.href = n.url || 'notifications.html';
+      el.innerHTML = `${n.actor ? this.avatarHtml(n.actor, 'avatar') : `<span class="lt-ic">${icon(n.icon || 'bell', 20)}</span>`}
+        <span class="lt-tx"><b>${esc(n.title || '')}</b>${n.body ? `<span>${esc(n.body)}</span>` : ''}</span>
+        <button type="button" class="lt-x" aria-label="Dismiss">${icon('close', 16)}</button>`;
+      el.querySelector('.lt-x').onclick = (e) => { e.preventDefault(); e.stopPropagation(); el.remove(); };
+      host.prepend(el);
+      while (host.children.length > 3) host.lastChild.remove();
+      setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 400); }, 7000);
+    },
+    async liveCheck(prev, now) {
+      if (!prev || this._pushOn) return;
+      try {
+        if ((now.notifications || 0) > (prev.notifications || 0)) {
+          const { data } = await sb.rpc('list_notifications', { p_limit: 5 });
+          let seen = []; try { seen = JSON.parse(sessionStorage.getItem('fl:lt') || '[]'); } catch (_) {}
+          (data || []).filter((n) => !n.is_read && !seen.includes(n.id)).slice(0, 2).reverse().forEach((n) => {
+            seen.push(n.id); this.liveToast({ title: n.title, body: n.body, url: n.link_url || 'notifications.html', actor: n.actor });
+          });
+          try { sessionStorage.setItem('fl:lt', JSON.stringify(seen.slice(-50))); } catch (_) {}
+        }
+        if ((now.messages || 0) > (prev.messages || 0) && !location.pathname.endsWith('messaging.html')) {
+          const { data } = await sb.rpc('list_conversations');
+          const c = (data || []).filter((x) => x.unread > 0 && !x.last_mine).sort((a, b) => new Date(b.last_at) - new Date(a.last_at))[0];
+          if (c) this.liveToast({ title: c.full_name, body: c.last_body, url: 'messaging.html?u=' + encodeURIComponent(c.username), actor: c, icon: 'messages' });
+        }
+      } catch (_) {}
+    },
+
+    // once a day: Premium reminders etc.
+    async dailyTick(uid) {
+      const k = 'fl:tick:' + uid + ':' + new Date().toISOString().slice(0, 10);
+      try { if (localStorage.getItem(k)) return; localStorage.setItem(k, '1'); } catch (_) {}
+      try { await sb.rpc('daily_tick'); } catch (_) {}
     },
 
     param(name) { return new URLSearchParams(location.search).get(name); },

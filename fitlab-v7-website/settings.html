@@ -6,6 +6,7 @@
 <title>Settings — The Fit Lab</title>
 <script src="assets/theme.js"></script>
 <link rel="icon" href="assets/favicon.png">
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
 <style>
@@ -34,7 +35,7 @@
   <div class="layout l-side-main">
     <aside><div class="sticky-col"><div class="box set-nav">
       <div class="box-head" style="padding-bottom:8px"><h3 style="font-size:16px">Settings</h3></div>
-      <a href="#appearance" id="nA"></a><a href="#account" id="nB"></a><a href="#premium" id="nF"></a><a href="#privacy" id="nC"></a><a href="#community" id="nD"></a><a href="#blocked" id="nE"></a>
+      <a href="#appearance" id="nA"></a><a href="#notifications" id="nG"></a><a href="#account" id="nB"></a><a href="#premium" id="nF"></a><a href="#privacy" id="nC"></a><a href="#community" id="nD"></a><a href="#blocked" id="nE"></a>
     </div></div></aside>
     <section class="stack" id="main"></section>
   </div>
@@ -52,6 +53,7 @@
   FL.renderHeader(me);
   $('nA').innerHTML = I('sun', 18) + 'Appearance'; $('nB').innerHTML = I('settings', 18) + 'Account'; $('nC').innerHTML = I('eye', 18) + 'Visibility';
   $('nD').innerHTML = I('shield', 18) + 'Community'; $('nE').innerHTML = I('block', 18) + 'Blocked members'; $('nF').innerHTML = I('crown', 18) + 'Premium & verification';
+  $('nG').innerHTML = I('bell', 18) + 'Notifications';
   const { data: prem } = await sb.rpc('my_premium');
 
   const t = FL.theme.get();
@@ -62,6 +64,10 @@
         <button data-theme-set="light" class="${t === 'light' ? 'on' : ''}"><div class="pv" style="background:#f3f2ee"><i style="background:#fff"></i><i style="background:#3f7d0f"></i></div>${I('sun', 16)} Light</button>
         <button data-theme-set="dark" class="${t === 'dark' ? 'on' : ''}"><div class="pv" style="background:#050605"><i style="background:#131613"></i><i style="background:#a3e635"></i></div>${I('moon', 16)} Dark</button>
       </div></div>
+
+    <div class="box" id="notifications"><div class="box-head"><div><h2>Pop-up notifications</h2><div class="sub">Get a pop-up on this phone or computer for messages, invitations, jobs and more — even when The Fit Lab is closed.</div></div></div>
+      <div class="set-row"><div><b>On this device</b><div class="t-sm" id="pushTxt">Checking…</div></div><span id="pushAct"></span></div>
+      <div id="pushPrefs"></div></div>
 
     <div class="box" id="account"><div class="box-head"><h2>Account</h2></div>
       <div class="set-row"><div><b>Email</b><div class="t-sm">${esc(me.email || session.user.email || '')} · used to sign in. Only the Academy can see it.</div></div></div>
@@ -85,7 +91,11 @@
         <label class="switch"><input type="checkbox" id="swOtw" ${me.open_to_work ? 'checked' : ''} aria-label="Open to work"><span></span></label></div>
       <div class="set-row"><div><b>#Hiring</b><div class="t-sm">A purple frame on your photo to show you're recruiting. It also shows automatically while you have an open job.</div></div>
         <label class="switch"><input type="checkbox" id="swHire" ${me.hiring ? 'checked' : ''} aria-label="Hiring"><span></span></label></div>
-      <div class="set-row"><div><b>Who can message you</b><div class="t-sm">Your connections. Employers can also send a job-related InMail, which you accept or decline. This keeps The Fit Lab professional and safe.</div></div><span class="chip">${I('lock', 13)}Connections + job InMail</span></div></div>
+      <div class="set-row"><div><b>Who can message you</b><div class="t-sm">Your connections. Employers can also send a job-related InMail, which you accept or decline.</div></div><span class="chip">${I('lock', 13)}Connections + job InMail</span></div>
+      <div class="set-row"><div><b>Open Profile ${FL.prem('pro')}</b><div class="t-sm">Let anyone on The Fit Lab message you for free — great for getting new clients. ${prem && prem.active ? '' : 'Part of Premium.'}</div></div>
+        <label class="switch"><input type="checkbox" id="swOpen" ${me.open_profile ? 'checked' : ''} aria-label="Open Profile"><span></span></label></div>
+      <div class="set-row"><div><b>Contact &amp; social links</b><div class="t-sm">Instagram, YouTube, WhatsApp, website and more on your profile. ${me.social_visibility === 'connections' ? 'Visible to your connections.' : 'Visible to everyone.'}</div></div>
+        <a class="pill sm" href="profile.html?edit=social">Edit</a></div></div>
 
     <div class="box" id="community"><div class="box-head"><h2>Community</h2></div>
       ${FL.communityNotice(me) ? `<div style="padding:0 20px">${FL.communityNotice(me)}</div>` : ''}
@@ -108,6 +118,52 @@
   $('swOtw').onchange = (e) => toggle(e.target, 'open_to_work');
   $('swHire').onchange = (e) => toggle(e.target, 'hiring');
   const sp = $('swPrem'); if (sp) sp.onchange = (e) => toggle(e.target, 'show_premium_badge');
+  $('swOpen').onchange = async (e) => {
+    const r = await FL.call('set_open_profile', { p_on: e.target.checked });
+    if (!r) { e.target.checked = false; return; }
+    FL.toast(r.open_profile ? 'Open Profile is on — anyone can message you' : 'Open Profile is off', 'ok');
+  };
+
+  // ---- pop-up notifications ----
+  const CATS = [['messages', 'Messages', 'New messages and InMail'], ['network', 'My network', 'Invitations, endorsements, service requests'],
+    ['posts', 'Posts', 'Reactions, comments and @mentions'], ['jobs', 'Jobs & pages', 'Job alerts, applications and status updates'],
+    ['account', 'Account', 'Premium, verification and account notices'], ['academy', 'Academy & announcements', 'Courses, certificates and news from The Fit Lab']];
+  async function pushUI() {
+    const st = await FL.push.status();
+    const txt = $('pushTxt'), act = $('pushAct');
+    if (!st.supported) {
+      txt.innerHTML = st.needsInstall ? 'On iPhone and iPad, add The Fit Lab to your Home Screen first (Share → <b>Add to Home Screen</b>), open it from there, and come back here.' : 'This browser can\'t show pop-ups. Try Chrome, Edge, Firefox or Safari.';
+      act.innerHTML = st.needsInstall ? `<button class="pill sm" id="pushInstall">${I('phone', 15)}How to</button>` : '';
+      const pi = $('pushInstall'); if (pi) pi.onclick = () => FL.installApp();
+    } else if (st.permission === 'denied') {
+      txt.textContent = 'Blocked in your browser. Open the site settings (the lock icon next to the address), allow Notifications, then reload.';
+      act.innerHTML = '';
+    } else if (st.on) {
+      txt.textContent = 'On — you\'ll get pop-ups on this device.';
+      act.innerHTML = `<span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button class="pill ghost sm" id="pushTest">Send a test</button><button class="pill ghost sm" id="pushOff">Turn off</button></span>`;
+      $('pushTest').onclick = async (e) => { FL.busy(e.target, true, 'Sending…'); const r = await FL.call('send_test_push'); FL.busy(e.target, false); if (r) FL.toast('Sent — it should pop up in a few seconds', 'ok'); };
+      $('pushOff').onclick = async () => { await FL.push.disable(); FL.toast('Pop-ups turned off on this device', 'ok'); pushUI(); };
+    } else {
+      txt.textContent = 'Off on this device.';
+      act.innerHTML = `<button class="pill solid sm" id="pushOn">${I('bell', 15)}Turn on</button>`;
+      $('pushOn').onclick = async (e) => {
+        FL.busy(e.target, true, 'Turning on…');
+        try { await FL.push.enable(); FL.toast('Pop-up notifications are on', 'ok'); } catch (err) { FL.busy(e.target, false); return FL.notice('Notifications', err.message); }
+        pushUI();
+      };
+    }
+    const { data: np } = await sb.rpc('my_notify_prefs');
+    const prefs = (np && np.prefs) || {};
+    $('pushPrefs').innerHTML = `<div class="set-row" style="padding-bottom:6px"><div><b>What pops up</b><div class="t-sm">On all your devices${np && np.devices ? ` (${np.devices} turned on)` : ''}. Everything still appears under Notifications.</div></div></div>`
+      + CATS.map(([k, l, d]) => `<div class="set-row"><div><b style="font-size:14px">${l}</b><div class="t-sm">${d}</div></div>
+        <label class="switch"><input type="checkbox" data-np="${k}" ${prefs[k] !== false ? 'checked' : ''} aria-label="${l}"><span></span></label></div>`).join('');
+  }
+  $('pushPrefs').addEventListener('change', async (e) => {
+    const el = e.target.closest('[data-np]'); if (!el) return;
+    const r = await FL.call('set_notify_prefs', { p: { [el.dataset.np]: el.checked } });
+    if (!r) el.checked = !el.checked; else FL.toast('Saved', 'ok');
+  });
+  pushUI();
   $('btnPw').onclick = () => {
     const m = FL.modal({ title: 'Change password', body: `<div class="field"><label for="pw1">New password</label><input id="pw1" type="password" autocomplete="new-password" minlength="8"></div>
       <div class="field"><label for="pw2">Confirm new password</label><input id="pw2" type="password" autocomplete="new-password"></div><div class="err hidden" id="pwErr"></div>`,

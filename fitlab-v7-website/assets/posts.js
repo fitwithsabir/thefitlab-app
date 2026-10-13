@@ -2,6 +2,13 @@
 (function () {
   const esc = FL.esc, icon = FL.icon, RX = FL.REACTIONS;
 
+  // links, then #hashtags and @mentions (only after a space / start, so URLs and emails are untouched)
+  function rich(text) {
+    return FL.linkify(text)
+      .replace(/(^|[\s(>])#([A-Za-z][A-Za-z0-9_]{1,39})\b/g, (m, pre, tag) => `${pre}<a class="hashtag" href="feed.html?tag=${encodeURIComponent(tag.toLowerCase())}">#${tag}</a>`)
+      .replace(/(^|[\s(>])@([A-Za-z0-9_](?:[A-Za-z0-9_.]{1,28}[A-Za-z0-9_]))/g, (m, pre, u) => `${pre}<a class="mention" href="profile.html?u=${encodeURIComponent(u.toLowerCase())}">@${u}</a>`);
+  }
+
   function author(p) {
     const a = p.author || {};
     const link = p.page ? `company.html?p=${encodeURIComponent(p.page.slug)}` : `profile.html?u=${encodeURIComponent(a.username || '')}`;
@@ -12,7 +19,8 @@
     const kinds = Object.entries(p.reactions || {}).sort((x, y) => y[1] - x[1]).map(([k]) => k).slice(0, 3);
     const rx = p.reaction_total ? `<span class="rx"><span class="rx-icons">${kinds.map((k) => `<span class="${RX[k].cls}">${icon(RX[k].icon, 11)}</span>`).join('')}</span>${p.reaction_total}</span>` : '<span></span>';
     const cm = p.comment_count ? `<button class="txt-btn" data-act="comments" style="padding:0;font-size:12.5px;font-weight:500">${p.comment_count} comment${p.comment_count > 1 ? 's' : ''}</button>` : '';
-    return p.reaction_total || p.comment_count ? `<div class="post-stats">${rx}${cm}</div>` : '';
+    const vw = p.views != null ? `<button class="txt-btn" data-act="stats" style="padding:0;font-size:12.5px;font-weight:500">${icon('chart', 13)} ${p.views} view${p.views === 1 ? '' : 's'}</button>` : '';
+    return p.reaction_total || p.comment_count || vw ? `<div class="post-stats">${rx}<span style="display:flex;gap:12px;align-items:center">${cm}${vw}</span></div>` : '';
   }
 
   function render(p, opts = {}) {
@@ -23,10 +31,10 @@
       ? `<div class="post-milestone"><span class="medal">${icon('award', 24)}</span><div style="flex:1;min-width:0">
            <b style="display:block;font-size:15px">${esc(p.body)}</b>
            ${p.link_url ? `<a class="t-sm" href="${esc(p.link_url)}" style="font-weight:700">View verified certificate →</a>` : ''}</div></div>`
-      : `<div class="post-body ${long && !opts.expanded ? 'clamp' : ''}">${FL.linkify(p.body)}</div>
+      : `<div class="post-body ${long && !opts.expanded ? 'clamp' : ''}">${rich(p.body)}</div>
          ${long && !opts.expanded ? `<button class="morebtn" data-act="seemore" style="padding:0 16px 8px">…see more</button>` : ''}
          ${p.image_url ? `<img class="post-img" src="${esc(p.image_url)}" alt="Image shared by ${esc(a.full_name || '')}" loading="lazy" data-act="zoom">` : ''}`;
-    return `<article class="box post" data-post="${p.id}">
+    return `<article class="box post" data-post="${p.id}" data-saved="${p.saved ? 1 : 0}">
       ${p.status === 'hidden' ? `<div class="notice warn" style="margin:12px 16px 0;font-size:13px">${icon('eye', 18)}<span>Only you can see this post while the Academy team reviews it.</span></div>` : ''}
       <div class="post-head">
         ${p.page ? `<a href="${link}">${FL.pageLogo(p.page)}</a>
@@ -60,7 +68,7 @@
         <div style="flex:1;min-width:0"><a href="${link}">${esc(a.full_name || a.username)}</a>${FL.tick(a.verified, 13)}<div class="ent-sub">${esc(a.headline || '')}</div></div>
         <span class="t-xs muted">${FL.timeAgo(c.created_at)}</span>
         <button class="icon-btn" style="width:26px;height:26px" data-act="cmenu" aria-label="Comment options">${icon('more', 16)}</button></div>
-        <p>${FL.linkify(c.body)}</p>${c.status === 'hidden' ? '<span class="t-xs muted">Hidden while under review</span>' : ''}</div></div>`;
+        <p>${rich(c.body)}</p>${c.status === 'hidden' ? '<span class="t-xs muted">Hidden while under review</span>' : ''}</div></div>`;
   }
 
   function closeMenus(root) { root.querySelectorAll('.menu-pop,.rx-picker').forEach((m) => m.remove()); }
@@ -137,11 +145,19 @@
         const open = art.querySelector(':scope > .menu-pop'); closeMenus(root); if (open) return;
         const mine = art.querySelector('[data-act=message-author]').hidden;
         const pop = document.createElement('div'); pop.className = 'menu-pop';
-        pop.innerHTML = mine
-          ? `<button data-act="edit">${icon('edit', 18)}Edit post</button><button data-act="delete" class="danger">${icon('trash', 18)}Delete post</button>`
-          : `<button data-act="report">${icon('flag', 18)}Report post</button>${me && (me.is_admin || me.is_owner) ? `<button data-act="mod-remove" class="danger">${icon('trash', 18)}Remove (moderator)</button>` : ''}`;
+        const saved = art.dataset.saved === '1';
+        pop.innerHTML = `<button data-act="save">${icon('bookmark', 18)}${saved ? 'Unsave' : 'Save post'}</button>` + (mine
+          ? `<button data-act="stats">${icon('chart', 18)}Post analytics</button><button data-act="edit">${icon('edit', 18)}Edit post</button><button data-act="delete" class="danger">${icon('trash', 18)}Delete post</button>`
+          : `<button data-act="report">${icon('flag', 18)}Report post</button>${me && (me.is_admin || me.is_owner) ? `<button data-act="mod-remove" class="danger">${icon('trash', 18)}Remove (moderator)</button>` : ''}`);
         art.appendChild(pop); return;
       }
+      if (act === 'save') {
+        closeMenus(root);
+        const r = await FL.call('toggle_save_post', { p_post: art.dataset.post });
+        if (r) { art.dataset.saved = r.saved ? '1' : '0'; FL.toast(r.saved ? 'Saved — find it under Saved on Home' : 'Removed from Saved', 'ok'); }
+        return;
+      }
+      if (act === 'stats') { closeMenus(root); return stats(art.dataset.post); }
       if (act === 'report') { closeMenus(root); return FL.report('post', art.dataset.post, { onDone: () => art.remove() }); }
       if (act === 'delete' || act === 'mod-remove') {
         closeMenus(root);
@@ -205,6 +221,38 @@
     });
   }
 
+  async function stats(id) {
+    const { data: d, error } = await sb.rpc('post_stats', { p_post: id });
+    if (error || !d) return FL.toast(error ? FL.friendly(error) : 'Analytics are only for your own posts', 'err');
+    const bars = (list) => { const mx = Math.max(1, ...list.map((x) => x.n)); return list.map((x) => `<div class="hbar"><span>${esc(x.label)}</span><div class="t"><i style="width:${Math.round(x.n / mx * 100)}%"></i></div><b>${x.n}</b></div>`).join(''); };
+    FL.modal({ title: 'Post analytics', wide: true, body: `
+      <div class="kpis" style="padding:0;margin-bottom:14px">${[[d.views, 'Views'], [d.viewers, 'People reached'], [d.reactions, 'Reactions'], [d.comments, 'Comments'], [d.saves, 'Saves']]
+        .map(([v, l]) => `<div class="kpi"><b>${v}</b><span>${l}</span></div>`).join('')}</div>
+      ${d.premium ? `<h4 style="margin:6px 0">Who it reached — by profession</h4>${(d.by_profession || []).length ? bars(d.by_profession) : '<p class="t-sm muted">No views yet.</p>'}
+        <h4 style="margin:14px 0 6px">By city</h4>${(d.by_city || []).length ? bars(d.by_city) : '<p class="t-sm muted">No views yet.</p>'}
+        ${(d.engaged || []).length ? `<h4 style="margin:14px 0 6px">People who engaged</h4><div style="display:flex;flex-wrap:wrap;gap:8px">${d.engaged.map((u) => `<a class="chip" href="profile.html?u=${encodeURIComponent(u.username)}">${esc(u.full_name)}</a>`).join('')}</div>` : ''}`
+      : `<div class="prem-box"><h3>${icon('crown', 16)}See who your post reached</h3><div class="t-sm" style="line-height:1.55">With Premium, see the professions and cities of the people who viewed your posts, and exactly who engaged.</div>
+          <a class="pill gold sm" href="premium.html?plan=pro" style="margin-top:10px">Try Premium free for 14 days</a></div>`}
+      <p class="t-xs muted" style="margin:12px 0 0">Views count each member once a day, and never your own.</p>` });
+  }
+
+  // count a view when at least half of a post is on screen for a moment
+  function trackViews(root) {
+    if (!('IntersectionObserver' in window)) return;
+    const seen = new Set(), queue = new Set(); let tmr = null;
+    const flush = () => { tmr = null; const ids = [...queue]; queue.clear(); if (ids.length) sb.rpc('log_post_views', { p_ids: ids }).then(() => {}, () => {}); };
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((en) => {
+        const id = en.target.dataset.post;
+        if (en.isIntersecting && id && !seen.has(id)) { seen.add(id); queue.add(id); io.unobserve(en.target); if (!tmr) tmr = setTimeout(flush, 3000); }
+      });
+    }, { threshold: 0.5 });
+    const scan = () => root.querySelectorAll('article.post[data-post]').forEach((a) => { if (!a._obs) { a._obs = 1; io.observe(a); } });
+    new MutationObserver(scan).observe(root, { childList: true, subtree: true });
+    scan();
+    window.addEventListener('pagehide', flush);
+  }
+
   // composer modal (new post or edit)
   function composer(me, { editing = null, onDone, page = null } = {}) {
     let imgFile = null;
@@ -213,7 +261,7 @@
         <div><b>${esc(page ? page.name : (me.full_name || ''))}</b><div class="t-xs muted">${icon('globe', 12)} ${page ? 'Posting as the page · followers see it in their feed' : 'Visible to Fit Lab members'}</div></div></div>
       <textarea id="pcBody" maxlength="3000" placeholder="Share a coaching insight, a client win, a question for other coaches…" style="min-height:160px;border:0;padding:4px 0;font-size:16px;box-shadow:none;background:transparent">${editing ? esc(editing.body) : ''}</textarea>
       <div id="pcImg"></div>
-      <p class="t-xs muted" style="margin:10px 0 0">Keep it professional — no contact details, no personal photos of others without consent.</p>`,
+      <p class="t-xs muted" style="margin:10px 0 0">Add #hashtags so people can find your post, and @username to mention someone. Keep it professional — no photos of others without their consent.</p>`,
       foot: `<div class="left" style="display:flex;gap:4px;align-items:center">
           ${editing ? '' : `<label class="icon-btn" title="Add a photo" style="cursor:pointer">${icon('image', 22)}<input type="file" id="pcFile" accept="image/jpeg,image/png,image/webp" hidden></label>`}
           <span class="t-xs muted" id="pcCount"></span></div>
@@ -255,5 +303,5 @@
     return m;
   }
 
-  window.FLPosts = { render, mount, composer, commentHtml };
+  window.FLPosts = { render, mount, composer, commentHtml, trackViews, rich, stats };
 })();

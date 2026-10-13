@@ -6,6 +6,7 @@
 <title>Hiring — The Fit Lab</title>
 <script src="assets/theme.js"></script>
 <link rel="icon" href="assets/favicon.png">
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
 <style>
@@ -66,6 +67,7 @@
   if (FL.param('new') || FL.param('edit')) return jobForm(FL.param('edit'));
   if (FL.param('job')) return applicants(FL.param('job'));
   if (FL.param('tab') === 'candidates') return candidates();
+  if (FL.param('tab') === 'pipeline') return pipeline();
   return dashboard();
 
   function side() {
@@ -77,7 +79,7 @@
         : `<p class="t-sm muted" style="padding:0 20px 16px;margin:0;line-height:1.5">Jobs are posted by organisation pages. Create your gym, studio or clinic's page first — it takes a minute.</p>`}</div>
       <div class="box box-pad"><b style="display:flex;gap:8px;align-items:center">${I('search', 18)}Find candidates</b>
         <p class="t-sm muted" style="margin:8px 0 12px;line-height:1.5">Search open-to-work trainers, physios and coaches by profession, city, certifications and experience — then InMail them.</p>
-        <a class="pill sm" href="hiring.html?tab=candidates">Search candidates</a></div>
+        <span style="display:flex;gap:8px;flex-wrap:wrap"><a class="pill sm" href="hiring.html?tab=candidates">Search candidates</a><a class="pill ghost sm" href="hiring.html?tab=pipeline">Talent pipeline</a></span></div>
       <div class="box box-pad"><b>Good job posts get better applicants</b>
         <ul class="checklist" style="margin-top:10px"><li>${I('check', 15)}Pay is required — be specific</li><li>${I('check', 15)}List the shift timings</li>
         <li>${I('check', 15)}Name 3–5 must-have skills</li><li>${I('check', 15)}Reply to everyone — your response rate is public</li></ul></div>
@@ -312,7 +314,7 @@
   async function candidates() {
     document.title = 'Find candidates — The Fit Lab';
     $('main').innerHTML = `<div class="box"><div class="box-head"><div><h2>Find candidates ${I('crown', 16)}</h2><div class="sub">Recruiter Premium · open-to-work members by default</div></div>
-        <a class="txt-btn" href="hiring.html">${I('back', 16)}Hiring</a></div>
+        <span style="display:flex;gap:12px"><a class="txt-btn" href="hiring.html?tab=pipeline">${I('bookmark', 16)}Pipeline</a><a class="txt-btn" href="hiring.html">${I('back', 16)}Hiring</a></span></div>
       <form id="cf"><div class="cfilters">
           <input id="cq" type="search" placeholder="Name or headline" aria-label="Name or headline">
           <select id="cp" aria-label="Profession">${FL.professionOptions(profs, '', 'Any profession')}</select>
@@ -342,12 +344,70 @@
             <div class="ent-meta">${esc([c.profession_label, c.city, c.experience_years ? c.experience_years + ' yrs' : 'Fresher'].filter(Boolean).join(' · '))}${c.certified ? ' · Fit Lab certified' : ''}</div>
             ${(c.skills || []).length ? `<div class="ph-badges" style="margin-top:6px">${c.skills.map((s) => `<span class="chip">${esc(s)}</span>`).join('')}</div>` : ''}
             <div class="ent-act">${c.can_inmail && (c.can_inmail.connected || c.can_inmail.existing) ? `<a class="pill sm" href="messaging.html?u=${encodeURIComponent(c.username)}">Message</a>`
-              : c.can_inmail && c.can_inmail.ok ? `<button class="pill sm" data-im="${c.user_id}">${I('mail', 14)}InMail</button>` : `<span class="t-xs muted">${esc((c.can_inmail && c.can_inmail.reason) || '')}</span>`}</div></div></div>`).join('')
+              : c.can_inmail && c.can_inmail.ok ? `<button class="pill sm" data-im="${c.user_id}">${I('mail', 14)}InMail</button>` : `<span class="t-xs muted">${esc((c.can_inmail && c.can_inmail.reason) || '')}</span>`}
+              <button class="pill ghost sm" data-save="${c.user_id}">${I('bookmark', 14)}Save</button></div></div></div>`).join('')
         : `<div class="empty"><b>No candidates match</b>Try fewer filters or a nearby city.</div>`;
       $('cr').querySelectorAll('[data-im]').forEach((b) => { b.onclick = () => { const c = list.find((x) => x.user_id === b.dataset.im); FL.inmail(c, c.can_inmail).then((r) => { if (r) { b.disabled = true; b.textContent = 'InMail sent'; } }); }; });
+      $('cr').querySelectorAll('[data-save]').forEach((b) => { b.onclick = async () => { const r = await FL.call('save_candidate', { p_candidate: b.dataset.save, p_stage: 'saved', p_note: null }); if (r) { b.disabled = true; b.innerHTML = I('check', 14) + 'Saved'; FL.toast('Added to your talent pipeline', 'ok'); } }; });
     };
     $('cf').onsubmit = (e) => { e.preventDefault(); run(); };
     run();
+  }
+
+  // =========================================================== talent pipeline (Recruiter)
+  async function pipeline() {
+    document.title = 'Talent pipeline — The Fit Lab';
+    const PST = [['saved', 'Saved'], ['contacted', 'Contacted'], ['interview', 'Interview'], ['offer', 'Offer'], ['hired', 'Hired'], ['not_now', 'Not now']];
+    let stage = null;
+    $('main').innerHTML = `<div class="box"><div class="box-head"><div><h2>Talent pipeline ${I('crown', 16)}</h2><div class="sub">Candidates you've saved, with your private notes and stages</div></div>
+        <span style="display:flex;gap:12px"><a class="txt-btn" href="hiring.html?tab=candidates">${I('search', 16)}Find candidates</a><a class="txt-btn" href="hiring.html">${I('back', 16)}Hiring</a></span></div>
+      <div class="catbar" id="pst"></div><div id="pl"><div class="skeleton" style="height:70px;margin:14px"></div></div></div>`;
+    async function load() {
+      const { data, error } = await sb.rpc('saved_candidates_list', { p_stage: stage });
+      if (error) { $('pl').innerHTML = `<div class="empty">${esc(FL.friendly(error))}</div>`; return; }
+      if (data && data.ok === false) {
+        $('pst').innerHTML = '';
+        $('pl').innerHTML = `<div class="prem-box" style="margin:6px 20px 20px"><h3>${I('crown', 16)}The talent pipeline is part of Recruiter</h3>
+          <div class="t-sm" style="line-height:1.55">Save promising trainers, physios and coaches as you search, add notes, and move them through Contacted → Interview → Offer → Hired.</div>
+          <a class="pill gold sm" href="premium.html?plan=recruiter" style="margin-top:10px">Try Recruiter free</a></div>`;
+        return;
+      }
+      const counts = data.counts || {}, total = Object.values(counts).reduce((a, b) => a + b, 0);
+      $('pst').innerHTML = [[null, 'All', total]].concat(PST.map(([k, l]) => [k, l, counts[k] || 0]))
+        .map(([k, l, n]) => `<button class="${stage === k ? 'on' : ''}" data-ps="${k || ''}">${l} <b>${n}</b></button>`).join('');
+      const list = data.results || [];
+      $('pl').innerHTML = list.length ? list.map((c) => `<div class="ent" data-c="${c.user_id}"><a href="profile.html?u=${encodeURIComponent(c.username)}">${FL.ringAvatar(c, 'avatar')}</a>
+          <div class="ent-main"><a class="ent-name" href="profile.html?u=${encodeURIComponent(c.username)}">${esc(c.full_name)}${FL.tags(c)}</a>
+            <div class="ent-sub">${esc(c.headline || '')}</div>
+            <div class="ent-meta">${esc([c.profession_label, c.city].filter(Boolean).join(' · '))} · saved ${FL.timeAgo(c.saved_at)} ago</div>
+            ${c.note ? `<div class="inv-note" style="margin-top:6px">${esc(c.note)}</div>` : ''}
+            <div class="ent-act"><select class="inv-tag" data-stage aria-label="Stage">${PST.map(([k, l]) => `<option value="${k}" ${k === c.stage ? 'selected' : ''}>${l}</option>`).join('')}</select>
+              <button class="pill ghost sm" data-note>${I('edit', 14)}Note</button>
+              ${c.can_inmail && (c.can_inmail.connected || c.can_inmail.existing || c.can_inmail.context === 'open') ? `<a class="pill sm" href="messaging.html?u=${encodeURIComponent(c.username)}">Message</a>`
+                : c.can_inmail && c.can_inmail.ok ? `<button class="pill sm" data-im>${I('mail', 14)}InMail</button>` : ''}
+              <button class="txt-btn" data-rm>Remove</button></div></div></div>`).join('')
+        : `<div class="empty"><b>${stage ? 'No one at this stage' : 'Your pipeline is empty'}</b>${stage ? '' : 'Tap “Save” on candidates in search to keep track of them here.'}</div>`;
+      $('pl')._list = list;
+    }
+    $('pst').onclick = (e) => { const b = e.target.closest('[data-ps]'); if (!b) return; stage = b.dataset.ps || null; load(); };
+    $('pl').addEventListener('change', async (e) => {
+      const sel = e.target.closest('[data-stage]'); if (!sel) return;
+      const id = sel.closest('[data-c]').dataset.c;
+      const r = await FL.call('save_candidate', { p_candidate: id, p_stage: sel.value, p_note: null });
+      if (r) { FL.toast('Moved to ' + (PST.find((x) => x[0] === sel.value) || [])[1], 'ok'); load(); }
+    });
+    $('pl').addEventListener('click', async (e) => {
+      const row = e.target.closest('[data-c]'); if (!row) return;
+      const c = ($('pl')._list || []).find((x) => x.user_id === row.dataset.c); if (!c) return;
+      if (e.target.closest('[data-rm]')) { if (await FL.confirm('Remove from pipeline?', `${c.full_name} will be removed from your saved candidates.`, 'Remove', true)) { await FL.call('remove_candidate', { p_candidate: c.user_id }); load(); } return; }
+      if (e.target.closest('[data-im]')) { const r = await FL.inmail(c, c.can_inmail); if (r) load(); return; }
+      if (e.target.closest('[data-note]')) {
+        const m = FL.modal({ title: 'Note about ' + c.full_name, body: `<textarea id="pn" maxlength="1000" style="min-height:120px" placeholder="Private — only you see this">${esc(c.note || '')}</textarea>`,
+          foot: `<button class="pill solid" data-ok>Save note</button>` });
+        m.q('[data-ok]').onclick = async () => { const r = await FL.call('save_candidate', { p_candidate: c.user_id, p_stage: null, p_note: m.q('#pn').value }); if (r) { m.close(); load(); } };
+      }
+    });
+    load();
   }
 })();
 </script>
