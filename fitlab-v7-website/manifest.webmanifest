@@ -1,21 +1,110 @@
 {
+  "id": "/feed.html?source=app",
   "name": "The Fit Lab",
   "short_name": "Fit Lab",
   "description": "The professional network for the health and fitness industry — jobs, pages, courses and people.",
+  "lang": "en-IN",
+  "dir": "ltr",
   "start_url": "feed.html?source=app",
   "scope": "./",
   "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
   "background_color": "#0b0d0b",
   "theme_color": "#0b0d0b",
   "orientation": "portrait-primary",
+  "categories": [
+    "health",
+    "fitness",
+    "education",
+    "business",
+    "social"
+  ],
   "icons": [
-    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "assets/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "assets/badge-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "monochrome"
+    }
   ],
   "shortcuts": [
-    { "name": "Messages", "url": "messaging.html", "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }] },
-    { "name": "Jobs", "url": "jobs.html", "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }] },
-    { "name": "Notifications", "url": "notifications.html", "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }] }
-  ]
+    {
+      "name": "Messages",
+      "url": "messaging.html",
+      "icons": [
+        {
+          "src": "assets/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Jobs",
+      "url": "jobs.html",
+      "icons": [
+        {
+          "src": "assets/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "url": "notifications.html",
+      "icons": [
+        {
+          "src": "assets/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "launch_handler": {
+    "client_mode": [
+      "navigate-existing",
+      "auto"
+    ]
+  },
+  "share_target": {
+    "action": "share-target",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "image",
+          "accept": [
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+          ]
+        }
+      ]
+    }
+  },
+  "prefer_related_applications": false
 }

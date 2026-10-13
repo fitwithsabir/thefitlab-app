@@ -254,12 +254,12 @@
   }
 
   // composer modal (new post or edit)
-  function composer(me, { editing = null, onDone, page = null } = {}) {
+  function composer(me, { editing = null, onDone, page = null, initText = '', initFile = null } = {}) {
     let imgFile = null;
     const m = FL.modal({ title: editing ? 'Edit post' : 'Create a post', wide: true, body: `
       <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px">${page ? FL.pageLogo(page) : FL.avatarHtml(me, 'avatar md')}
         <div><b>${esc(page ? page.name : (me.full_name || ''))}</b><div class="t-xs muted">${icon('globe', 12)} ${page ? 'Posting as the page · followers see it in their feed' : 'Visible to Fit Lab members'}</div></div></div>
-      <textarea id="pcBody" maxlength="3000" placeholder="Share a coaching insight, a client win, a question for other coaches…" style="min-height:160px;border:0;padding:4px 0;font-size:16px;box-shadow:none;background:transparent">${editing ? esc(editing.body) : ''}</textarea>
+      <textarea id="pcBody" maxlength="3000" placeholder="Share a coaching insight, a client win, a question for other coaches…" style="min-height:160px;border:0;padding:4px 0;font-size:16px;box-shadow:none;background:transparent">${editing ? esc(editing.body) : esc(initText || '')}</textarea>
       <div id="pcImg"></div>
       <p class="t-xs muted" style="margin:10px 0 0">Add #hashtags so people can find your post, and @username to mention someone. Keep it professional — no photos of others without their consent.</p>`,
       foot: `<div class="left" style="display:flex;gap:4px;align-items:center">
@@ -270,15 +270,17 @@
     const sync = () => { const n = ta.value.trim().length; btn.disabled = !n; cnt.textContent = n > 2600 ? `${n} / 3000` : ''; };
     ta.addEventListener('input', sync); sync(); setTimeout(() => ta.focus(), 80);
     const file = m.q('#pcFile');
-    if (file) file.onchange = () => {
-      imgFile = file.files[0] || null;
+    const showImg = (f) => {
+      imgFile = f || null;
       if (!imgFile) return;
       if (imgFile.size > 12 * 1024 * 1024) { imgFile = null; return FL.toast('That image is too large (max 12 MB)', 'err'); }
       const url = URL.createObjectURL(imgFile);
       m.q('#pcImg').innerHTML = `<div style="position:relative;margin-top:10px"><img src="${url}" alt="" style="width:100%;max-height:340px;object-fit:cover;border-radius:10px">
         <button class="icon-btn" id="pcRm" style="position:absolute;right:8px;top:8px;background:rgba(0,0,0,.6);color:#fff" aria-label="Remove image">${icon('close', 18)}</button></div>`;
-      m.q('#pcRm').onclick = () => { imgFile = null; file.value = ''; m.q('#pcImg').innerHTML = ''; };
+      m.q('#pcRm').onclick = () => { imgFile = null; if (file) file.value = ''; m.q('#pcImg').innerHTML = ''; };
     };
+    if (file) file.onchange = () => showImg(file.files[0]);
+    if (initFile && !editing) showImg(initFile);
     btn.onclick = async () => {
       FL.busy(btn, true, editing ? 'Saving…' : 'Posting…');
       try {

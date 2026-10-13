@@ -105,7 +105,11 @@
         <span class="chip ${me.community_status === 'active' ? 'acc' : ''}">${me.community_status === 'active' ? 'Active' : me.community_status === 'banned' ? 'Removed' : 'Paused'}</span></div></div>
 
     <div class="box" id="blocked"><div class="box-head"><div><h2>Blocked members</h2><div class="sub">They can't see your profile or posts, message you or connect.</div></div></div>
-      <div id="blist"><div class="skeleton" style="height:56px;margin:14px"></div></div></div>`;
+      <div id="blist"><div class="skeleton" style="height:56px;margin:14px"></div></div></div>
+
+    <div class="box" id="data"><div class="box-head"><div><h2>Your data</h2><div class="sub">How The Fit Lab uses your data, and how to get a copy or close your account.</div></div></div>
+      <div class="set-row"><div><b>Privacy policy and terms</b><div class="t-sm">What we collect, who can see it, and the rules for using The Fit Lab.</div></div><span style="display:flex;gap:6px;flex-wrap:wrap"><a class="pill sm" href="privacy.html">Privacy</a><a class="pill sm" href="terms.html">Terms</a></span></div>
+      <div class="set-row"><div><b>Copy of your data or account deletion</b><div class="t-sm">Email <span class="mono">fitwithsabir@gmail.com</span> from ${esc(me.email || session.user.email || 'your sign-in address')}. We reply within 7 days.</div></div><a class="pill ghost sm" href="mailto:fitwithsabir@gmail.com?subject=My%20Fit%20Lab%20data">Email us</a></div></div>`;
   FL.wireCommon($('main'));
 
   $('btnOut').onclick = () => FL.signOut();

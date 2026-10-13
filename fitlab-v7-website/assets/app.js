@@ -855,6 +855,8 @@
         const total = (data.messages || 0) + (data.notifications || 0) + (data.invitations || 0);
         const base = document.title.replace(/^\(\d+\+?\)\s*/, '');
         document.title = total ? `(${total > 99 ? '99+' : total}) ${base}` : base;
+        // number on the installed app's icon
+        try { if (navigator.setAppBadge) { if (total) navigator.setAppBadge(total); else navigator.clearAppBadge(); } } catch (_) {}
       } catch (_) {}
     },
 

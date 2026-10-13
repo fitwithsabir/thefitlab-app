@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "in.thefitlab.app",
+      "sha256_cert_fingerprints": [
+        "10:D5:9C:AD:E6:B7:10:D4:2E:82:5E:54:30:53:3B:EC:22:93:F8:6F:AF:56:43:C9:A2:51:0E:72:1A:86:5D:5C"
+      ]
+    }
+  }
+]

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>You're offline — The Fit Lab</title>
+<meta name="theme-color" content="#0b0d0b">
+<style>
+  :root{--ink:#050605;--bone:#f1f4ec;--ash:#93a08f;--lime:#a3e635;--on-lime:#0a0f05;--line:#1f241f;color-scheme:dark}
+  @media (prefers-color-scheme: light){:root{--ink:#f3f2ee;--bone:#191c16;--ash:#5d6656;--lime:#3f7d0f;--on-lime:#fff;--line:#e2e1dc;color-scheme:light}}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--ink);color:var(--bone);font-family:system-ui,-apple-system,'Segoe UI',sans-serif}
+  main{min-height:100%;display:grid;place-items:center;padding:32px 20px;text-align:center}
+  .box{max-width:380px;display:grid;gap:16px;justify-items:center}
+  img{width:140px;height:auto}
+  .light{display:none}
+  @media (prefers-color-scheme: light){.dark{display:none}.light{display:block}}
+  h1{margin:0;font-size:24px}
+  p{margin:0;color:var(--ash);line-height:1.55}
+  button{font:inherit;font-weight:700;border:0;border-radius:999px;padding:12px 22px;background:var(--lime);color:var(--on-lime);cursor:pointer}
+  button:focus-visible{outline:2px solid var(--bone);outline-offset:3px}
+</style>
+</head>
+<body>
+<main>
+  <div class="box">
+    <img class="dark" src="assets/logo-600.png" alt="The Fit Lab">
+    <img class="light" src="assets/logo-600-light.png" alt="The Fit Lab">
+    <h1>You're offline</h1>
+    <p>The Fit Lab needs an internet connection. Check your Wi-Fi or mobile data, then try again.</p>
+    <button type="button" onclick="location.reload()">Try again</button>
+  </div>
+</main>
+<script>window.addEventListener('online', () => location.reload());</script>
+</body>
+</html>
