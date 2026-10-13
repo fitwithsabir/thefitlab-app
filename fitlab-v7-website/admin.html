@@ -339,7 +339,7 @@
     ['certificates', 'Certificates', 'Approve, send back or revoke course certificates', 'award'],
     ['content', 'Courses & lessons', 'Edit course and lesson content', 'courses'],
     ['announcements', 'Announcements', 'Send a pop-up notice to every member', 'bell'],
-    ['premium', 'Premium & payments', 'Change prices, give or end Premium and see payments', 'crown'],
+    ['premium', 'Premium & payments', 'Change prices, give or end Premium, see payments, bookings and refunds', 'crown'],
     ['team', 'Admin team', 'Add people to the team, give them areas they manage themselves, and see the activity log', 'shield'],
   ];
   const RMAP = Object.fromEntries(RIGHTS.map(([k, label, desc, icon]) => [k, { label, desc, icon }]));
@@ -365,6 +365,7 @@
     { id: 'conduct', label: 'Settings & rules', icon: 'settings', group: 'Trust & safety', need: 'moderation', short: 'Rules' },
     { id: 'pages', label: 'Pages', icon: 'building', group: 'Business', need: 'verification' },
     { id: 'premium', label: 'Premium', icon: 'crown', group: 'Business', need: 'premium' },
+    { id: 'bookings', label: 'Bookings & payouts', icon: 'calendar', group: 'Business', need: 'premium', short: 'Bookings' },
     { id: 'certs', label: 'Certificates', icon: 'award', group: 'Academy', need: 'certificates', cnt: 'certificates' },
     { id: 'broadcast', label: 'Announcements', icon: 'bell', group: 'Academy', need: 'announcements' },
   ];
@@ -871,6 +872,9 @@
     'page.removed': ['trash', (t) => `removed the page ${t}`],
     'premium.give': ['crown', (t, d) => `gave ${t} ${E(FL.PLAN_NAMES[d.plan] || 'Premium')}${d.until ? ' until ' + E(fmt(d.until)) : ''}`],
     'premium.end': ['crown', (t) => `ended Premium for ${t}`],
+    'booking_refunded': ['rupee', (t, d) => `marked booking ${t} as refunded${d.amount ? ' (₹' + E(d.amount) + ')' : ''}`],
+    'route_account': ['rupee', (t, d) => d.on ? `switched on online payments for ${t}` : `switched off online payments for ${t}`],
+    'booking_fee': ['rupee', (t, d) => `set the booking fee to ${E(d.pct)}%`],
     'certificate.approved': ['award', (t, d) => `approved ${t}'s certificate${d.course ? ' for ' + E(d.course) : ''}`],
     'certificate.auto_approved': ['award', (t, d) => `issued ${t}'s certificate${d.course ? ' for ' + E(d.course) : ''}`],
     'certificate.rejected': ['award', (t) => `sent ${t}'s certificate back for changes`],
@@ -1304,6 +1308,60 @@
       const m = await findMember($('gUser').value); if (!m) return FL.toast('No member found with that username or ID', 'err');
       if (await act('admin_grant_premium', { p_user: m.user_id, p_plan: $('gPlan').value, p_days: +$('gDays').value }, `${m.full_name} now has ${FL.PLAN_NAMES[$('gPlan').value]}`)) reload();
     };
+  };
+
+  // ------------------------------------------------------------------ BOOKINGS & PAYOUTS
+  VIEWS.bookings = async (alive) => {
+    let filter = 'attention';
+    const draw = async () => {
+      const { data, error } = await sb.rpc('admin_bookings', { p_filter: filter });
+      if (!alive()) return;
+      if (error || !data) { $('view').innerHTML = errBox(error || {}); return; }
+      const st = data.stats || {}, items = data.items || [], coaches = data.coaches || [];
+      const PS = { unpaid: 'Not paid', claimed: 'Client says paid', paid: 'Paid', refund_due: 'Refund due', refunded: 'Refunded' };
+      $('view').innerHTML = `<div class="stack" id="bkRoot">
+        <div class="box"><div class="box-head"><h2>Bookings at a glance</h2><span class="sub">Last 30 days</span></div><div class="kpis">
+          ${[[n(st.bookings_30d || 0), 'Bookings'], ['₹' + n(st.paid_online_30d || 0), 'Paid online'], ['₹' + n(st.fees_30d || 0), 'Booking fees earned'],
+             [n(st.refunds_due || 0), 'Refunds to send'], [n(st.coaches_taking || 0), 'Professionals taking bookings'], [n(st.online_coaches || 0), 'With online payments'],
+             [n(st.open_requests || 0), 'Open client requests'], [n(st.reviews || 0), 'Reviews']].map(([v, l]) => `<div class="kpi"><b>${E(v)}</b><span>${E(l)}</span></div>`).join('')}</div></div>
+        <div class="box"><div class="box-head"><div><h2>Booking fee</h2><div class="sub">The Fit Lab's share of each online payment. Razorpay sends the rest to the professional. UPI and cash payments go straight to them with no fee.</div></div></div>
+          <form class="cr-tools" id="feeF"><input id="feePct" type="number" min="0" max="30" step="0.5" value="${E(st.fee_pct ?? 0)}" aria-label="Fee percent" style="flex:0 1 120px"><span class="t-sm">%</span>
+            <button class="pill solid" type="submit" ${rights.is_owner ? '' : 'disabled title="Only the owner can change this"'}>Save</button></form></div>
+        <div class="box"><div class="box-head"><div><h2>Payments</h2><div class="sub">Refund online payments in the Razorpay Dashboard (Payments → the payment → Refund, and reverse the transfer), then mark them refunded here.</div></div></div>
+          <div class="catbar" id="bkF">${[['attention', 'Refunds due'], ['online', 'Paid online'], ['all', 'All bookings']].map(([k, l]) => `<button type="button" data-f="${k}" class="${k === filter ? 'on' : ''}">${l}</button>`).join('')}</div>
+          ${items.length ? `<div class="tblwrap"><table class="tbl"><thead><tr><th>Booked</th><th>Ref</th><th>Professional</th><th>Client</th><th>Amount</th><th>Paid by</th><th>Status</th><th></th></tr></thead><tbody>
+            ${items.map((b) => `<tr><td>${E(fmt(b.created_at))}</td><td class="mono">${E(b.ref)}</td><td>${whoLink(b.coach)}</td><td>${whoLink(b.client)}</td>
+              <td>₹${n(b.price)}${b.fee ? `<br><span class="sub">fee ₹${n(b.fee)}</span>` : ''}</td><td>${E({ upi: 'UPI direct', cash: 'At session', online: 'Online', free: 'Free' }[b.pay_method] || b.pay_method)}</td>
+              <td><span class="st st-${E(b.pay_status)}">${E(PS[b.pay_status] || b.pay_status)}</span><br><span class="sub">${E(b.status)}</span></td>
+              <td>${b.pay_status === 'refund_due' ? `<button class="pill sm" type="button" data-refunded="${E(b.id)}">Mark refunded</button>` : ''}${b.payment_id ? `<div class="mono" style="font-size:10.5px">${E(b.payment_id)}</div>` : ''}</td></tr>`).join('')}</tbody></table></div>`
+            : `<div class="empty">${filter === 'attention' ? 'No refunds to send.' : 'Nothing here yet.'}</div>`}</div>
+        <div class="box"><div class="box-head"><div><h2>Online payments for professionals</h2><div class="sub">Add each professional as a Linked Account in Razorpay Dashboard → Route (Razorpay checks their bank details), then paste their acc_… ID here.</div></div></div>
+          <form class="cr-tools" id="rtF"><input id="rtUser" placeholder="@username or Fit Lab ID" aria-label="Professional"><input id="rtAcc" placeholder="acc_…" class="mono" aria-label="Linked account ID" style="flex:0 1 220px">
+            <button class="pill solid" type="submit">Switch on</button></form>
+          ${coaches.length ? coaches.map((c) => `<div class="lrow"><div class="who">${FL.avatarHtml(c, 'avatar sm')}<div><div class="nm">${whoLink(c)}</div>
+              <div class="sub">${c.booking_on ? 'Taking bookings' : 'Bookings closed'} · ${n(c.bookings)} booking${c.bookings === 1 ? '' : 's'} · ${c.route_account ? 'Online payments on <span class="mono">' + E(c.route_account) + '</span>' : 'UPI or cash only'}</div></div></div>
+            ${c.route_account ? `<div class="acts"><button class="pill red-o sm" type="button" data-rtoff="${E(c.user_id)}">Switch off online</button></div>` : ''}</div>`).join('')
+            : '<div class="empty">No professionals have set up bookings yet.</div>'}</div>
+        <div class="notice">${I('rupee', 18)}<div><b>Razorpay Route</b> splits each online payment: the professional's share goes to their bank, and The Fit Lab keeps the booking fee. Ask Razorpay to switch on Route for your account first. Online payment also needs the <span class="mono">booking-checkout</span> Edge Function.</div></div></div>`;
+      $('bkF').onclick = (e) => { const b = e.target.closest('[data-f]'); if (b && b.dataset.f !== filter) { filter = b.dataset.f; draw(); } };
+      $('feeF').onsubmit = async (e) => { e.preventDefault(); if (await act('admin_booking_fee', { p_pct: +$('feePct').value }, 'Booking fee saved')) draw(); };
+      $('rtF').onsubmit = async (e) => {
+        e.preventDefault();
+        const m = await findMember($('rtUser').value); if (!m) return FL.toast('No member found with that username or ID', 'err');
+        if (await act('admin_set_route_account', { p_user: m.user_id, p_account: $('rtAcc').value.trim() }, `Online payments on for ${m.full_name}`)) draw();
+      };
+      $('bkRoot').onclick = async (e) => {
+        const mb = e.target.closest('[data-member]'); if (mb) return openMember(mb.dataset.member);
+        const r = e.target.closest('[data-refunded]');
+        if (r) { if (!(await FL.confirm('Refund sent?', 'Only mark this after refunding the payment in the Razorpay Dashboard. The client is told the refund is on its way.', 'Mark refunded'))) return;
+          if (await act('admin_mark_refunded', { p_booking: r.dataset.refunded }, 'Marked refunded')) draw(); return; }
+        const off = e.target.closest('[data-rtoff]');
+        if (off) { if (!(await FL.confirm('Switch off online payments?', 'Clients will only see UPI or pay at the session for this professional.', 'Switch off', true))) return;
+          if (await act('admin_set_route_account', { p_user: off.dataset.rtoff, p_account: null }, 'Online payments switched off')) draw(); }
+      };
+    };
+    reloadView = () => { if (current === 'bookings') draw(); };
+    await draw();
   };
 
   // ------------------------------------------------------------------ CERTIFICATES

@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Client requests — The Fit Lab</title>
+<script src="assets/theme.js"></script>
+<link rel="icon" href="assets/favicon.png">
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+  .mn a{display:flex;justify-content:space-between;align-items:center;padding:11px 18px;color:var(--ash);font-size:14px;font-weight:600}
+  .mn a:hover{background:var(--hover);color:var(--bone);text-decoration:none}
+  .mn a.on{color:var(--lime);background:var(--accent-soft)}
+  .mn a b{color:var(--bone);font-weight:700}
+  .pad{padding:4px 20px 18px}
+  .form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+  .modes{display:flex;gap:8px;flex-wrap:wrap}
+  .modes label{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-2);border-radius:999px;padding:7px 14px;cursor:pointer;font-weight:600;font-size:14px}
+  .modes label:has(input:checked){border-color:var(--lime);background:var(--accent-soft);color:var(--lime)}
+  .modes input{accent-color:var(--lime)}
+  .how{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;padding:0 20px 18px}
+  .how div{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--panel-2);font-size:13.5px}
+  .how b{display:block;font-size:14.5px;margin-bottom:2px}
+  .meta{display:flex;gap:6px;flex-wrap:wrap}
+  @media (max-width:767px){ .mn-mobile{display:block} .col-nav{display:none} }
+  @media (min-width:768px){ .mn-mobile{display:none} }
+</style>
+</head>
+<body data-page="requests">
+<main class="page">
+  <div class="layout l-side-main">
+    <aside class="col-nav"><div class="sticky-col">
+      <div class="box mn"><div class="box-head" style="padding-bottom:8px"><h3 style="font-size:16px">Client requests</h3></div>
+        <a href="requests.html#post" data-v="post">Post what you need</a>
+        <a href="requests.html#mine" data-v="mine">My requests <b id="nMine"></b></a>
+        <a href="requests.html#foryou" data-v="foryou">Requests for you <b id="nFor"></b></a>
+        <a href="bookings.html">Bookings</a>
+      </div>
+      <div id="footL"></div>
+    </div></aside>
+    <section class="stack">
+      <div class="box mn-mobile"><div class="utabs" id="mtabs">
+        <a href="requests.html#post" data-v="post">Post</a><a href="requests.html#mine" data-v="mine">My requests</a><a href="requests.html#foryou" data-v="foryou">For you</a><a href="bookings.html">Bookings</a></div></div>
+      <div id="notice"></div>
+      <div id="view" class="stack"><div class="box skeleton" style="height:320px"></div></div>
+    </section>
+  </div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="assets/app.js"></script>
+<script src="assets/bookings.js"></script>
+<script>
+(async () => {
+  const $ = (id) => document.getElementById(id);
+  const esc = FL.esc, I = FL.icon, B = FLBook;
+  const session = await FL.requireAuth(); if (!session) return;
+  let me; try { me = await FL.getProfile(); } catch (e) { return FL.toast(FL.friendly(e), 'err'); }
+  if (!me.profile_completed) return location.replace('register.html');
+  FL.renderHeader(me);
+  $('notice').innerHTML = FL.communityNotice(me);
+  $('footL').innerHTML = FL.siteFootHtml(true); FL.wireCommon($('footL'));
+  const view = $('view');
+  const plink = (u) => `profile.html?u=${encodeURIComponent(u)}`;
+  const profs = await FL.professions();
+  const MODE = { in_person: 'In person', online: 'Online', either: 'In person or online' };
+  const START = { asap: 'As soon as possible', this_month: 'This month', flexible: 'Flexible' };
+  const UNIT = { session: 'per session', month: 'per month', package: 'for the package' };
+  const RST = { open: 'Open', hired: 'Hired', closed: 'Closed', expired: 'Expired' };
+  const PST = { sent: 'New', accepted: 'Accepted', declined: 'Declined', withdrawn: 'Withdrawn' };
+  let mine = [], forMe = [];
+
+  async function loadLists() {
+    const [a, b] = await Promise.all([sb.rpc('my_client_requests'), sb.rpc('requests_for_me')]);
+    mine = a.data || []; forMe = b.data || [];
+    const newProps = mine.filter((r) => r.status === 'open').reduce((n, r) => n + r.proposals.filter((p) => p.status === 'sent').length, 0);
+    $('nMine').textContent = newProps || ''; $('nFor').textContent = forMe.filter((r) => !r.my_proposal).length || '';
+  }
+  const reqMeta = (r) => `<div class="meta"><span class="chip">${esc(r.profession_label || '')}</span><span class="chip">${esc(r.mode === 'online' ? 'Online' : (r.city || '') + (r.mode === 'either' ? ' or online' : ''))}</span>
+    ${r.budget != null ? `<span class="chip">${I('rupee', 13)}${B.inr(r.budget)} ${esc(UNIT[r.budget_unit] || '')}</span>` : ''}<span class="chip">${esc(START[r.starts] || '')}</span></div>`;
+
+  // ------------------------------------------------------------ post
+  function showPost() {
+    view.innerHTML = `<div class="box"><div class="box-head"><div><h2>Post what you need</h2><div class="sub">Describe your goal. Up to five verified or Fit Lab-certified professionals reply with how they'd help and what it costs.</div></div></div>
+      <div class="how"><div><b>1. Describe it</b>Your goal, where, and your budget.</div><div><b>2. Get up to 5 replies</b>Only verified or certified professionals in your field and city can reply.</div><div><b>3. Book the one you like</b>Compare ratings and prices, then book and pay on The Fit Lab.</div></div>
+      <form class="pad" id="pf" novalidate>
+        <div class="field"><label class="req" for="rqProf">Who do you need?</label><select id="rqProf">${FL.professionOptions(profs, '', 'Choose a professional')}</select></div>
+        <div class="field"><label class="req" for="rqTitle">Your goal in one line</label><input id="rqTitle" maxlength="120" placeholder="e.g. Strength coach to rebuild my knee after ACL surgery"></div>
+        <div class="field"><label for="rqDet">Details</label><textarea id="rqDet" maxlength="1000" placeholder="Experience level, injuries, days and times that suit you…"></textarea></div>
+        <div class="field"><label>Where</label><div class="modes">${Object.entries(MODE).map(([v, l]) => `<label><input type="radio" name="rqMode" value="${v}" ${v === 'either' ? 'checked' : ''}>${l}</label>`).join('')}</div></div>
+        <div class="form-row"><div class="field"><label for="rqCity">City</label><input id="rqCity" maxlength="80" value="${esc(me.city || '')}" placeholder="Kakinada"></div>
+          <div class="field"><label for="rqStart">When do you want to start?</label><select id="rqStart">${Object.entries(START).map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></div></div>
+        <div class="form-row"><div class="field"><label for="rqBudget">Budget in ₹ (optional)</label><input id="rqBudget" type="number" inputmode="numeric" min="0" max="1000000" placeholder="5000"></div>
+          <div class="field"><label for="rqUnit">Budget is</label><select id="rqUnit">${Object.entries(UNIT).map(([v, l]) => `<option value="${v}" ${v === 'month' ? 'selected' : ''}>${l}</option>`).join('')}</select></div></div>
+        <div class="err hidden" id="rqErr"></div>
+        <div class="btn-row"><button class="pill solid" type="submit" id="rqGo">Post request</button><span class="t-xs muted">Open for 14 days. Your name and photo are shown to the professionals who can reply.</span></div>
+      </form></div>`;
+    $('pf').onsubmit = async (e) => {
+      e.preventDefault();
+      const err = $('rqErr'); err.classList.add('hidden');
+      const mode = view.querySelector('input[name=rqMode]:checked').value;
+      if (!$('rqProf').value) { err.textContent = 'Choose who you need.'; return err.classList.remove('hidden'); }
+      if ($('rqTitle').value.trim().length < 10) { err.textContent = 'Describe your goal in at least 10 characters.'; return err.classList.remove('hidden'); }
+      FL.busy($('rqGo'), true, 'Posting…');
+      try {
+        const r = await FL.call('create_client_request', { p: { profession: $('rqProf').value, title: $('rqTitle').value.trim(), details: $('rqDet').value.trim(), mode, city: $('rqCity').value.trim(),
+          starts: $('rqStart').value, budget: $('rqBudget').value, budget_unit: $('rqBudget').value ? $('rqUnit').value : null } });
+        if (!r) return;
+        FL.toast(r.notified ? `Posted. ${r.notified} professional${r.notified === 1 ? '' : 's'} told about it.` : 'Posted. Professionals who match will see it.', 'ok');
+        history.replaceState(null, '', 'requests.html?r=' + r.id); await loadLists(); route();
+      } finally { FL.busy($('rqGo'), false); }
+    };
+  }
+
+  // ------------------------------------------------------------ cards
+  const propCard = (p, r) => {
+    const s = p.service;
+    return `<div class="prop ${p.status === 'accepted' ? 'acc' : ''}">
+      <div class="bk-who"><a href="${plink(p.coach.username)}">${FL.avatarHtml(p.coach, 'avatar')}</a><div style="min-width:0"><a class="ent-name" href="${plink(p.coach.username)}">${esc(p.coach.full_name)} ${FL.tick(p.coach.verified, 14)}</a>
+        <div class="t-sm muted">${esc(p.coach.headline || '')}</div>${p.coach.rating && p.coach.rating.count ? `<div class="t-sm">${B.ratingLine(p.coach.rating)}</div>` : '<div class="t-xs muted">No reviews yet</div>'}</div></div>
+      <div>${esc(p.message)}</div>
+      <div class="meta">${p.price != null ? `<span class="chip acc">${B.inr(p.price)} ${esc(UNIT[p.price_unit] || '')}</span>` : ''}
+        ${s ? `<span class="chip">${esc(s.title)}${s.sessions > 1 ? ` · ${s.sessions} sessions` : ''}</span>` : ''}<span class="chip">${esc(PST[p.status])}</span></div>
+      ${p.status === 'sent' && r.status === 'open' ? `<div class="btn-row"><button class="pill solid sm" data-accept="${p.id}">${s && s.bookable ? 'Accept and book' : 'Accept'}</button>
+        <a class="pill ghost sm" href="messaging.html?u=${encodeURIComponent(p.coach.username)}">Message</a><button class="txt-btn" data-decline="${p.id}">Not for me</button></div>`
+        : p.status === 'accepted' ? `<div class="btn-row"><a class="pill sm" href="messaging.html?u=${encodeURIComponent(p.coach.username)}">Message ${esc(p.coach.full_name.split(' ')[0])}</a><a class="txt-btn" href="bookings.html">Your bookings</a></div>` : ''}</div>`;
+  };
+  const myCard = (r, full) => `<div class="rq">${full ? '' : `<a class="t" href="requests.html?r=${r.id}">${esc(r.title)}</a>`}
+      ${reqMeta(r)}<div class="t-sm muted">${esc(RST[r.status] || r.status)} · posted ${FL.timeAgo(r.created_at)} ago · ${r.proposal_count} of 5 replies</div></div>
+    ${full ? `${r.details ? `<div class="pad"><div class="note" style="padding:10px 12px;border-radius:10px;background:var(--panel-2);border:1px solid var(--line)">${esc(r.details)}</div></div>` : ''}
+      ${r.proposals.length ? r.proposals.map((p) => propCard(p, r)).join('') : '<div class="empty">No replies yet. Matching professionals were told about your request.</div>'}
+      ${r.status === 'open' ? `<div class="pad"><button class="txt-btn" data-close="${r.id}">Close this request</button></div>` : ''}` : ''}`;
+
+  function showMine() {
+    view.innerHTML = `<div class="box"><div class="box-head"><div><h2>My requests</h2><div class="sub">Requests you posted and the replies.</div></div><a class="pill sm" href="requests.html#post">Post a request</a></div>
+      ${mine.length ? mine.map((r) => myCard(r, false)).join('') : '<div class="empty"><b>No requests yet</b>Tell professionals what you need and compare up to five replies. <a href="requests.html#post">Post what you need</a></div>'}</div>`;
+  }
+  function showForMe() {
+    view.innerHTML = `<div class="box"><div class="box-head"><div><h2>Requests for you</h2><div class="sub">Clients looking for: ${esc((profs.find((p) => p.code === me.profession) || {}).label || 'your profession')}${me.city ? ' in ' + esc(me.city) + ' or online' : ''}. Up to five professionals can reply to each.</div></div></div>
+      ${forMe.length ? forMe.map((r) => `<div class="rq"><a class="t" href="requests.html?r=${r.id}">${esc(r.title)}</a>
+          <div class="t-sm muted">${esc(r.client.full_name)} · ${FL.timeAgo(r.created_at)} ago · ${r.proposal_count} of 5 replies</div>${reqMeta(r)}
+          ${r.details ? `<div class="t-sm">${esc(r.details.slice(0, 220))}${r.details.length > 220 ? '…' : ''}</div>` : ''}
+          <div class="btn-row">${r.my_proposal ? `<span class="chip ${r.my_proposal.status === 'accepted' ? 'acc' : ''}">You replied · ${esc(PST[r.my_proposal.status])}</span>` : r.proposal_count >= 5 ? '<span class="chip">Full</span>' : `<a class="pill sm" href="requests.html?r=${r.id}">Reply</a>`}</div></div>`).join('')
+        : `<div class="empty"><b>No open requests right now</b>${me.profession ? 'When a client near you posts a request in your field, you\'ll get a notification.' : 'Add your profession to your profile to see requests in your field.'}
+          ${!(me.verified || me.is_owner) ? '<br>Only verified or Fit Lab-certified professionals can reply. <a href="verification.html">Get the verified tick</a>' : ''}</div>`}</div>`;
+  }
+
+  async function showDetail(id) {
+    document.querySelectorAll('[data-v]').forEach((a) => a.classList.remove('on'));
+    const { data: r } = await sb.rpc('client_request_detail', { p_id: id });
+    if (!r) { view.innerHTML = '<div class="box"><div class="empty"><b>Request not found</b>It may be closed, or for a different field or city. <a href="requests.html#foryou">See requests for you</a></div></div>'; return; }
+    if (r.mine) {
+      view.innerHTML = `<div class="box"><div class="box-head"><div><a class="t-sm" href="requests.html#mine">${I('back', 15)} My requests</a><h2 style="margin-top:6px">${esc(r.title)}</h2></div></div>${myCard(r, true)}</div>`;
+      return;
+    }
+    const mp = r.my_proposal;
+    view.innerHTML = `<div class="box"><div class="box-head"><div><a class="t-sm" href="requests.html#foryou">${I('back', 15)} Requests for you</a><h2 style="margin-top:6px">${esc(r.title)}</h2></div></div>
+        <div class="rq"><div class="bk-who">${FL.avatarHtml(r.client, 'avatar')}<div><b>${esc(r.client.full_name)}</b><div class="t-sm muted">Posted ${FL.timeAgo(r.created_at)} ago · ${r.proposal_count} of 5 replies</div></div></div>
+          ${reqMeta(r)}${r.details ? `<div>${esc(r.details)}</div>` : ''}</div></div>
+      <div class="box"><div class="box-head"><div><h2>${mp ? 'Your reply' : 'Reply to this request'}</h2><div class="sub">${mp ? esc(PST[mp.status]) : 'Say how you\'d help, your price, and which package they can book.'}</div></div></div>
+        ${mp ? `<div class="pad"><div>${esc(mp.message)}</div>${mp.price != null ? `<div class="meta" style="margin-top:8px"><span class="chip acc">${B.inr(mp.price)} ${esc(UNIT[mp.price_unit] || '')}</span></div>` : ''}
+            ${mp.status === 'sent' ? `<div class="btn-row" style="margin-top:10px"><button class="txt-btn" data-withdraw="${mp.id}">Withdraw reply</button></div>` : ''}
+            ${mp.status === 'accepted' ? `<div class="btn-row" style="margin-top:10px"><a class="pill sm" href="messaging.html?u=${encodeURIComponent(r.client.username)}">Message ${esc(r.client.full_name.split(' ')[0])}</a></div>` : ''}</div>`
+        : !r.can_propose ? `<div class="empty">${r.proposal_count >= 5 ? 'This request already has five replies.' : 'Only verified or Fit Lab-certified professionals in this field and city can reply. <a href="verification.html">Get the verified tick</a>'}</div>`
+        : r.proposal_count >= 5 ? '<div class="empty">This request already has five replies.</div>'
+        : `<form class="pad" id="pp" novalidate>
+            <div class="field"><label class="req" for="ppMsg">How you'd help</label><textarea id="ppMsg" maxlength="800" style="min-height:130px" placeholder="Your experience with this goal, how you'd plan it, when you're free…"></textarea><span class="help">20 to 800 characters.</span></div>
+            <div class="form-row"><div class="field"><label for="ppPrice">Your price in ₹</label><input id="ppPrice" type="number" inputmode="numeric" min="0" max="1000000"></div>
+              <div class="field"><label for="ppUnit">Price is</label><select id="ppUnit">${Object.entries(UNIT).map(([v, l]) => `<option value="${v}" ${v === (r.budget_unit || 'package') ? 'selected' : ''}>${l}</option>`).join('')}</select></div></div>
+            <div class="field"><label for="ppSvc">Package they can book</label><select id="ppSvc"><option value="">None, we'll agree by message</option>
+              ${(r.my_services || []).map((s) => `<option value="${s.id}">${esc(s.title)}${s.bookable ? ` · bookable${s.price != null ? ' · ' + B.inr(s.price) : ''}` : ''}</option>`).join('')}</select>
+              <span class="help">${(r.my_services || []).some((s) => s.bookable) ? 'With a bookable package, they can book a time and pay straight away.' : 'Make a package bookable on your profile so clients can book you straight from your reply.'}</span></div>
+            <div class="btn-row"><button class="pill solid" id="ppGo" type="submit">Send reply</button></div></form>`}</div>`;
+    const pp = $('pp');
+    if (pp) pp.onsubmit = async (e) => {
+      e.preventDefault();
+      const msg = $('ppMsg').value.trim(); if (msg.length < 20) return FL.toast('Write at least 20 characters', 'err');
+      FL.busy($('ppGo'), true, 'Sending…');
+      try {
+        const res = await FL.call('send_proposal', { p_request: r.id, p_message: msg, p_price: $('ppPrice').value === '' ? null : +$('ppPrice').value, p_unit: $('ppUnit').value, p_service: $('ppSvc').value || null });
+        if (res) { FL.toast('Reply sent', 'ok'); await loadLists(); showDetail(r.id); }
+      } finally { FL.busy($('ppGo'), false); }
+    };
+  }
+
+  view.addEventListener('click', async (e) => {
+    const t = e.target.closest('button'); if (!t) return;
+    const d = t.dataset;
+    if (d.accept) {
+      const res = await FL.call('respond_proposal', { p_id: d.accept, p_accept: true }); if (!res) return;
+      if (res.book) return FLBook.open(res.book, { proposal: res.proposal, price: res.price });
+      FL.toast('Accepted. Message them to agree the details.', 'ok');
+      if (res.message_user) location.href = 'messaging.html?u=' + encodeURIComponent(res.message_user);
+      return;
+    }
+    if (d.decline) { const res = await FL.call('respond_proposal', { p_id: d.decline, p_accept: false }); if (res) { await loadLists(); route(); } return; }
+    if (d.close) { if (!(await FL.confirm('Close this request?', 'Professionals can\'t reply any more. Replies you have stay here.', 'Close request'))) return; const res = await FL.call('close_client_request', { p_id: d.close }); if (res) { await loadLists(); route(); } return; }
+    if (d.withdraw) { const res = await FL.call('withdraw_proposal', { p_id: d.withdraw }); if (res) { FL.toast('Reply withdrawn', 'ok'); await loadLists(); route(); } }
+  });
+
+  function route() {
+    const id = FL.param('r');
+    if (id) return showDetail(id);
+    const v = (location.hash || (forMe.length && !mine.length ? '#foryou' : mine.length ? '#mine' : '#post')).slice(1);
+    document.querySelectorAll('[data-v]').forEach((a) => a.classList.toggle('on', a.dataset.v === v));
+    if (v === 'mine') return showMine();
+    if (v === 'foryou') return showForMe();
+    return showPost();
+  }
+  window.addEventListener('hashchange', () => { if (!FL.param('r')) route(); });
+  document.querySelectorAll('a[data-v]').forEach((a) => a.addEventListener('click', (e) => {
+    e.preventDefault(); history.replaceState(null, '', 'requests.html#' + a.dataset.v); route(); }));
+  await loadLists();
+  route();
+})();
+</script>
+</body>
+</html>

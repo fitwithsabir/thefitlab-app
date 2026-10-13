@@ -60,6 +60,9 @@
     userplus: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.7-3.5 3.2-5.5 6.5-5.5s5.8 2 6.5 5.5M19 8v6M16 11h6"/>',
     usercheck: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.7-3.5 3.2-5.5 6.5-5.5s5.8 2 6.5 5.5M16 11l2 2 4-4"/>',
     clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+    calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+    star: '<path d="M12 3.8l2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8z"/>',
+    dumbbell: '<path d="M6.5 7.5v9M17.5 7.5v9M3.5 10v4M20.5 10v4M6.5 12h11"/>',
     back: '<path d="M15 5l-7 7 7 7"/>',
     camera: '<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/>',
     down: '<path d="m6 9 6 6 6-6"/>',
@@ -785,6 +788,10 @@
           <a href="premium.html" class="gold-lnk">${icon('crown', 18)}<span id="mePremLbl">Try Premium free for 14 days</span></a>
           ${(profile.verified || profile.is_owner) ? `<a href="verification.html">${icon('tick', 18)}You're verified</a>` : `<a href="verification.html">${icon('tick', 18)}Get the verified tick</a>`}
           <a href="insights.html">${icon('chart', 18)}Profile insights</a></div>
+        <div class="me-sec"><h6>Clients &amp; bookings</h6>
+          <a href="bookings.html">${icon('calendar', 18)}Bookings</a>
+          <a href="requests.html">${icon('target', 18)}Client requests</a>
+          <a href="bookings.html#settings">${icon('clock', 18)}Booking settings</a></div>
         <div class="me-sec"><h6>Jobs &amp; pages</h6>
           <a href="jobs.html?tab=applied">${icon('briefcase', 18)}My jobs</a>
           <a href="hiring.html">${icon('userplus', 18)}Hiring &amp; job posts</a>

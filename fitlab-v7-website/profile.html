@@ -40,6 +40,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
 <script src="assets/app.js"></script>
+<script src="assets/bookings.js"></script>
 <script src="assets/posts.js"></script>
 <script>
 (async () => {
@@ -245,6 +246,11 @@
         { k: 'price_from', label: 'Price from (₹, optional)', type: 'number', min: 0, half: true },
         { k: 'price_unit', label: 'Per', type: 'select', options: [['', '—']].concat(Object.entries(UNITS)), half: true },
         { k: 'description', label: 'What\'s included', type: 'textarea', max: 600, rows: 100, ph: 'Assessment, programme, check-ins, who it suits.' },
+        { k: 'bookable', label: 'Clients can book a time and pay for this package', type: 'checkbox' },
+        { k: 'book_price', label: 'Package price (₹, 0 = free)', type: 'number', min: 0, half: true, def: x.book_price ?? '' },
+        { k: 'sessions', label: 'Sessions in the package', type: 'number', min: 1, maxv: 60, half: true, def: x.sessions || 1 },
+        { k: 'session_min', label: 'Session length', type: 'select', options: [[15, '15 min'], [20, '20 min'], [30, '30 min'], [45, '45 min'], [60, '1 hour'], [75, '1 hour 15 min'], [90, '1 hour 30 min'], [120, '2 hours']], half: true, def: x.session_min || 60 },
+        { k: 'valid_days', label: 'Use sessions within', type: 'select', options: [[30, '1 month'], [60, '2 months'], [90, '3 months'], [180, '6 months'], [365, '1 year']], half: true, def: x.valid_days || 90 },
         { k: 'active', label: 'Show this service on my profile', type: 'checkbox' }],
         onSave: async (v) => {
           const r = await FL.call('save_service', { p_id: id || null, p: v });
@@ -333,6 +339,7 @@
         else if (im.ok) acts += `<button class="pill gold-o" id="btnInmail">${I('mail', 16)}${im.cost ? 'InMail' : 'Message about the job'}</button>`;
         else if (im.premium_needed && (p.hiring || p.open_to_work)) acts += `<button class="pill ghost" id="btnInmail">${I('lock', 15)}Message</button>`;
       }
+      if (canBook()) acts = `<button class="pill solid" id="btnBookTop">${I('calendar', 16)}Book a session</button>` + acts.replace('pill solid', 'pill');
       acts += `<div class="acts-menu"><button class="pill ghost" id="btnMore">More</button></div>`;
     }
     const ring = p.hiring ? 'hiring' : p.open_to_work ? 'otw' : '';
@@ -352,6 +359,7 @@
         <p class="ph-loc"><a href="${self ? 'network.html#connections' : '#'}" ${self ? '' : 'onclick="return false"'}>${p.connections} connection${p.connections === 1 ? '' : 's'}</a>${!self && p.mutual ? ` · ${p.mutual} mutual` : ''}
           ${!self && c.state === 'connected' ? ` · <button class="txt-btn tagbtn" data-tag="1">${I('tag', 13)}${p.my_tag ? esc((FL.CONN_TAGS.find((x) => x[0] === p.my_tag) || [])[1] || p.my_tag) : 'Add how you know them'}</button>` : ''}
           ${!self && p.open_profile ? ` · <span class="chip acc" style="font-size:11px">${I('send', 12)}Open Profile</span>` : ''}</p>
+        ${p.rating && p.rating.count ? `<p class="ph-loc"><a href="#reviews" class="ph-rating">${FLBook.ratingLine(p.rating)}</a></p>` : ''}
         ${p.social && Object.keys(p.social).length ? `<div class="socials">${FL.socialChips(p.social)}${self ? `<button class="txt-btn" data-ed="social">${I('edit', 14)}Edit</button>` : ''}</div>`
           : self ? `<div class="socials"><button class="txt-btn" data-ed="social" style="color:var(--lime)">${I('plus', 15)}Add your Instagram, YouTube, WhatsApp or website</button></div>`
           : p.social_hidden ? `<div class="socials"><span class="t-xs muted">${I('lock', 12)} Contact &amp; social links are visible to connections</span></div>` : ''}
@@ -410,16 +418,44 @@
 
   const MODES = { in_person: 'In person', online: 'Online', home_visit: 'Home visits', hybrid: 'In person & online' };
   const UNITS = { session: 'session', month: 'month', package: 'package', consultation: 'consultation', hour: 'hour' };
+  const canBook = () => !isSelf() && p.booking && p.booking.on && (p.services || []).some((x) => x.bookable && x.active);
   function services() {
     const sv = p.services || [];
     if (!sv.length && !isSelf()) return '';
-    return `<div class="box sec-box" id="svcBox"><div class="box-head"><div><h2>Services</h2>${isSelf() ? '<div class="sub">Clients send a request — no phone numbers needed</div>' : ''}</div><span class="sec-tools">${addBtn('svc', 'Add a service')}</span></div>
+    const bookOn = p.booking && p.booking.on;
+    const priceLine = (x) => x.bookable && x.book_price != null
+      ? ` · <span class="price">${x.sessions > 1 ? `${x.sessions} × ${x.session_min} min · ` : `${x.session_min} min · `}${x.book_price ? FL.inr(x.book_price) : 'Free'}</span>`
+      : x.price_from != null ? ` · <span class="price">from ${FL.inr(x.price_from)}${x.price_unit ? ' / ' + UNITS[x.price_unit] : ''}</span>` : '';
+    return `<div class="box sec-box" id="svcBox"><div class="box-head"><div><h2>Services</h2>${isSelf() ? `<div class="sub">${bookOn ? 'You\'re taking bookings.' : 'Mark a package as bookable and open bookings so clients can book and pay.'} <a href="bookings.html#settings">Booking settings</a></div>` : bookOn ? '<div class="sub">Book a free time and pay on The Fit Lab</div>' : ''}</div><span class="sec-tools">${addBtn('svc', 'Add a service')}</span></div>
       <div class="svc-list">${sv.map((x) => `<div class="svc" ${x.active ? '' : 'style="opacity:.6"'}><div style="display:flex;gap:8px;align-items:flex-start"><div style="flex:1;min-width:0">
-          <b>${esc(x.title)}</b>${x.active ? '' : ' <span class="chip">Hidden</span>'}
-          <div class="meta">${esc([MODES[x.mode], x.city].filter(Boolean).join(' · '))}${x.price_from != null ? ` · <span class="price">from ${FL.inr(x.price_from)}${x.price_unit ? ' / ' + UNITS[x.price_unit] : ''}</span>` : ''}</div></div>
-          ${isSelf() ? editBtn('svc', x.id) : `<button class="pill sm" data-req="${x.id}">Request</button>`}</div>
+          <b>${esc(x.title)}</b>${x.active ? '' : ' <span class="chip">Hidden</span>'}${isSelf() && x.bookable ? ' <span class="chip acc">Bookable</span>' : ''}
+          <div class="meta">${esc([MODES[x.mode], x.city].filter(Boolean).join(' · '))}${priceLine(x)}</div></div>
+          ${isSelf() ? editBtn('svc', x.id) : x.bookable && bookOn ? `<button class="pill solid sm" data-book="${x.id}">Book</button>` : `<button class="pill sm" data-req="${x.id}">Request</button>`}</div>
           ${x.description ? `<p class="t-sm" style="margin:6px 0 0;line-height:1.5;white-space:pre-line">${esc(x.description)}</p>` : ''}</div>`).join('')
         || `<p class="t-sm muted" style="margin:0">Coach clients, see patients or run sessions? List what you offer — training packages, physio consultations, diet plans — and clients can send you a request.</p>`}</div></div>`;
+  }
+
+  function showcase() {
+    const sc = p.showcase || [];
+    if (!sc.length) return '';
+    return `<div class="box sec-box" id="showcase"><div class="box-head"><div><h2>Client results</h2><div class="sub">Shown with each client's permission</div></div></div>
+      <div class="tf-grid">${sc.map((t) => `<div class="tf-card"><div class="tf"><figure><img src="${esc(t.before_url)}" alt="Before" loading="lazy"><figcaption>Before</figcaption></figure>
+        <figure><img src="${esc(t.after_url)}" alt="After" loading="lazy"><figcaption>After</figcaption></figure></div>
+        ${t.caption || t.weeks ? `<div class="t-sm">${esc(t.caption || '')}${t.weeks ? `${t.caption ? ' · ' : ''}${t.weeks} weeks` : ''}</div>` : ''}</div>`).join('')}</div></div>`;
+  }
+  let allReviews = null;
+  function reviews() {
+    const r = p.reviews; if (!r || !r.summary || !r.summary.count) return '';
+    const items = allReviews || r.items || [], n = r.summary.count, st = r.stars || {};
+    return `<div class="box sec-box" id="reviews"><div class="box-head"><div><h2>Reviews</h2><div class="sub">Only from clients who booked and had a session</div></div></div>
+      <div class="rsum"><div><div class="big">${Number(r.summary.avg).toFixed(1)}</div>${FLBook.stars(r.summary.avg, 16)}<div class="t-xs muted">${n} review${n === 1 ? '' : 's'}</div></div>
+        <div class="bars">${[5, 4, 3, 2, 1].map((k) => `<div class="bar"><span>${k}</span><i><b style="width:${Math.round(100 * (st[k] || 0) / n)}%"></b></i><span>${st[k] || 0}</span></div>`).join('')}</div></div>
+      ${items.map((x) => `<div class="rv"><div class="head">${FL.avatarHtml(x.client, 'avatar')}<div style="flex:1;min-width:0"><b>${esc(x.client.full_name)}</b>
+          <div class="t-xs muted">${esc(x.service || '')}${x.sessions ? ` · ${x.sessions} session${x.sessions === 1 ? '' : 's'}` : ''} · ${FL.timeAgo(x.created_at)} ago</div></div>${FLBook.stars(x.rating)}</div>
+        ${x.body ? `<div>${esc(x.body)}</div>` : ''}
+        ${x.coach_reply ? `<div class="reply"><b>${esc(p.full_name)} replied:</b> ${esc(x.coach_reply)}</div>` : ''}
+        ${!isSelf() && !x.mine ? `<div><button class="txt-btn" data-rvreport="${x.id}">${I('flag', 13)}Report</button></div>` : ''}</div>`).join('')}
+      ${n > items.length ? `<div class="pad" style="padding:6px 20px 16px"><button class="pill ghost sm" id="rvAll">Show all ${n} reviews</button></div>` : ''}</div>`;
   }
 
   function featured() {
@@ -570,13 +606,15 @@
       return;
     }
     document.title = `${p.full_name} — The Fit Lab`;
-    $('main').innerHTML = header() + strength() + about() + featured() + activity() + services() + experience() + education() + credentials() + skills() + badges() + courses() + orgs() + languages();
+    $('main').innerHTML = header() + strength() + about() + featured() + activity() + services() + showcase() + reviews() + experience() + education() + credentials() + skills() + badges() + courses() + orgs() + languages();
     const am = $('aboutMore'); if (am) am.onclick = () => { $('aboutTxt').classList.remove('clamp'); am.remove(); };
     const asb = $('allSkills'); if (asb) asb.onclick = () => { $('skills').outerHTML = skills(true); };
   }
 
   async function reload() {
-    const { data, error } = await sb.rpc('get_profile_v9', { p_username: (FL.param('u') || me.username).replace(/^@/, '') });
+    const uname = (FL.param('u') || me.username).replace(/^@/, '');
+    let { data, error } = await sb.rpc('get_profile_v10', { p_username: uname });
+    if ((error && /get_profile_v10|function/i.test(error.message || '')) || (!error && !data)) ({ data, error } = await sb.rpc('get_profile_v9', { p_username: uname }));
     if (error) { $('main').innerHTML = `<div class="box empty"><b>Member not found</b>${esc(FL.friendly(error))}<br><br><a class="pill sm" href="search.html">Search members</a></div>`; return; }
     const first = !p;
     p = data;
@@ -606,6 +644,10 @@
     }
     if (t.dataset.tag) { const r = await FL.tagConnection(p.user_id, p.full_name, p.my_tag); if (r) { p.my_tag = r.tag; render(); } return; }
     if (t.dataset.req) return requestService(t.dataset.req);
+    if (t.dataset.book) return FLBook.open(t.dataset.book);
+    if (t.id === 'btnBookTop') { const bk = (p.services || []).filter((x) => x.bookable && x.active); if (bk.length === 1) return FLBook.open(bk[0].id); const sb2 = $('svcBox'); if (sb2) sb2.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+    if (t.dataset.rvreport) return FL.report('review', t.dataset.rvreport);
+    if (t.id === 'rvAll') { const { data } = await sb.rpc('coach_reviews_list', { p_coach: p.user_id, p_before: null, p_limit: 30 }); if (data) { allReviews = data.items; render(); const rv = $('reviews'); if (rv) rv.scrollIntoView({ block: 'start' }); } return; }
     if (t.id === 'btnPhoto') return uploadPic('photo');
     if (t.id === 'btnCover') return uploadPic('cover');
     if (t.id === 'btnShare') { const url = new URL('profile.html?u=' + encodeURIComponent(p.username), location.href).href;

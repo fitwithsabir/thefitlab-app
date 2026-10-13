@@ -184,6 +184,7 @@
       key: data.key_id, amount: data.amount, currency: data.currency, order_id: data.order_id,
       name: 'The Fit Lab', description: `${data.name} · ${data.description}`, prefill: data.prefill,
       theme: { color: getComputedStyle(document.documentElement).getPropertyValue('--gold').trim() || '#e0b341' },
+      modal: { ondismiss: () => FL.toast('Payment cancelled. You weren\'t charged.') },
       handler: async (resp) => {
         FL.toast('Confirming your payment…');
         const v = await FL.fn('premium-checkout', { action: 'verify', order_id: resp.razorpay_order_id, payment_id: resp.razorpay_payment_id, signature: resp.razorpay_signature });

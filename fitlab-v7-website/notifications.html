@@ -17,7 +17,7 @@
     <section class="stack">
       <div class="box">
         <div class="box-head"><h2>Notifications</h2><button class="txt-btn" id="markAll">Mark all as read</button></div>
-        <div class="utabs" id="tabs"><button data-f="all" class="on">All</button><button data-f="posts">My posts</button><button data-f="network">Network</button><button data-f="jobs">Jobs</button><button data-f="academy">Updates</button></div>
+        <div class="utabs" id="tabs"><button data-f="all" class="on">All</button><button data-f="posts">My posts</button><button data-f="network">Network</button><button data-f="jobs">Jobs</button><button data-f="bookings">Bookings</button><button data-f="academy">Updates</button></div>
         <div id="list"><div class="skeleton" style="height:64px;margin:14px"></div><div class="skeleton" style="height:64px;margin:14px"></div></div>
       </div>
     </section>
@@ -47,19 +47,19 @@
   const { data, error } = await sb.rpc('list_notifications', { p_limit: 100 });
   if (error) { $('list').innerHTML = `<div class="empty">${esc(FL.friendly(error))}</div>`; return; }
   const all = data || [];
-  const group = (n) => ['reaction', 'comment', 'mention'].includes(n.kind) ? 'posts' : ['connection', 'endorsement', 'inmail', 'service', 'page'].includes(n.kind) ? 'network' : n.kind === 'job' ? 'jobs' : 'academy';
+  const group = (n) => ['reaction', 'comment', 'mention'].includes(n.kind) ? 'posts' : ['connection', 'endorsement', 'inmail', 'service', 'page'].includes(n.kind) ? 'network' : n.kind === 'job' ? 'jobs' : ['booking', 'review', 'proposal'].includes(n.kind) ? 'bookings' : 'academy';
   const icFor = (n) => ({ reaction: 'like', comment: 'comment', connection: 'userplus', endorsement: 'usercheck', launch: 'courses', system: 'shield', motivation: 'sparkles',
-    job: 'briefcase', page: 'building', premium: 'crown', verification: 'tick', inmail: 'mail', service: 'briefcase', mention: 'at', test: 'bell' })[n.kind] || 'bell';
+    job: 'briefcase', page: 'building', premium: 'crown', verification: 'tick', inmail: 'mail', service: 'briefcase', mention: 'at', test: 'bell', booking: 'calendar', review: 'star', proposal: 'target' })[n.kind] || 'bell';
   let filter = 'all';
 
   function draw() {
     const list = all.filter((n) => filter === 'all' || group(n) === filter);
     $('list').innerHTML = list.length ? list.map((n) => `<a class="notif ${n.is_read ? '' : 'unread'}" href="${esc(n.link_url || '#')}" data-id="${n.id}">
         ${n.actor ? FL.avatarHtml(n.actor, 'avatar') : `<span class="ic-circle">${I(icFor(n), 22)}</span>`}
-        <div style="flex:1;min-width:0"><p>${n.actor ? `<b>${esc(n.actor.full_name)}</b> ` + esc(n.title.replace(/^@\S+\s/, '')) : `<b>${esc(n.title)}</b>`}</p>
+        <div style="flex:1;min-width:0"><p>${n.actor && /^@\S+\s/.test(n.title) ? `<b>${esc(n.actor.full_name)}</b> ` + esc(n.title.replace(/^@\S+\s/, '')) : `<b>${esc(n.title)}</b>`}</p>
           ${n.body ? `<span class="q">${esc(n.body)}</span>` : ''}</div>
         <time datetime="${n.created_at}">${FL.timeAgo(n.created_at)}</time></a>`).join('')
-      : `<div class="empty"><b>Nothing here yet</b>${filter === 'posts' ? 'Reactions, comments and @mentions will show up here.' : filter === 'network' ? 'Invitations, endorsements, InMails and service requests will show up here.' : filter === 'jobs' ? 'Application updates, new applicants and jobs from pages you follow will show up here.' : 'You\'re all caught up.'}</div>`;
+      : `<div class="empty"><b>Nothing here yet</b>${filter === 'posts' ? 'Reactions, comments and @mentions will show up here.' : filter === 'network' ? 'Invitations, endorsements, InMails and service requests will show up here.' : filter === 'jobs' ? 'Application updates, new applicants and jobs from pages you follow will show up here.' : filter === 'bookings' ? 'Bookings, session reminders, reviews and client requests will show up here.' : 'You\'re all caught up.'}</div>`;
   }
   $('tabs').onclick = (e) => { const b = e.target.closest('[data-f]'); if (!b) return; filter = b.dataset.f;
     document.querySelectorAll('#tabs button').forEach((x) => x.classList.toggle('on', x === b)); draw(); };

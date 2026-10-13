@@ -33,6 +33,9 @@
     <div class="eyebrow">Hire a coach</div>
     <h1 class="display" style="font-size:clamp(32px,5vw,52px);margin:6px 0 6px">Certified Fit Lab coaches</h1>
     <p class="ash" style="max-width:600px">Every coach here has completed and passed a Fit Lab Academy course. Contact details are never shown — select the coaches you're interested in and we'll pass your request on.</p>
+    <div class="card" style="margin-top:14px;display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:14px 18px">
+      <div><b>Looking for a coach for yourself?</b><div class="small ash">Post your goal and up to five verified professionals reply with a plan and a price. Book and pay on The Fit Lab.</div></div>
+      <a class="btn btn-primary" href="requests.html#post">Post what you need</a></div>
   </div>
 
   <div class="layout">
@@ -154,6 +157,7 @@
               <h3>${FL.esc(c.full_name)}</h3>
               ${c.headline ? `<div class="small" style="margin:2px 0 4px">${FL.esc(c.headline)}</div>` : ''}
               <div class="idl">${FL.esc(c.unique_id)} · @${FL.esc(c.username || '')}</div>
+              ${c.username ? `<a class="small" href="profile.html?u=${encodeURIComponent(c.username)}#svcBox" style="display:inline-block;margin-top:4px">View profile, reviews &amp; booking →</a>` : ''}
               ${c.open_to_work ? `<span class="otw" style="margin-top:6px">Open to coaching roles</span>` : ''}
             </div>
           </div>

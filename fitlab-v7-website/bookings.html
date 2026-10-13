@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Bookings — The Fit Lab</title>
+<script src="assets/theme.js"></script>
+<link rel="icon" href="assets/favicon.png">
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+  .mn a{display:flex;justify-content:space-between;align-items:center;padding:11px 18px;color:var(--ash);font-size:14px;font-weight:600}
+  .mn a:hover{background:var(--hover);color:var(--bone);text-decoration:none}
+  .mn a.on{color:var(--lime);background:var(--accent-soft)}
+  .mn a b{color:var(--bone);font-weight:700}
+  .mn a b.hot{color:var(--on-lime);background:var(--lime);border-radius:999px;padding:0 7px;font-size:12px}
+  .dhead{padding:18px 20px;display:grid;gap:10px}
+  .dhead h1{margin:0;font-size:22px;font-family:var(--body);text-transform:none;letter-spacing:0}
+  .dhead .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;padding:0 20px 18px}
+  .facts div{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  .facts span{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ash);font-weight:700}
+  .facts b{font-size:15px;font-variant-numeric:tabular-nums}
+  .who{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .who .avatar{width:44px;height:44px}
+  .act{padding:4px 20px 18px;display:grid;gap:10px}
+  .note{padding:10px 12px;border-radius:10px;background:var(--panel-2);border:1px solid var(--line);font-size:14px;line-height:1.5}
+  .form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+  .sw{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 20px;border-top:1px solid var(--line)}
+  .sw b{display:block}
+  .pad{padding:4px 20px 18px}
+  .rate-in{display:flex;gap:4px}
+  .rate-in button{border:0;background:none;font-size:30px;color:var(--line-2);cursor:pointer;padding:0 2px;line-height:1}
+  .rate-in button.on{color:#f5b301}
+  .rate-in button:focus-visible{outline:2px solid var(--lime);outline-offset:2px;border-radius:4px}
+  @media (max-width:767px){ .mn-mobile{display:block} .col-nav{display:none} }
+  @media (min-width:768px){ .mn-mobile{display:none} }
+</style>
+</head>
+<body data-page="bookings">
+<main class="page">
+  <div class="layout l-side-main">
+    <aside class="col-nav"><div class="sticky-col">
+      <div class="box mn"><div class="box-head" style="padding-bottom:8px"><h3 style="font-size:16px">Bookings</h3></div>
+        <a href="bookings.html#client" data-v="client">My bookings <b id="nClient"></b></a>
+        <a href="bookings.html#coach" data-v="coach">My clients <b id="nCoach"></b></a>
+        <a href="bookings.html#settings" data-v="settings">Booking settings</a>
+        <a href="requests.html">Client requests</a>
+        <a href="hire.html">Find a professional</a>
+      </div>
+      <div id="footL"></div>
+    </div></aside>
+    <section class="stack">
+      <div class="box mn-mobile"><div class="utabs" id="mtabs">
+        <a href="bookings.html#client" data-v="client">My bookings</a><a href="bookings.html#coach" data-v="coach">My clients</a>
+        <a href="bookings.html#settings" data-v="settings">Settings</a><a href="requests.html">Requests</a></div></div>
+      <div id="notice"></div>
+      <div id="view" class="stack"><div class="box skeleton" style="height:320px"></div></div>
+    </section>
+  </div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="assets/app.js"></script>
+<script src="assets/bookings.js"></script>
+<script>
+(async () => {
+  const $ = (id) => document.getElementById(id);
+  const esc = FL.esc, I = FL.icon, B = FLBook;
+  const session = await FL.requireAuth(); if (!session) return;
+  let me; try { me = await FL.getProfile(); } catch (e) { return FL.toast(FL.friendly(e), 'err'); }
+  if (!me.profile_completed) return location.replace('register.html');
+  FL.renderHeader(me);
+  $('notice').innerHTML = FL.communityNotice(me);
+  $('footL').innerHTML = FL.siteFootHtml(true); FL.wireCommon($('footL'));
+  const view = $('view');
+  const plink = (u) => `profile.html?u=${encodeURIComponent(u)}`;
+  const WD = [[1, 'Monday'], [2, 'Tuesday'], [3, 'Wednesday'], [4, 'Thursday'], [5, 'Friday'], [6, 'Saturday'], [0, 'Sunday']];
+  const hm = (m) => { const h = Math.floor(m / 60), mm = m % 60; const d = new Date(Date.UTC(2000, 0, 1, h, mm)); return m === 1440 ? '12:00 am (midnight)' : d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }); };
+  const TIMES = Array.from({ length: 49 }, (_, i) => i * 30).filter((m) => m >= 300);
+  let counts = {};
+
+  async function loadCounts() {
+    const { data } = await sb.rpc('booking_counts'); counts = data || {};
+    $('nCoach').textContent = counts.coach_action || ''; $('nCoach').classList.toggle('hot', !!counts.coach_action);
+    $('nClient').textContent = counts.client_action || ''; $('nClient').classList.toggle('hot', !!counts.client_action);
+  }
+
+  // ------------------------------------------------------------ lists
+  const row = (b) => {
+    const nxt = b.next ? `Next: ${B.fmtWhen(b.next)}` : b.left > 0 && b.status === 'confirmed' ? `${b.left} session${b.left === 1 ? '' : 's'} left to book` : '';
+    const ACT = { confirm: 'Confirm or decline', check_payment: 'Check payment', pay: 'Pay', review: 'Leave a review', schedule: 'Book next session' };
+    return `<a class="bkrow" href="bookings.html?b=${b.id}">${FL.avatarHtml(b.member, 'avatar')}
+      <div class="m"><span class="t">${esc(b.title)}</span>
+        <span class="t-sm">${b.role === 'coach' ? 'Client' : 'With'} <b>${esc(b.member.full_name)}</b> · ${b.used} of ${b.sessions_total} done</span>
+        ${nxt ? `<span class="t-sm muted">${esc(nxt)}</span>` : ''}
+        <span class="chips">${B.statusChip(b.status)}${b.status !== 'requested' || b.pay_method !== 'online' ? B.payChip(b) : ''}</span></div>
+      ${b.action ? `<span class="go pill sm ${['confirm', 'check_payment', 'pay'].includes(b.action) ? 'solid' : 'ghost'}">${ACT[b.action]}</span>` : ''}</a>`;
+  };
+  async function showList(role) {
+    let filter = 'active';
+    const draw = async () => {
+      const [{ data: list }, agenda] = await Promise.all([sb.rpc('my_bookings', { p_role: role, p_filter: filter }),
+        role === 'coach' && filter === 'active' ? sb.rpc('my_agenda', { p_days: 14 }).then((r) => r.data || []) : Promise.resolve(null)]);
+      const items = list || [];
+      let ag = '';
+      if (agenda) {
+        const byDay = {}; agenda.forEach((s) => { (byDay[B.fmtDay(s.starts_at)] ||= []).push(s); });
+        ag = `<div class="box agenda"><div class="box-head"><div><h2>Next 14 days</h2><div class="sub">${agenda.length} session${agenda.length === 1 ? '' : 's'} booked</div></div></div>
+          ${agenda.length ? Object.entries(byDay).map(([d, ss]) => `<div class="day">${esc(d)}</div>${ss.map((s) => `<a class="bkrow" href="bookings.html?b=${s.booking_id}">${FL.avatarHtml(s.member, 'avatar')}
+              <div class="m"><span class="t">${B.fmtTime(s.starts_at)} · ${esc(s.member.full_name)}</span><span class="t-sm muted">${esc(s.title)}${s.pending ? ' · waiting for your reply' : ''}</span></div></a>`).join('')}`).join('')
+            : '<div class="empty">No sessions in the next two weeks.</div>'}</div>`;
+      }
+      const empty = role === 'coach'
+        ? `<div class="empty"><b>No client bookings yet</b>Add a bookable package to your profile and open bookings, and clients can book your free times. <a href="bookings.html#settings">Set up bookings</a></div>`
+        : `<div class="empty"><b>No bookings yet</b>Find a trainer, physio or dietitian, or post what you need and let up to five professionals reply.<div class="btn-row" style="justify-content:center;margin-top:12px"><a class="pill sm" href="hire.html">Find a professional</a><a class="pill ghost sm" href="requests.html#post">Post what you need</a></div></div>`;
+      view.innerHTML = `${ag}<div class="box"><div class="box-head"><div><h2>${role === 'coach' ? 'My clients' : 'My bookings'}</h2>
+          <div class="sub">${role === 'coach' ? 'Bookings clients made with you' : 'Packages and sessions you booked'}</div></div></div>
+        <div class="seg" id="seg" role="tablist"><button type="button" class="${filter === 'active' ? 'on' : ''}" data-f="active">Active</button><button type="button" class="${filter === 'past' ? 'on' : ''}" data-f="past">Past</button></div>
+        ${items.length ? items.map(row).join('') : filter === 'active' ? empty : '<div class="empty">Nothing here yet.</div>'}</div>`;
+      $('seg').onclick = (e) => { const b = e.target.closest('[data-f]'); if (b && b.dataset.f !== filter) { filter = b.dataset.f; draw(); } };
+    };
+    await draw();
+  }
+
+  // ------------------------------------------------------------ settings
+  async function showSettings() {
+    const { data: s0 } = await sb.rpc('my_booking_settings');
+    const s = s0 || {};
+    let hours = (s.hours || []).map((h) => ({ ...h }));
+    const timeSel = (v, cls) => `<select class="${cls}" aria-label="${cls === 'hs' ? 'From' : 'To'}">${TIMES.map((m) => `<option value="${m}" ${m === v ? 'selected' : ''}>${hm(m)}</option>`).join('')}</select>`;
+    const drawHours = () => {
+      $('hrs').innerHTML = WD.map(([d, name]) => {
+        const rs = hours.map((h, i) => ({ ...h, i })).filter((h) => h.weekday === d);
+        return `<div class="hrow"><div class="dname">${name}</div><div class="ranges">
+          ${rs.length ? rs.map((h) => `<span class="rg" data-i="${h.i}">${timeSel(h.start, 'hs')}–${timeSel(h.end, 'he')}<button class="icon-btn" type="button" data-rm="${h.i}" aria-label="Remove">${I('close', 16)}</button></span>`).join('') : '<span class="off">Not available</span>'}
+          <button class="txt-btn" type="button" data-add="${d}">${I('plus', 16)}Add hours</button></div></div>`;
+      }).join('');
+    };
+    view.innerHTML = `<div class="box"><div class="box-head"><div><h2>Booking settings</h2><div class="sub">Clients can book your free times for the packages you mark as bookable on your profile.</div></div></div>
+        <div class="sw"><div><b>Take bookings</b><span class="t-sm muted">Shows a Book button on your bookable packages.</span></div><label class="switch"><input type="checkbox" aria-label="Take bookings" id="sOn" ${s.booking_on ? 'checked' : ''}><span></span></label></div>
+        <div class="sw"><div><b>Instant booking</b><span class="t-sm muted">Confirm bookings automatically instead of approving each one.</span></div><label class="switch"><input type="checkbox" aria-label="Instant booking" id="sAuto" ${s.auto_confirm ? 'checked' : ''}><span></span></label></div>
+        <div class="sw"><div><b>Bookable packages</b><span class="t-sm muted">${s.bookable_services || 0} on your profile.</span></div><a class="pill ghost sm" href="profile.html#svcBox">Manage packages</a></div></div>
+      <div class="box"><div class="box-head"><div><h2>When you coach</h2><div class="sub">Times are in India time (IST).</div></div><button class="txt-btn" type="button" id="copyMon">Copy Monday to weekdays</button></div>
+        <div class="pad"><div class="hrs" id="hrs"></div></div></div>
+      <div class="box"><div class="box-head"><div><h2>How clients pay you</h2></div></div>
+        <div class="pad stack" style="gap:12px">
+          <label class="check"><input type="checkbox" id="sUpi" ${s.accept_upi ? 'checked' : ''}><span>UPI straight to me</span></label>
+          <div class="form-row"><div class="field"><label for="sUpiId">Your UPI ID</label><input id="sUpiId" class="mono" maxlength="120" placeholder="name@okaxis" value="${esc(s.upi_id || '')}"></div>
+            <div class="field"><label for="sUpiName">Name shown to clients</label><input id="sUpiName" maxlength="60" placeholder="${esc(me.full_name || '')}" value="${esc(s.upi_name || '')}"></div></div>
+          <label class="check"><input type="checkbox" id="sCash" ${s.accept_cash ? 'checked' : ''}><span>Pay at the session (cash or UPI when you meet)</span></label>
+          <div class="note">${s.online ? `${I('check', 16)} <b>Online payments are on.</b> Clients can pay by card or UPI on The Fit Lab, and Razorpay sends the money to your bank${Number(s.fee_pct) ? `, less The Fit Lab's ${Number(s.fee_pct)}% fee` : ''}.`
+            : `<b>Want clients to pay online?</b> The Fit Lab can link your bank account through Razorpay so clients pay by card or UPI when they book. Write to <span class="mono">${esc(FITLAB_CONFIG.SUPPORT_EMAIL || '')}</span> to set it up.`}</div>
+        </div></div>
+      <div class="box"><div class="box-head"><div><h2>Booking rules</h2></div></div>
+        <div class="pad"><div class="form-row">
+          <div class="field"><label for="sNotice">Minimum notice</label><select id="sNotice">${[[0, 'None'], [2, '2 hours'], [6, '6 hours'], [12, '12 hours'], [24, '1 day'], [48, '2 days']].map(([v, l]) => `<option value="${v}" ${v === s.notice_hours ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+          <div class="field"><label for="sHorizon">Book up to</label><select id="sHorizon">${[[14, '2 weeks ahead'], [30, '1 month ahead'], [60, '2 months ahead'], [90, '3 months ahead']].map(([v, l]) => `<option value="${v}" ${v === s.horizon_days ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+          <div class="field"><label for="sBuffer">Break between sessions</label><select id="sBuffer">${[[0, 'None'], [10, '10 minutes'], [15, '15 minutes'], [30, '30 minutes']].map(([v, l]) => `<option value="${v}" ${v === s.buffer_min ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+        </div>
+        <div class="field"><label for="sPlace">Where you meet clients</label><input id="sPlace" maxlength="160" placeholder="e.g. Shaan Fitness Gym, Main Road, Kakinada" value="${esc(s.place || '')}"></div>
+        <div class="btn-row"><button class="pill solid" id="sSave">Save settings</button></div></div></div>
+      <div class="box"><div class="box-head"><div><h2>Time off</h2><div class="sub">No bookings on these days.</div></div></div>
+        <div id="offList">${(s.time_off || []).length ? s.time_off.map((t) => `<div class="sess"><span class="when">${B.fmtDate(t.from)}${t.to !== t.from ? ' – ' + B.fmtDate(t.to) : ''}</span><span class="muted">${esc(t.note || '')}</span><span class="acts"><button class="txt-btn" data-offdel="${t.id}">Remove</button></span></div>`).join('') : '<div class="empty" style="padding:10px 20px">No time off planned.</div>'}</div>
+        <div class="pad"><div class="form-row"><div class="field"><label for="oFrom">From</label><input type="date" id="oFrom"></div><div class="field"><label for="oTo">To</label><input type="date" id="oTo"></div>
+          <div class="field"><label for="oNote">Note (optional)</label><input id="oNote" maxlength="120" placeholder="Holiday"></div></div>
+          <button class="pill sm" id="oAdd">Add time off</button></div></div>`;
+    drawHours();
+    $('hrs').onclick = (e) => {
+      const a = e.target.closest('[data-add]'); if (a) { const d = +a.dataset.add; const last = hours.filter((h) => h.weekday === d).sort((x, y) => x.end - y.end).pop();
+        const st = last ? Math.min(last.end + 60, 1380) : 360; hours.push({ weekday: d, start: st, end: Math.min(st + 240, 1440) }); drawHours(); return; }
+      const r = e.target.closest('[data-rm]'); if (r) { hours.splice(+r.dataset.rm, 1); drawHours(); }
+    };
+    $('hrs').onchange = (e) => { const g = e.target.closest('[data-i]'); if (!g) return; const h = hours[+g.dataset.i]; h[e.target.classList.contains('hs') ? 'start' : 'end'] = +e.target.value; };
+    $('copyMon').onclick = () => { const mon = hours.filter((h) => h.weekday === 1); if (!mon.length) return FL.toast('Add Monday\'s hours first', 'err');
+      hours = hours.filter((h) => ![2, 3, 4, 5].includes(h.weekday)); [2, 3, 4, 5].forEach((d) => mon.forEach((h) => hours.push({ weekday: d, start: h.start, end: h.end }))); drawHours(); };
+    $('sSave').onclick = async (e) => {
+      const bad = hours.find((h) => h.end - h.start < 15); if (bad) return FL.toast('Each time range needs an end time after its start time.', 'err');
+      FL.busy(e.target, true, 'Saving…');
+      try {
+        const r = await FL.call('save_booking_settings', { p: { booking_on: $('sOn').checked, auto_confirm: $('sAuto').checked, accept_upi: $('sUpi').checked,
+          upi_id: $('sUpiId').value.trim(), upi_name: $('sUpiName').value.trim(), accept_cash: $('sCash').checked, notice_hours: $('sNotice').value,
+          horizon_days: $('sHorizon').value, buffer_min: $('sBuffer').value, place: $('sPlace').value.trim(), hours } });
+        if (r) { FL.toast(r.booking_on ? 'Saved. You\'re taking bookings.' : 'Saved', 'ok'); }
+        else { const { data } = await sb.rpc('my_booking_settings'); if (data) $('sOn').checked = !!data.booking_on; }
+      } finally { FL.busy(e.target, false); }
+    };
+    $('oAdd').onclick = async () => {
+      const r = await FL.call('add_time_off', { p_from: $('oFrom').value || null, p_to: $('oTo').value || $('oFrom').value || null, p_note: $('oNote').value.trim() || null });
+      if (r) { FL.toast('Time off added', 'ok'); showSettings(); }
+    };
+    $('offList').onclick = async (e) => { const d = e.target.closest('[data-offdel]'); if (!d) return; await FL.call('delete_time_off', { p_id: d.dataset.offdel }); showSettings(); };
+  }
+
+  // ------------------------------------------------------------ one booking (the client space)
+  async function signed(paths) {
+    const list = paths.filter(Boolean); if (!list.length) return {};
+    const { data } = await sb.storage.from('client-space').createSignedUrls(list, 3600);
+    const out = {}; (data || []).forEach((x) => { if (x.signedUrl) out[x.path] = x.signedUrl; }); return out;
+  }
+  async function showBooking(id) {
+    document.querySelectorAll('[data-v]').forEach((a) => a.classList.remove('on'));
+    const { data: b, error } = await sb.rpc('booking_detail', { p_booking: id });
+    if (error || !b) { view.innerHTML = '<div class="box"><div class="empty"><b>Booking not found</b>It may belong to someone else. <a href="bookings.html">See your bookings</a></div></div>'; return; }
+    const isCoach = b.role === 'coach', isClient = b.role === 'client';
+    const other = isCoach ? b.client : b.coach;
+    const now = Date.now();
+    const photoPaths = b.checkins.map((k) => k.photo_path).concat(b.transformations.flatMap((t) => [t.before_path, t.after_path])).concat(b.program && b.program.file_path ? [b.program.file_path] : []);
+    const urls = await signed([...new Set(photoPaths)]);
+    const live = ['requested', 'confirmed'].includes(b.status);
+
+    // what needs doing now
+    let act = '';
+    if (isCoach && b.status === 'requested' && b.pay_method !== 'online') {
+      act = `${b.client_note ? `<div class="note"><b>${esc(b.client.full_name)} wrote:</b> ${esc(b.client_note)}</div>` : ''}
+        <div class="btn-row"><button class="pill solid" data-confirm>Confirm booking</button><button class="pill ghost" data-decline>Decline</button></div>
+        <span class="t-xs muted">If you don't reply within 48 hours, the request expires and the time is released.</span>`;
+    } else if (isCoach && b.pay_status === 'claimed') {
+      act = `<div class="note">${esc(b.client.full_name)} says they paid <b>${B.inr(b.price)}</b> by UPI${b.upi_ref ? ` (reference <span class="mono">${esc(b.upi_ref)}</span>)` : ''}. Check your UPI app before confirming.</div>
+        <div class="btn-row"><button class="pill solid" data-received>Yes, I received it</button><button class="pill ghost" data-notreceived>Not received yet</button></div>`;
+    } else if (isCoach && ['upi', 'cash'].includes(b.pay_method) && b.pay_status === 'unpaid' && ['confirmed', 'completed'].includes(b.status)) {
+      act = `<div class="btn-row"><span class="t-sm muted">${b.pay_method === 'cash' ? 'They pay you at the session.' : 'Waiting for their UPI payment.'}</span><button class="pill sm" data-received>Mark ${B.inr(b.price)} as received</button></div>`;
+    } else if (isClient && b.pay_method === 'upi' && ['unpaid', 'claimed'].includes(b.pay_status) && b.status === 'confirmed' && b.upi && b.upi.id) {
+      act = B.upiBoxHtml(b);
+    } else if (isClient && b.pay_method === 'upi' && b.status === 'requested') {
+      act = '<div class="note">You\'ll pay by UPI once they confirm. We\'ll let you know.</div>';
+    } else if (isClient && b.pay_method === 'online' && b.pay_status === 'unpaid' && b.status === 'requested') {
+      act = `<div class="note">Your time is held for 30 minutes from booking. Pay to confirm it.</div><div class="btn-row"><button class="pill solid" data-payonline>Pay ${B.inr(b.price)}</button><button class="pill ghost" data-cancelb>Cancel</button></div>`;
+    } else if (b.pay_status === 'refund_due') {
+      act = '<div class="note">The Fit Lab is refunding the online payment. It takes 5 to 7 working days to reach the account you paid from.</div>';
+    }
+    if (['cancelled', 'declined', 'expired'].includes(b.status)) {
+      act += `<div class="note">${b.status === 'expired' ? 'This booking expired.' : b.status === 'declined' ? 'This booking was declined.' : b.cancelled_by_me ? 'You cancelled this booking.' : 'This booking was cancelled.'}${b.cancel_reason ? ' “' + esc(b.cancel_reason) + '”' : ''}</div>`;
+    }
+
+    const upcoming = b.sessions.filter((s) => s.status === 'scheduled' && new Date(s.ends_at).getTime() > now);
+    const rest = b.sessions.filter((s) => !upcoming.includes(s)).reverse();
+    const SST = { scheduled: 'Booked', done: 'Done', cancelled: 'Cancelled', no_show: 'No-show' };
+    const sessRow = (s) => {
+      const started = new Date(s.starts_at).getTime() <= now + 15 * 60000, future = new Date(s.starts_at).getTime() > now;
+      const acts = [];
+      if (s.status === 'scheduled' && live) {
+        if (isCoach && started) acts.push(`<button class="pill sm" data-done="${s.id}">Done</button><button class="txt-btn" data-noshow="${s.id}">No-show</button>`);
+        if (future) acts.push(`<button class="txt-btn" data-move="${s.id}">Move</button><button class="txt-btn" data-cancels="${s.id}">Cancel</button>`);
+        if (isCoach && future && b.mode !== 'in_person') acts.push(`<button class="txt-btn" data-link="${s.id}">${s.meet_link ? 'Change link' : 'Add meeting link'}</button>`);
+        if (s.meet_link) acts.push(`<a class="pill sm" href="${esc(s.meet_link)}" target="_blank" rel="noopener">${I('play', 15)}Join</a>`);
+      }
+      if (isCoach && ['done', 'no_show'].includes(s.status) && ['confirmed', 'completed'].includes(b.status)) acts.push(`<button class="txt-btn" data-${s.status === 'done' ? 'noshow' : 'done'}="${s.id}">Mark ${s.status === 'done' ? 'no-show' : 'done'}</button>`);
+      return `<div class="sess ${s.status !== 'scheduled' ? 'past' : ''}"><span class="when">${B.fmtWhen(s.starts_at)}</span><span class="chip ${s.status === 'done' ? 'st-confirmed' : s.status === 'scheduled' ? '' : 'st-cancelled'}">${SST[s.status]}</span><span class="acts">${acts.join('')}</span></div>`;
+    };
+
+    const canReview = isClient && b.sessions.some((s) => s.status === 'done');
+    const review = b.review;
+    const reviewBox = (canReview || review) ? `<div class="box" id="review"><div class="box-head"><div><h2>Review</h2><div class="sub">${isClient ? 'Shown on their profile with your name. Only clients who had a session can review.' : 'What your client said'}</div></div></div>
+      <div class="pad">${isClient ? `<div class="rate-in" id="rateIn" role="radiogroup" aria-label="Rating">${[1, 2, 3, 4, 5].map((n) => `<button type="button" role="radio" aria-checked="${review && review.rating === n}" aria-label="${n} star${n > 1 ? 's' : ''}" data-r="${n}" class="${review && review.rating >= n ? 'on' : ''}">★</button>`).join('')}</div>
+          <div class="field" style="margin-top:8px"><label for="rvBody">Your review</label><textarea id="rvBody" maxlength="1000" placeholder="What did they help you with? How did it go?">${esc(review ? review.body || '' : '')}</textarea></div>
+          <div class="btn-row"><button class="pill solid sm" id="rvSave">${review ? 'Update review' : 'Post review'}</button>${review ? '<button class="txt-btn" id="rvDel">Delete</button>' : ''}</div>
+          ${review && review.coach_reply ? `<div class="rv"><div class="reply"><b>${esc(b.coach.full_name)} replied:</b> ${esc(review.coach_reply)}</div></div>` : ''}`
+        : review ? `<div>${B.stars(review.rating, 18)}</div>${review.body ? `<p style="margin:6px 0 10px">${esc(review.body)}</p>` : ''}
+          <div class="field"><label for="rvReply">Your public reply</label><textarea id="rvReply" maxlength="600" placeholder="Thank them, or add context">${esc(review.coach_reply || '')}</textarea></div>
+          <button class="pill sm" id="rvReplySave" data-rid="${review.id}">Save reply</button>` : ''}</div></div>` : '';
+
+    const prog = b.program;
+    const programBox = (['confirmed', 'completed'].includes(b.status) && (isCoach || prog)) ? `<div class="box" id="program"><div class="box-head"><div><h2>Program</h2><div class="sub">${isCoach ? 'Only your client sees this.' : `From ${esc(b.coach.full_name)}`}${prog && prog.updated_at ? ` · updated ${FL.timeAgo(prog.updated_at)} ago` : ''}</div></div></div>
+      <div class="pad">${isCoach ? `<div class="field"><label for="pgBody">Plan, exercises and notes</label><textarea id="pgBody" maxlength="8000" style="min-height:180px" placeholder="Week 1: …">${esc(prog ? prog.body || '' : '')}</textarea></div>
+          <div class="btn-row"><label class="pill ghost sm" style="cursor:pointer">${I('upload', 15)}Attach PDF or image<input type="file" id="pgFile" accept="application/pdf,image/jpeg,image/png,image/webp" hidden></label>
+            <span class="t-sm muted" id="pgFileName">${prog && prog.file_name ? esc(prog.file_name) : ''}</span><button class="pill solid sm" id="pgSave">Save and share</button></div>`
+        : `${prog && prog.body ? `<div class="prose">${FL.md(prog.body)}</div>` : ''}`}
+        ${prog && prog.file_path && urls[prog.file_path] ? `<a class="pill sm" href="${esc(urls[prog.file_path])}" target="_blank" rel="noopener">${I('download', 15)}${esc(prog.file_name || 'Open file')}</a>` : ''}</div></div>` : '';
+
+    const ckRow = (k) => `<div class="ck"><div class="t-sm muted">${B.fmtWhen(k.created_at)}</div>
+      <div class="nums">${k.weight_kg != null ? `<span>Weight <b>${Number(k.weight_kg)} kg</b></span>` : ''}${k.energy ? `<span>Energy <b>${k.energy}/5</b></span>` : ''}${k.sleep_h != null ? `<span>Sleep <b>${Number(k.sleep_h)} h</b></span>` : ''}</div>
+      ${k.note ? `<div>${esc(k.note)}</div>` : ''}${k.photo_path && urls[k.photo_path] ? `<img src="${esc(urls[k.photo_path])}" alt="Check-in photo" loading="lazy">` : ''}
+      ${k.coach_reply ? `<div class="reply"><b>${esc(b.coach.full_name)}:</b> ${esc(k.coach_reply)}</div>` : ''}
+      <div class="btn-row">${isCoach ? `<button class="txt-btn" data-ckreply="${k.id}">${k.coach_reply ? 'Edit reply' : 'Reply'}</button>` : `<button class="txt-btn" data-ckdel="${k.id}" data-ckphoto="${esc(k.photo_path || '')}">Delete</button>`}</div></div>`;
+    const checkinBox = ['confirmed', 'completed'].includes(b.status) ? `<div class="box" id="checkins"><div class="box-head"><div><h2>Check-ins</h2><div class="sub">Private between you and ${esc(other.full_name)}.</div></div></div>
+      ${isClient ? `<div class="pad"><div class="form-row">
+          <div class="field"><label for="ckW">Weight (kg)</label><input id="ckW" type="number" inputmode="decimal" min="20" max="400" step="0.1"></div>
+          <div class="field"><label for="ckE">Energy</label><select id="ckE"><option value="">—</option>${[1, 2, 3, 4, 5].map((n) => `<option value="${n}">${n} · ${['Very low', 'Low', 'OK', 'Good', 'Great'][n - 1]}</option>`).join('')}</select></div>
+          <div class="field"><label for="ckS">Sleep (hours)</label><input id="ckS" type="number" inputmode="decimal" min="0" max="24" step="0.5"></div></div>
+        <div class="field"><label for="ckN">How's it going?</label><textarea id="ckN" maxlength="1000" style="min-height:70px" placeholder="Workouts done, food, pain, wins…"></textarea></div>
+        <div class="btn-row"><label class="pill ghost sm" style="cursor:pointer">${I('camera', 15)}Add progress photo<input type="file" id="ckP" accept="image/jpeg,image/png,image/webp" hidden></label><span class="t-sm muted" id="ckPN"></span><button class="pill solid sm" id="ckSave">Send check-in</button></div></div>` : ''}
+      ${b.checkins.length ? b.checkins.map(ckRow).join('') : `<div class="empty" style="padding:12px 20px">${isClient ? 'Send your first check-in so your coach can track progress.' : 'No check-ins yet.'}</div>`}</div>` : '';
+
+    const tfCard = (t) => {
+      const bu = t.status === 'approved' ? t.before_url : urls[t.before_path], au = t.status === 'approved' ? t.after_url : urls[t.after_path];
+      const ST = { pending: 'Waiting for client approval', approved: 'On the profile', declined: 'Declined by client', withdrawn: 'Withdrawn by client' };
+      return `<div class="tf-card"><div class="tf"><figure>${bu ? `<img src="${esc(bu)}" alt="Before">` : ''}<figcaption>Before</figcaption></figure><figure>${au ? `<img src="${esc(au)}" alt="After">` : ''}<figcaption>After</figcaption></figure></div>
+        ${t.caption ? `<div class="t-sm">${esc(t.caption)}${t.weeks ? ` · ${t.weeks} weeks` : ''}</div>` : ''}<span class="chip ${t.status === 'approved' ? 'st-confirmed' : ''}">${ST[t.status] || t.status}</span>
+        <div class="btn-row">${isClient && t.status === 'pending' ? `<button class="pill solid sm" data-tfyes="${t.id}">Approve and show</button><button class="txt-btn" data-tfno="${t.id}">No thanks</button>` : ''}
+          ${t.status === 'approved' || (isCoach && t.status === 'pending') ? `<button class="txt-btn" data-tfoff="${t.id}">${isClient ? 'Withdraw consent' : 'Remove'}</button>` : ''}</div></div>`;
+    };
+    const ckPhotos = b.checkins.filter((k) => k.photo_path);
+    const showcaseBox = (['confirmed', 'completed'].includes(b.status) && (isCoach || b.transformations.length)) ? `<div class="box" id="showcase"><div class="box-head"><div><h2>Results showcase</h2>
+        <div class="sub">${isCoach ? 'Ask to show a before-and-after on your profile. Nothing appears unless your client approves, and they can withdraw it any time.' : 'Your coach asked to show your progress. Nothing is public unless you approve.'}</div></div>
+        ${isCoach ? `<button class="pill sm" id="tfNew" ${ckPhotos.length < 2 ? 'disabled title="Needs two check-in photos"' : ''}>Ask to show results</button>` : ''}</div>
+      ${b.transformations.length ? `<div class="tf-grid">${b.transformations.map(tfCard).join('')}</div>` : `<div class="empty" style="padding:12px 20px">${isCoach ? 'Uses two of your client\'s check-in photos.' : ''}</div>`}</div>` : '';
+
+    view.innerHTML = `<div class="box">
+        <div class="dhead"><a class="t-sm" href="bookings.html#${isCoach ? 'coach' : 'client'}">${I('back', 15)} ${isCoach ? 'My clients' : 'My bookings'}</a>
+          <h1>${esc(b.title)}</h1>
+          <div class="chips">${B.statusChip(b.status)}${B.payChip(b)}<span class="chip mono">${esc(b.ref)}</span></div>
+          <div class="who"><a href="${plink(other.username)}">${FL.avatarHtml(other, 'avatar')}</a><div style="flex:1;min-width:0"><a class="ent-name" href="${plink(other.username)}">${esc(other.full_name)} ${FL.tick(other.verified, 14)}</a><div class="t-sm muted">${isCoach ? 'Client' : esc(other.headline || '')}</div></div>
+            <a class="pill ghost sm" href="messaging.html?u=${encodeURIComponent(other.username)}">${I('messages', 15)}Message</a></div></div>
+        <div class="facts">
+          <div><span>Sessions</span><b>${b.used} of ${b.sessions_total} done</b></div>
+          <div><span>Length</span><b>${b.session_min} min</b></div>
+          <div><span>Price</span><b>${b.price ? B.inr(b.price) : 'Free'}</b> <span style="display:inline;letter-spacing:0;text-transform:none;font-weight:500">${esc(b.pay_method === 'free' ? '' : B.METHOD[b.pay_method])}</span></div>
+          <div><span>Where</span><b>${esc(B.MODE[b.mode] || '')}</b>${b.place && b.mode !== 'online' ? `<span style="display:inline;letter-spacing:0;text-transform:none;font-weight:500"> · ${esc(b.place)}</span>` : ''}</div>
+          ${b.valid_until && b.sessions_total > 1 ? `<div><span>Use by</span><b>${B.fmtDate(b.valid_until)}</b></div>` : ''}
+        </div>
+        ${act ? `<div class="act">${act}</div>` : ''}</div>
+      <div class="box" id="sessions"><div class="box-head"><div><h2>Sessions</h2><div class="sub">${b.left > 0 && b.status === 'confirmed' ? `${b.left} left to book` : 'All booked'}</div></div>
+          ${b.status === 'confirmed' && b.left > 0 ? '<button class="pill sm" id="sNext">Book next session</button>' : ''}</div>
+        ${upcoming.map(sessRow).join('')}${rest.map(sessRow).join('')}
+        ${!b.sessions.length ? '<div class="empty">No sessions yet.</div>' : ''}
+        <div class="pad t-xs muted" style="padding-top:10px">${isClient ? `Move or cancel a session up to ${b.notice_hours} hours before it starts. A cancelled session goes back into your package.` : 'Mark each session done after it happens. When all are done, the package is complete and your client is asked for a review.'}</div></div>
+      ${programBox}${checkinBox}${reviewBox}${showcaseBox}
+      ${live ? `<div class="btn-row" style="justify-content:flex-end"><button class="txt-btn" data-cancelb style="color:var(--danger-text)">Cancel booking</button></div>` : ''}`;
+
+    const qr = document.getElementById('upiQr'); if (qr && b.upi) B.drawQr(qr, B.upiLink(b));
+    if (location.hash) { const t = document.getElementById(location.hash.slice(1)); if (t) setTimeout(() => t.scrollIntoView({ block: 'start' }), 60); }
+    wireBooking(b, urls);
+  }
+
+  function ask(title, label, { value = '', max = 300, ph = '', okLabel = 'Save', required = false } = {}) {
+    return new Promise((res) => {
+      const m = FL.modal({ title, body: `<div class="field"><label for="askIn">${esc(label)}</label><textarea id="askIn" maxlength="${max}" style="min-height:80px" placeholder="${esc(ph)}">${esc(value)}</textarea></div>`,
+        foot: `<button class="pill ghost" data-no>Back</button><button class="pill solid" data-ok>${esc(okLabel)}</button>`, onClose: () => res(null) });
+      m.q('[data-no]').onclick = () => m.close();
+      m.q('[data-ok]').onclick = () => { const v = m.q('#askIn').value.trim(); if (required && !v) return FL.toast(label + ' is required', 'err'); res(v); m.el.remove(); document.body.style.overflow = ''; };
+    });
+  }
+  function pickTime(b, title, run) {
+    const m = FL.modal({ title, wide: true, body: '<div id="ptSlots"></div>', foot: '<span class="left t-sm" id="ptWhen">Pick a time</span><button class="pill solid" id="ptGo" disabled>Confirm time</button>' });
+    let start = null, pk = null;
+    FLBook.slotPicker(m.q('#ptSlots'), b.coach.user_id, b.session_min, (t) => { start = t; m.q('#ptWhen').textContent = t ? B.fmtWhen(t) : 'Pick a time'; m.q('#ptGo').disabled = !t; }).then((p) => { pk = p; });
+    m.q('#ptGo').onclick = async (e) => {
+      FL.busy(e.target, true, 'Saving…');
+      const { data: r, error } = await run(start);
+      FL.busy(e.target, false);
+      if (error) return FL.toast(FL.friendly(error), 'err');
+      if (!r || r.ok === false) { FL.toast((r && r.message) || 'Couldn\'t save', 'err'); if (r && r.code === 'slot' && pk) pk = await pk.refresh(); return; }
+      m.close(); FL.toast('Saved', 'ok'); showBooking(b.id);
+    };
+  }
+
+  function wireBooking(b, urls) {
+    const reload = () => showBooking(b.id);
+    const run = async (fn, args, ok) => { const r = await FL.call(fn, args); if (r) { if (ok) FL.toast(ok, 'ok'); await loadCounts(); reload(); } return r; };
+    view.onclick = async (e) => {
+      const t = e.target.closest('button,[data-copyupi]'); if (!t) return;
+      const d = t.dataset;
+      if ('confirm' in d) return run('respond_booking', { p_booking: b.id, p_accept: true, p_note: null }, 'Booking confirmed');
+      if ('decline' in d) { const why = await ask('Decline this booking?', 'Message to the client (optional)', { ph: 'Sorry, I\'m fully booked that week.', okLabel: 'Decline' }); if (why === null) return; return run('respond_booking', { p_booking: b.id, p_accept: false, p_note: why || null }, 'Declined'); }
+      if ('received' in d) return run('coach_confirm_paid', { p_booking: b.id, p_received: true }, 'Payment marked as received');
+      if ('notreceived' in d) return run('coach_confirm_paid', { p_booking: b.id, p_received: false }, 'Client told the payment hasn\'t arrived');
+      if ('paid' in d) { const ref = await ask('Paid by UPI?', 'UPI reference number (optional)', { max: 40, ph: 'e.g. 4321 9876 5432', okLabel: 'I\'ve paid' }); if (ref === null) return; return run('client_mark_paid', { p_booking: b.id, p_ref: ref || null }, 'Thanks! They\'ll confirm when it arrives.'); }
+      if ('copyupi' in d) { try { await navigator.clipboard.writeText(b.upi.id); FL.toast('UPI ID copied', 'ok'); } catch (_) { const r = document.createRange(); r.selectNodeContents($('upiId')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); } return; }
+      if ('payonline' in d) return FLBook.payOnline(b.id);
+      if ('cancelb' in d) { const why = await ask('Cancel this booking?', 'Reason (optional, shared with them)', { okLabel: 'Cancel booking' }); if (why === null) return; return run('cancel_booking', { p_booking: b.id, p_reason: why || null }, 'Booking cancelled'); }
+      if (t.id === 'sNext') return pickTime(b, 'Book your next session', (start) => sb.rpc('schedule_session', { p_booking: b.id, p_start: start }));
+      if (d.move) return pickTime(b, 'Move this session', (start) => sb.rpc('move_session', { p_session: d.move, p_start: start }));
+      if (d.cancels) { if (!(await FL.confirm('Cancel this session?', 'It goes back into the package so you can book another time.', 'Cancel session', true))) return; return run('cancel_session', { p_session: d.cancels }, 'Session cancelled'); }
+      if (d.done) return run('mark_session', { p_session: d.done, p_status: 'done' }, 'Marked done');
+      if (d.noshow) return run('mark_session', { p_session: d.noshow, p_status: 'no_show' }, 'Marked as no-show');
+      if (d.link) { const l = await ask('Meeting link', 'Google Meet, Zoom or other link', { max: 300, ph: 'https://meet.google.com/…' }); if (l === null) return; return run('set_session_link', { p_session: d.link, p_link: l || null }, 'Link saved'); }
+      if (t.id === 'rvSave') {
+        const n = view.querySelectorAll('#rateIn .on').length; if (!n) return FL.toast('Choose 1 to 5 stars', 'err');
+        return run('write_review', { p_booking: b.id, p_rating: n, p_body: $('rvBody').value.trim() || null }, 'Thanks for your review');
+      }
+      if (t.id === 'rvDel') { if (!(await FL.confirm('Delete your review?', 'It will be removed from their profile.', 'Delete', true))) return; return run('delete_review', { p_review: b.review.id }, 'Review deleted'); }
+      if (d.r) { view.querySelectorAll('#rateIn [data-r]').forEach((x) => { x.classList.toggle('on', +x.dataset.r <= +d.r); x.setAttribute('aria-checked', x === t ? 'true' : 'false'); }); return; }
+      if (t.id === 'rvReplySave') return run('reply_review', { p_review: d.rid, p_reply: $('rvReply').value.trim() || null }, 'Reply saved');
+      if (t.id === 'pgSave') {
+        FL.busy(t, true, 'Saving…');
+        try {
+          let path = null, name = null; const f = $('pgFile').files[0];
+          if (f) { if (f.size > 8 * 1024 * 1024) return FL.toast('Files can be up to 8 MB', 'err');
+            const ext = (f.name.split('.').pop() || 'pdf').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 5);
+            path = `${b.id}/program-${Date.now()}.${ext}`; name = f.name.slice(0, 120);
+            const { error } = await sb.storage.from('client-space').upload(path, f, { contentType: f.type, upsert: false }); if (error) return FL.toast(FL.friendly(error), 'err'); }
+          await run('save_program', { p_booking: b.id, p_body: $('pgBody').value, p_file_path: path, p_file_name: name }, 'Program shared with your client');
+        } finally { FL.busy(t, false); }
+        return;
+      }
+      if (t.id === 'ckSave') {
+        FL.busy(t, true, 'Sending…');
+        try {
+          let photo = null; const f = $('ckP').files[0];
+          if (f) { photo = `${b.id}/checkin-${Date.now()}.jpg`; await FL.uploadImage(f, { bucket: 'client-space', path: photo, max: 1400 }); }
+          await run('add_checkin', { p_booking: b.id, p: { weight_kg: $('ckW').value, energy: $('ckE').value, sleep_h: $('ckS').value, note: $('ckN').value.trim(), photo_path: photo } }, 'Check-in sent');
+        } catch (ex) { FL.toast(FL.friendly(ex), 'err'); } finally { FL.busy(t, false); }
+        return;
+      }
+      if (d.ckreply) { const k = b.checkins.find((x) => x.id === d.ckreply); const r = await ask('Reply to check-in', 'Your reply', { value: k.coach_reply || '', max: 600, okLabel: 'Send' }); if (r === null) return; return run('reply_checkin', { p_id: d.ckreply, p_reply: r || null }, 'Reply sent'); }
+      if (d.ckdel) { if (!(await FL.confirm('Delete this check-in?', 'Your coach won\'t see it any more.', 'Delete', true))) return; const r = await FL.call('delete_checkin', { p_id: d.ckdel }); if (r && d.ckphoto) await sb.storage.from('client-space').remove([d.ckphoto]); return reload(); }
+      if (t.id === 'tfNew') return proposeShowcase(b, urls);
+      if (d.tfyes) return approveShowcase(b, d.tfyes);
+      if (d.tfno) return run('respond_transformation', { p_id: d.tfno, p_approve: false, p_before_url: null, p_after_url: null }, 'Declined. Nothing is shown.');
+      if (d.tfoff) {
+        if (!(await FL.confirm(b.role === 'client' ? 'Withdraw consent?' : 'Remove from your profile?', 'The photos are taken off the profile straight away.', b.role === 'client' ? 'Withdraw' : 'Remove', true))) return;
+        const r = await FL.call('withdraw_transformation', { p_id: d.tfoff });
+        if (r) { await sb.storage.from('showcase').remove([`${d.tfoff}/before.jpg`, `${d.tfoff}/after.jpg`]); FL.toast('Removed', 'ok'); reload(); }
+      }
+    };
+    const pf = $('pgFile'); if (pf) pf.onchange = () => { $('pgFileName').textContent = pf.files[0] ? pf.files[0].name : ''; };
+    const cp = $('ckP'); if (cp) cp.onchange = () => { $('ckPN').textContent = cp.files[0] ? cp.files[0].name : ''; };
+  }
+
+  function proposeShowcase(b, urls) {
+    const photos = b.checkins.filter((k) => k.photo_path).slice().reverse();
+    const opt = (k) => `<option value="${esc(k.photo_path)}">${B.fmtDay(k.created_at)}${k.weight_kg != null ? ' · ' + Number(k.weight_kg) + ' kg' : ''}</option>`;
+    const m = FL.modal({ title: 'Ask to show results', wide: true, body: `<p class="t-sm muted" style="margin:0 0 12px">Choose two of ${esc(b.client.full_name)}'s check-in photos. They decide whether it appears on your profile.</p>
+      <div class="form-row"><div class="field"><label for="tfB">Before</label><select id="tfB">${photos.map(opt).join('')}</select></div>
+        <div class="field"><label for="tfA">After</label><select id="tfA">${photos.map(opt).join('')}</select></div></div>
+      <div class="tf" id="tfPrev" style="max-width:360px"></div>
+      <div class="form-row" style="margin-top:12px"><div class="field"><label for="tfC">Caption</label><input id="tfC" maxlength="300" placeholder="e.g. Pain-free squats after ACL rehab"></div>
+        <div class="field"><label for="tfW">Weeks</label><input id="tfW" type="number" min="1" max="520" inputmode="numeric"></div></div>`,
+      foot: '<button class="pill solid" id="tfGo">Ask for approval</button>' });
+    const a = m.q('#tfA'); a.selectedIndex = photos.length - 1;
+    const prev = () => { m.q('#tfPrev').innerHTML = `<figure>${urls[m.q('#tfB').value] ? `<img src="${esc(urls[m.q('#tfB').value])}" alt="">` : ''}<figcaption>Before</figcaption></figure><figure>${urls[a.value] ? `<img src="${esc(urls[a.value])}" alt="">` : ''}<figcaption>After</figcaption></figure>`; };
+    m.q('#tfB').onchange = prev; a.onchange = prev; prev();
+    m.q('#tfGo').onclick = async (e) => {
+      if (m.q('#tfB').value === a.value) return FL.toast('Choose two different photos', 'err');
+      FL.busy(e.target, true, 'Sending…');
+      const r = await FL.call('propose_transformation', { p_booking: b.id, p_before: m.q('#tfB').value, p_after: a.value, p_caption: m.q('#tfC').value.trim() || null, p_weeks: +m.q('#tfW').value || null });
+      FL.busy(e.target, false);
+      if (r) { m.close(); FL.toast('Sent to your client for approval', 'ok'); showBooking(b.id); }
+    };
+  }
+
+  async function approveShowcase(b, id) {
+    const t = b.transformations.find((x) => x.id === id); if (!t) return;
+    if (!(await FL.confirm('Show this on their profile?', 'Members of The Fit Lab will see these two photos on your coach\'s profile. You can withdraw consent at any time.', 'Approve and show'))) return;
+    FL.toast('Publishing…');
+    try {
+      const out = {};
+      for (const [k, p] of [['before', t.before_path], ['after', t.after_path]]) {
+        const { data: blob, error } = await sb.storage.from('client-space').download(p); if (error) throw error;
+        const dest = `${id}/${k}.jpg`;
+        const up = await sb.storage.from('showcase').upload(dest, blob, { contentType: blob.type || 'image/jpeg', upsert: true }); if (up.error) throw up.error;
+        out[k] = sb.storage.from('showcase').getPublicUrl(dest).data.publicUrl;
+      }
+      const r = await FL.call('respond_transformation', { p_id: id, p_approve: true, p_before_url: out.before, p_after_url: out.after });
+      if (r) { FL.toast('Approved. It\'s on their profile.', 'ok'); showBooking(b.id); }
+    } catch (ex) { FL.toast(FL.friendly(ex), 'err'); }
+  }
+
+  // ------------------------------------------------------------ routing
+  async function route() {
+    const id = FL.param('b');
+    if (id) return showBooking(id);
+    const v = (location.hash || '#client').slice(1);
+    document.querySelectorAll('[data-v]').forEach((a) => a.classList.toggle('on', a.dataset.v === v));
+    if (v === 'coach') return showList('coach');
+    if (v === 'settings') return showSettings();
+    return showList('client');
+  }
+  window.addEventListener('hashchange', () => { if (!FL.param('b')) route(); });
+  document.querySelectorAll('a[data-v]').forEach((a) => a.addEventListener('click', (e) => {
+    if (FL.param('b')) return; e.preventDefault(); history.replaceState(null, '', 'bookings.html#' + a.dataset.v); route(); }));
+  await loadCounts();
+  await route();
+})();
+</script>
+</body>
+</html>
