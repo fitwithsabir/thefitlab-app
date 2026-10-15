@@ -367,6 +367,7 @@
     { id: 'premium', label: 'Premium', icon: 'crown', group: 'Business', need: 'premium' },
     { id: 'bookings', label: 'Bookings & payouts', icon: 'calendar', group: 'Business', need: 'premium', short: 'Bookings' },
     { id: 'marketing', label: 'Marketing & ads', icon: 'chart', group: 'Business', need: 'premium', short: 'Marketing' },
+    { id: 'emails', label: 'Emails', icon: 'mail', group: 'Business', need: 'premium' },
     { id: 'certs', label: 'Certificates', icon: 'award', group: 'Academy', need: 'certificates', cnt: 'certificates' },
     { id: 'broadcast', label: 'Announcements', icon: 'bell', group: 'Academy', need: 'announcements' },
   ];
@@ -439,6 +440,37 @@
   }
 
   // ------------------------------------------------------------------ MARKETING (fix-23)
+  VIEWS.emails = async (alive) => {
+    const WHAT = { welcome: 'Welcome', receipt: 'Receipt', certificate: 'Certificate', notice: 'Update', test: 'Test' };
+    const ST = { sent: ['Sent', 'acc'], pending: ['Waiting', ''], sending: ['Sending', ''], failed: ['Failed', 'bad'], skipped: ['Skipped', ''] };
+    const draw = async () => {
+      $('view').innerHTML = `<div class="box">${spinner}</div>`;
+      const { data, error } = await sb.rpc('admin_email_status');
+      if (!alive()) return;
+      if (error || !data) { $('view').innerHTML = errBox(error || {}); return; }
+      const stuck = data.waiting > 0 && !data.sent_30d;
+      $('view').innerHTML = `<div class="stack">
+        <div class="box"><div class="box-head"><div><h2>Automatic emails</h2><div class="sub">Sent from fitwithsabir@gmail.com · welcome, receipts, certificates, bookings, trial sessions and job updates · Gmail allows about 500 a day</div></div>
+          <button class="pill solid sm" id="emTest">${I('mail', 15)}Send me a test</button></div>
+          <div class="kpis">${[[n(data.sent_24h), 'Sent today'], [n(data.sent_30d), 'Sent in 30 days'], [n(data.waiting), 'Waiting'], [n(data.failed_7d), 'Failed this week']]
+            .map(([v, l]) => `<div class="kpi"><b>${E(v)}</b><span>${E(l)}</span></div>`).join('')}</div>
+          ${data.last_error ? `<div class="notice warn" style="margin:0 20px 16px">${I('flag', 18)}<div class="t-sm" style="line-height:1.5"><b>Last problem:</b> ${E(data.last_error)}${/Invalid login|535|Username and Password/i.test(data.last_error) ? '<br>The Gmail App Password is wrong or was deleted. Make a new one at myaccount.google.com/apppasswords and update GMAIL_APP_PASSWORD in Supabase → Edge Functions → Secrets.' : ''}</div></div>`
+            : stuck ? `<div class="notice" style="margin:0 20px 16px">${I('clock', 18)}<div class="t-sm" style="line-height:1.5">Emails are waiting. If they don't go within a few minutes, check that GMAIL_USER and GMAIL_APP_PASSWORD are saved in Supabase → Edge Functions → Secrets.</div></div>` : ''}</div>
+        <div class="box"><div class="box-head"><h2>Latest emails</h2></div>
+          ${(data.recent || []).length ? `<div class="tblwrap"><table class="tbl"><thead><tr><th>When</th><th>To</th><th>Email</th><th>Status</th></tr></thead><tbody>
+            ${data.recent.map((r) => `<tr><td>${E(FL.timeAgo(r.created_at))}</td><td>${E(r.to_email)}</td><td>${E(WHAT[r.template] || r.template)}${r.what && r.template === 'notice' ? ' · ' + E(r.what) : ''}</td>
+              <td><span class="chip ${(ST[r.status] || [])[1] || ''}" ${r.status === 'failed' ? 'style="color:var(--danger-text);border-color:var(--danger)"' : ''}>${E((ST[r.status] || [r.status])[0])}</span></td></tr>`).join('')}</tbody></table></div>`
+            : '<div class="empty">No emails yet. They start with the next sign-up, payment or booking.</div>'}</div></div>`;
+      $('emTest').onclick = async (e) => {
+        FL.busy(e.target, true, 'Sending…');
+        const r = await FL.call('admin_send_test_email');
+        FL.busy(e.target, false);
+        if (r) { FL.toast(`Test email on its way to ${r.to}`, 'ok'); setTimeout(() => alive() && draw(), 6000); }
+      };
+    };
+    draw();
+  };
+
   VIEWS.marketing = async (alive) => {
     let days = 30;
     const SITE = 'https://thefitlab-com.netlify.app';
