@@ -19,6 +19,20 @@
   .stats3 b{color:var(--bone)}
   .cert-row{display:flex;gap:14px;align-items:center;padding:14px 20px}
   .cert-row + .cert-row{border-top:1px solid var(--line)}
+  .buy{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+  .buy-opt{border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px}
+  .buy-opt.main{border-color:var(--lime);background:rgba(163,230,53,.05)}
+  .buy-opt h3{margin:0;font:700 16px/1.3 var(--body);color:var(--bone)}
+  .buy-opt .price{font:400 30px/1 var(--display);color:var(--bone);letter-spacing:.02em}
+  .buy-opt ul{margin:2px 0 6px;padding-left:18px;font-size:13.5px;line-height:1.55;color:var(--ash)}
+  .buy-opt .pill{margin-top:auto;justify-content:center}
+  .mod{border-top:1px solid var(--line)}
+  .mod > summary{list-style:none;cursor:pointer;display:flex;gap:12px;align-items:center;padding:14px 20px}
+  .mod > summary::-webkit-details-marker{display:none}
+  .mod .mn{font:700 11px/1 var(--mono);color:var(--lime);letter-spacing:.08em;min-width:62px}
+  .mod .mt{flex:1;min-width:0}.mod .mt b{display:block;color:var(--bone);font-size:14.5px}.mod .mt span{font-size:12.5px;color:var(--ash)}
+  .mod ol{margin:0;padding:0 20px 14px 94px;font-size:13.5px;line-height:1.7;color:var(--ash)}
+  @media (max-width:640px){.buy{grid-template-columns:1fr}.mod ol{padding-left:38px}}
 </style>
 </head>
 <body data-page="courses">
@@ -32,6 +46,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
 <script src="assets/app.js"></script>
+<script src="assets/track.js"></script>
 <script>
 (async () => {
   const $ = (id) => document.getElementById(id);
@@ -78,10 +93,77 @@
     if (s.cert && s.cert.status === 'rejected') return `<span class="chip">Changes requested</span><span class="t-sm muted">${esc(s.cert.review_note || 'Please review your assignments.')}</span>`;
     if (s.cert || s.passed) return `<span class="otw">${FL.icon('check', 15)}Exam passed${s.passed ? ' · ' + Math.round(s.passed.percentage) + '%' : ''}</span>
       <span class="t-sm muted">Certificate awaiting review — you'll be emailed.</span><a class="pill sm" href="verify.html?id=${encodeURIComponent(me.unique_id)}">My result page</a>`;
+    const ee = enrolled(c);
+    if (ee && ee.track === 'direct') return `<a class="pill solid lg" href="exam.html?course=${encodeURIComponent(c.slug)}">Take the certification exam</a>
+      <span class="t-sm muted">${c.exam_question_count} questions · ${c.exam_seconds_per_question || 60}s each · pass ${c.pass_percentage}% · attempts ${s.used}/${c.max_attempts}</span>`;
     if (s.allDone) return `<a class="pill solid lg" href="exam.html?course=${encodeURIComponent(c.slug)}">Take the final exam</a>
       <span class="t-sm muted">${c.exam_question_count} questions · ${c.exam_time_minutes} min · pass ${c.pass_percentage}% · attempts ${s.used}/${c.max_attempts}</span>`;
     if (s.next) return `<a class="pill solid lg" href="lesson.html?course=${encodeURIComponent(c.slug)}&day=${s.next.day_number}">${s.doneCount ? 'Resume Day ' + s.next.day_number : 'Start Day 1'}</a>`;
     return `<span class="chip">New days are being published</span>`;
+  }
+
+  const price = (c) => Number(c.price_paise || 0);
+  const rupees = (p) => '₹' + (p / 100).toLocaleString('en-IN');
+  // the syllabus grouped into modules (chapters = the daily lessons)
+  const MODULES = {
+    'fitness-coaching-mastery': [
+      ['Foundations: movement, assessment & physiology', 1, 5],
+      ['Body composition & nutrition', 6, 10],
+      ['Conditioning & energy systems', 11, 14],
+      ['Movement quality, athleticism & sport-specific training', 15, 21],
+      ['Special populations & real-world limitations', 22, 24],
+      ['Program design & professional coaching', 25, 30],
+    ],
+  };
+  const modulesFor = (c) => MODULES[c.slug] || Array.from({ length: Math.ceil(c.total_days / 5) }, (_, i) =>
+    [`Module ${i + 1}`, i * 5 + 1, Math.min(c.total_days, i * 5 + 5)]);
+
+  function buyBox(c) {
+    const p = rupees(price(c));
+    return `<div class="buy">
+      <div class="buy-opt main"><div class="eyebrow" style="font-size:10px">Learn + certify</div><h3>Full course</h3><div class="price">${p}</div>
+        <ul><li>All ${c.total_days} daily chapters in ${modulesFor(c).length} modules</li><li>Checks and assignments every day</li><li>Final certification exam after Day ${c.total_days}</li></ul>
+        <button class="pill solid" data-buy="full">Buy full course — ${p}</button></div>
+      <div class="buy-opt"><div class="eyebrow" style="font-size:10px">Already experienced?</div><h3>Direct certification</h3><div class="price">${p}</div>
+        <ul><li>Skip the lessons — take the exam right away</li><li>The same ${c.exam_question_count}-question exam, same ${c.pass_percentage}% pass mark</li><li>${c.exam_seconds_per_question || 60} seconds a question, no going back</li></ul>
+        <button class="pill" data-buy="direct">Buy direct certification — ${p}</button></div>
+    </div>
+    <p class="t-xs muted" style="margin:10px 0 0">One-time payment via Razorpay — UPI, cards, net banking. Lifetime access. ${c.max_attempts} exam attempts included.</p>`;
+  }
+
+  function loadRazorpay() {
+    if (window.Razorpay) return Promise.resolve();
+    return new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = 'https://checkout.razorpay.com/v1/checkout.js'; sc.onload = res; sc.onerror = rej; document.head.appendChild(sc); });
+  }
+  async function buy(c, track, btn) {
+    FL.busy(btn, true, 'Opening…');
+    const { data, error } = await FL.fn('premium-checkout', { action: 'course_order', course: c.id, track, meta: window.FLTrack ? FLTrack.meta('courses-page') : {} });
+    FL.busy(btn, false);
+    if (error) return FL.toast('Payments couldn\'t be opened. Please try again.', 'err');
+    if (!data || !data.ok) {
+      if (data && data.code === 'enrolled') { location.href = `courses.html?c=${encodeURIComponent(c.slug)}`; return; }
+      return FL.toast((data && data.message) || 'Payments couldn\'t be opened.', 'err');
+    }
+    try { await loadRazorpay(); } catch (e) { return FL.toast('Couldn\'t load the payment window. Check your connection and try again.', 'err'); }
+    const cid = `${c.slug}-${track}`;
+    window.FLTrack && FLTrack.event('InitiateCheckout', { content_name: c.title, content_ids: [cid], content_type: 'product', value: data.amount / 100, currency: 'INR', num_items: 1 });
+    const rz = new window.Razorpay({
+      key: data.key_id, amount: data.amount, currency: data.currency, order_id: data.order_id,
+      name: 'The Fit Lab Academy', description: `${data.name} · ${data.description}`, prefill: data.prefill,
+      theme: { color: getComputedStyle(document.documentElement).getPropertyValue('--lime').trim() || '#a3e635' },
+      modal: { ondismiss: () => FL.toast('Payment cancelled. You weren\'t charged.') },
+      handler: async (resp) => {
+        FL.toast('Confirming your payment…');
+        const v = await FL.fn('premium-checkout', { action: 'verify', order_id: resp.razorpay_order_id, payment_id: resp.razorpay_payment_id, signature: resp.razorpay_signature });
+        if (v.data && v.data.ok) {
+          window.FLTrack && FLTrack.event('Purchase', { content_name: c.title, content_ids: [cid], content_type: 'product', value: data.amount / 100, currency: 'INR', num_items: 1 }, resp.razorpay_order_id);
+          FL.toast(track === 'direct' ? 'Paid — your exam is ready' : 'Paid — Day 1 is open', 'ok');
+          location.href = track === 'direct' ? `exam.html?course=${encodeURIComponent(c.slug)}` : `courses.html?c=${encodeURIComponent(c.slug)}`;
+        } else FL.toast((v.data && v.data.message) || 'We couldn\'t confirm the payment yet. If money was taken, access opens within a few minutes.', 'err');
+      },
+    });
+    rz.on('payment.failed', (r) => FL.toast((r && r.error && r.error.description) || 'Payment failed. No money was taken.', 'err'));
+    rz.open();
   }
 
   const thumb = (c) => `<div class="course-thumb"><b>${esc(c.code || 'FLA')}</b><i>${c.total_days} DAYS</i></div>`;
@@ -99,11 +181,16 @@
         <div class="eyebrow" style="font-size:10px">${esc(c.level || 'Course')}</div>
         <h1>${esc(c.title)}</h1><p class="sub">${esc(c.subtitle || '')}</p>
         ${e ? `<div class="cprog" style="margin-top:14px"><span class="progress"><i style="width:${s.pct}%"></i></span><span class="t-sm"><b>${s.doneCount}/${c.total_days}</b> days · ${s.pct}%</span></div>` : ''}
-        <div class="cta-row">${e ? ctaFor(c, s) : `<button class="pill solid lg" id="btnEnroll">Enroll — free</button>`}</div>
+        ${e ? `<div class="cta-row">${ctaFor(c, s)}</div>` : price(c) ? buyBox(c) : `<div class="cta-row"><button class="pill solid lg" id="btnEnroll">Enroll — free</button></div>`}
         <div class="stats3">${stt.enrolled_count != null ? `<span><b>${stt.enrolled_count}</b> enrolled</span><span><b>${stt.completed_count}</b> completed</span><span><b>${stt.in_progress_count}</b> in progress</span>` : ''}</div>
         ${c.description ? `<p class="desc">${esc(c.description)}</p>` : ''}
       </div></div>
-      <div class="box"><div class="box-head"><h2>Course content</h2><span class="sub">${days.length} of ${c.total_days} days published</span></div>
+      ${!e && price(c) ? `<div class="box"><div class="box-head"><h2>What you'll learn</h2><span class="sub">${modulesFor(c).length} modules · ${c.total_days} chapters</span></div>
+        ${modulesFor(c).map(([t, a, b], i) => `<details class="mod"${i === 0 ? ' open' : ''}><summary><span class="mn">MODULE ${i + 1}</span><span class="mt"><b>${esc(t)}</b><span>Days ${a}–${b} · ${b - a + 1} chapters</span></span>${FL.icon('down', 16)}</summary>
+          <ol start="${a}">${Array.from({ length: b - a + 1 }, (_, k) => { const d = days.find((x) => x.day_number === a + k); return `<li>${esc(d ? d.title : 'Day ' + (a + k))}</li>`; }).join('')}</ol></details>`).join('')}
+        <div class="mod" style="padding:14px 20px;display:flex;gap:12px;align-items:center"><span class="mn">${FL.icon('award', 16)}</span><span class="mt"><b>Certification exam</b><span>${c.exam_question_count} questions drawn from every module · ${c.exam_seconds_per_question || 60}s each · ${c.pass_percentage}% to pass · QR-verified certificate</span></span></div>
+      </div>` : ''}
+      <div class="box"${!e && price(c) ? ' style="display:none"' : ''}><div class="box-head"><h2>Course content</h2><span class="sub">${days.length} of ${c.total_days} days published</span></div>
         <p class="t-sm muted" style="margin:0 20px 8px">${(me.is_admin || me.is_owner) ? 'Admin view — every published day is open and timers are off.' : 'Completed days stay open to revise any time, with no reading timer. The next day unlocks when you finish the one before.'}</p>
         <div class="syl" id="syl"></div>
         <div class="syl-day ${s.allDone ? 'next' : 'locked'}" style="border-top:1px solid var(--line)">
@@ -128,6 +215,7 @@
     const nextEl = syl.querySelector('.next'); if (nextEl && s.doneCount > 3) nextEl.scrollIntoView({ block: 'center' });
     const be = $('btnEnroll');
     if (be) be.onclick = () => enroll(c, be);
+    $('main').querySelectorAll('[data-buy]').forEach((b) => { b.onclick = () => buy(c, b.dataset.buy, b); });
     side(c);
   }
 
@@ -154,7 +242,7 @@
       document.querySelectorAll('#ctabs button').forEach((b) => b.classList.toggle('on', b.dataset.t === t));
       history.replaceState(null, '', 'courses.html' + (t === 'learning' ? '' : '#' + t));
       if (t === 'learning') {
-        if (!mine.length) { body.innerHTML = `<div class="empty"><b>You haven't started a course yet</b>Pick one under Explore — enrollment is free for the current cohort.</div>`; return; }
+        if (!mine.length) { body.innerHTML = `<div class="empty"><b>You haven't started a course yet</b>Pick one under Explore — learn the full course, or go straight to the certification exam.</div>`; return; }
         const rows = [];
         for (const c of mine) { const days = await daysFor(c); const s = state(c, days);
           rows.push(`<div class="course-card">${thumb(c)}<div>
@@ -168,7 +256,7 @@
             <a class="ent-name" style="font-size:16px" href="courses.html?c=${encodeURIComponent(c.slug)}">${esc(c.title)}</a>
             <div class="ent-sub">${esc(c.subtitle || '')}</div>
             <p class="t-sm" style="margin:8px 0;line-height:1.5">${esc((c.description || '').slice(0, 220))}${(c.description || '').length > 220 ? '…' : ''}</p>
-            <div class="cta-row" style="margin-top:4px"><button class="pill solid sm" data-enroll="${c.id}">Enroll — free</button><a class="pill ghost sm" href="courses.html?c=${encodeURIComponent(c.slug)}">See all ${c.total_days} days</a></div></div></div>`).join('')
+            <div class="cta-row" style="margin-top:4px">${price(c) ? `<a class="pill solid sm" href="courses.html?c=${encodeURIComponent(c.slug)}">Buy — ${rupees(price(c))}</a>` : `<button class="pill solid sm" data-enroll="${c.id}">Enroll — free</button>`}<a class="pill ghost sm" href="courses.html?c=${encodeURIComponent(c.slug)}">See modules</a></div></div></div>`).join('')
           : `<div class="empty"><b>You're enrolled in every course</b>New courses appear here — and in your notifications — when they launch.</div>`;
       } else {
         body.innerHTML = issued.length ? issued.map((x) => { const c = courses.find((y) => y.id === x.course_id) || {};
@@ -191,7 +279,7 @@
         <p class="t-sm muted" style="margin:12px 0 0;line-height:1.5">Stars rise as you complete more courses and score well in exams. A new course launch lowers everyone's ratio — keep learning to stay on top.</p></div>
       <div class="box box-pad"><b style="font-size:15px">How certification works</b>
         <ol class="t-sm" style="margin:10px 0 0;padding-left:18px;line-height:1.6;color:var(--ash)">
-          <li>Finish every day — cards, checks and the daily assignment.</li><li>Pass the timed final exam.</li>
+          <li>Finish every day — cards, checks and the daily assignment. Experienced coaches can choose direct certification and go straight to the exam.</li><li>Pass the timed exam — one question at a time, no going back.</li>
           <li>The Academy reviews your assignments and issues a QR-verified certificate.</li><li>Certified members appear on the Hire-a-Coach portal.</li></ol></div>
       ${FL.siteFootHtml(true)}`;
     FL.wireCommon($('side'));

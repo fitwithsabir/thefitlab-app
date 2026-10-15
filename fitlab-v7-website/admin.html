@@ -366,6 +366,7 @@
     { id: 'pages', label: 'Pages', icon: 'building', group: 'Business', need: 'verification' },
     { id: 'premium', label: 'Premium', icon: 'crown', group: 'Business', need: 'premium' },
     { id: 'bookings', label: 'Bookings & payouts', icon: 'calendar', group: 'Business', need: 'premium', short: 'Bookings' },
+    { id: 'marketing', label: 'Marketing & ads', icon: 'chart', group: 'Business', need: 'premium', short: 'Marketing' },
     { id: 'certs', label: 'Certificates', icon: 'award', group: 'Academy', need: 'certificates', cnt: 'certificates' },
     { id: 'broadcast', label: 'Announcements', icon: 'bell', group: 'Academy', need: 'announcements' },
   ];
@@ -436,6 +437,47 @@
       if (e.key === '/' && !e.target.closest('input,textarea,select,[contenteditable]') && !document.querySelector('.mdl,.drawer')) { e.preventDefault(); $('crQ').focus(); }
     });
   }
+
+  // ------------------------------------------------------------------ MARKETING (fix-23)
+  VIEWS.marketing = async (alive) => {
+    let days = 30;
+    const SITE = 'https://thefitlab-com.netlify.app';
+    const LINKS = [['Full course · ₹99', '/academy', 'fcm_course'], ['Direct certification · ₹99', '/certify', 'fcm_direct'],
+      ['Jobs · trainers', '/trainer-jobs', 'jobs_trainer'], ['Jobs · coaches', '/coach-jobs', 'jobs_coach'], ['Jobs · nutritionists', '/nutritionist-jobs', 'jobs_nutritionist'],
+      ['Hiring · trainers', '/hire-trainers', 'hire_trainer'], ['Hiring · coaches', '/hire-coaches', 'hire_coach'], ['Hiring · nutritionists', '/hire-nutritionists', 'hire_nutritionist']];
+    const PARAMS = 'utm_source=meta&utm_medium=paid_social&utm_campaign={{campaign.name}}&utm_content={{ad.name}}&utm_term={{adset.name}}&placement={{placement}}';
+    const draw = async () => {
+      $('view').innerHTML = `<div class="box">${spinner}</div>`;
+      const { data, error } = await sb.rpc('admin_marketing_report', { p_days: days });
+      if (!alive()) return;
+      if (error || !data) { $('view').innerHTML = errBox(error || {}); return; }
+      const sl = data.sales || {};
+      $('view').innerHTML = `<div class="stack">
+        <div class="box"><div class="box-head"><div><h2>Last ${n(data.days)} days</h2><div class="sub">Sign-ups and sales, and which ads brought them</div></div>
+          <select id="mkDays" style="width:auto">${[7, 30, 90, 365].map((d) => `<option value="${d}"${d === days ? ' selected' : ''}>${d} days</option>`).join('')}</select></div>
+          <div class="kpis">${[[n(data.signups), 'New members'], [n(data.tracked_signups), 'From a tracked link'], [n(sl.course_count), 'Course sales', FL.paise(sl.course_paise)],
+            [n(sl.direct_count), 'Direct certifications'], [n(sl.premium_count), 'Premium sales', FL.paise(sl.premium_paise)]]
+            .map(([v, l, x]) => `<div class="kpi"><b>${E(v)}</b><span>${E(l)}${x ? ' · ' + E(x) : ''}</span></div>`).join('')}</div></div>
+        <div class="box"><div class="box-head"><h2>By page</h2></div>
+          ${(data.by_funnel || []).length ? `<div class="tblwrap"><table class="tbl"><thead><tr><th>Page</th><th>Sign-ups</th><th>Paid</th><th>Paid %</th></tr></thead><tbody>
+            ${data.by_funnel.map((r) => `<tr><td>${E(r.funnel)}</td><td>${n(r.signups)}</td><td>${n(r.payers)}</td><td>${r.signups ? Math.round(r.payers / r.signups * 100) : 0}%</td></tr>`).join('')}</tbody></table></div>`
+            : '<div class="empty">No sign-ups from the promotion pages yet.</div>'}</div>
+        <div class="box"><div class="box-head"><div><h2>By ad</h2><div class="sub">From the link's utm_source, utm_campaign and utm_content — the ads that bring paying members rise to the top</div></div></div>
+          ${(data.by_ad || []).length ? `<div class="tblwrap"><table class="tbl"><thead><tr><th>Source</th><th>Campaign</th><th>Ad</th><th>Sign-ups</th><th>Paid</th><th>Revenue</th></tr></thead><tbody>
+            ${data.by_ad.map((r) => `<tr><td>${E(r.source)}</td><td>${E(r.campaign)}</td><td>${E(r.ad)}</td><td>${n(r.signups)}</td><td>${n(r.payers)}</td><td>${E(FL.paise(r.revenue))}</td></tr>`).join('')}</tbody></table></div>`
+            : '<div class="empty">Nothing yet — results appear as soon as people sign up through a tracked link.</div>'}</div>
+        <div class="box"><div class="box-head"><div><h2>Promotion links</h2><div class="sub">Use these as the ad's website URL. Paste the URL parameters below into Meta Ads Manager → Ad → Tracking → URL parameters.</div></div></div>
+          <div class="tblwrap"><table class="tbl"><thead><tr><th>Page</th><th>Link</th><th></th></tr></thead><tbody>
+            ${LINKS.map(([l, path]) => `<tr><td>${E(l)}</td><td class="mono" style="font-size:12px">${E(SITE + path)}</td><td><button class="pill sm" type="button" data-copy="${E(SITE + path)}">Copy</button></td></tr>`).join('')}
+            <tr><td><b>URL parameters</b></td><td class="mono" style="font-size:11px;word-break:break-all">${E(PARAMS)}</td><td><button class="pill sm" type="button" data-copy="${E(PARAMS)}">Copy</button></td></tr>
+          </tbody></table></div></div>
+        <div class="notice">${I('chart', 18)}<div><b>Meta tracking</b> — the Pixel is ${(window.FITLAB_CONFIG || {}).META_PIXEL_ID ? '<b>on</b>' : '<b>off</b> (add your Pixel ID to config.js)'}. Payments are also reported from the server when the <span class="mono">META_PIXEL_ID</span> and <span class="mono">META_CAPI_TOKEN</span> secrets are set in Supabase.</div></div>
+      </div>`;
+      $('mkDays').onchange = () => { days = +$('mkDays').value; draw(); };
+      $('view').querySelectorAll('[data-copy]').forEach((b) => { b.onclick = async () => { try { await navigator.clipboard.writeText(b.dataset.copy); b.textContent = 'Copied'; setTimeout(() => { b.textContent = 'Copy'; }, 1400); } catch (_) { FL.toast('Copy failed — select the text instead', 'err'); } }; });
+    };
+    draw();
+  };
 
   // ------------------------------------------------------------------ OVERVIEW
   VIEWS.overview = async (alive) => {

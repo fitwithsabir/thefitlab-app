@@ -53,6 +53,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
 <script src="assets/app.js"></script>
+<script src="assets/track.js"></script>
 <script>
 (async () => {
   const $ = (id) => document.getElementById(id);
@@ -166,7 +167,7 @@
   async function checkout(plan) {
     if (!me) return login();
     const btns = document.querySelectorAll(`[data-buy="${plan}"]`); btns.forEach((b) => FL.busy(b, true, 'Opening…'));
-    const { data, error } = await FL.fn('premium-checkout', { action: 'order', plan, period });
+    const { data, error } = await FL.fn('premium-checkout', { action: 'order', plan, period, meta: window.FLTrack ? FLTrack.meta('premium') : {} });
     btns.forEach((b) => FL.busy(b, false));
     if (error) return FL.toast('Payments couldn\'t be opened. Please try again.', 'err');
     if (!data || !data.ok) {
@@ -180,6 +181,8 @@
       return FL.toast((data && data.message) || 'Payments couldn\'t be opened.', 'err');
     }
     try { await loadRazorpay(); } catch (e) { return FL.toast('Couldn\'t load the payment window. Check your connection and try again.', 'err'); }
+    const cid = `premium-${plan}-${period}`;
+    window.FLTrack && FLTrack.event('InitiateCheckout', { content_name: data.name, content_ids: [cid], content_type: 'product', value: data.amount / 100, currency: 'INR', num_items: 1 });
     const rz = new window.Razorpay({
       key: data.key_id, amount: data.amount, currency: data.currency, order_id: data.order_id,
       name: 'The Fit Lab', description: `${data.name} · ${data.description}`, prefill: data.prefill,
@@ -188,7 +191,7 @@
       handler: async (resp) => {
         FL.toast('Confirming your payment…');
         const v = await FL.fn('premium-checkout', { action: 'verify', order_id: resp.razorpay_order_id, payment_id: resp.razorpay_payment_id, signature: resp.razorpay_signature });
-        if (v.data && v.data.ok) { FL.toast('Welcome to Premium!', 'ok'); st = (await sb.rpc('my_premium')).data; use = (await sb.rpc('premium_usage')).data; FL.renderHeader(me); render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        if (v.data && v.data.ok) { window.FLTrack && FLTrack.event('Purchase', { content_name: data.name, content_ids: [cid], content_type: 'product', value: data.amount / 100, currency: 'INR', num_items: 1 }, resp.razorpay_order_id); FL.toast('Welcome to Premium!', 'ok'); st = (await sb.rpc('my_premium')).data; use = (await sb.rpc('premium_usage')).data; FL.renderHeader(me); render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
         else FL.toast((v.data && v.data.message) || 'We couldn\'t confirm the payment yet. If money was taken, Premium switches on within a few minutes.', 'err');
       },
     });

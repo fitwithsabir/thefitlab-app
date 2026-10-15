@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Fitness Jobs — Trainers, Coaches &amp; Nutritionists | The Fit Lab</title>
+<meta name="description" content="Free profile in 60 seconds. Jobs for personal trainers, fitness coaches and nutritionists with the pay always shown. Any valid certification counts.">
+<meta property="og:title" content="Fitness jobs with the pay shown upfront">
+<meta property="og:description" content="Personal trainers, coaches and nutritionists: create a free profile, add your certifications, and get found by gyms, studios and clinics.">
+<meta property="og:image" content="https://thefitlab-com.netlify.app/assets/logo-600.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="icon" href="assets/favicon.png">
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b">
+<script src="assets/theme.js"></script>
+<link rel="stylesheet" href="assets/styles.css">
+<link rel="stylesheet" href="assets/funnel.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="lp-top">
+    <a class="brand" href="index.html" aria-label="The Fit Lab"><img class="logomark logo-d" src="assets/logo-600.png" alt="The Fit Lab"><img class="logomark logo-l" src="assets/logo-600-light.png" alt="" aria-hidden="true"></a>
+    <nav><a href="academy">Get certified</a><a class="in" href="index.html">Log in</a></nav>
+  </header>
+  <div class="lp-grid">
+    <main class="lp-main" id="page"></main>
+    <aside class="lp-side"><div id="signup"></div></aside>
+  </div>
+  <footer class="lp-foot"><span>© <span id="yr"></span> The Fit Lab</span><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a><a href="mailto:fitwithsabir@gmail.com">fitwithsabir@gmail.com</a></footer>
+</div>
+<div class="lp-sticky"><div><b>Free</b><span>Profile in 60 seconds</span></div><a class="btn btn-primary" href="#signup" data-pick="go">Create profile</a></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="assets/app.js"></script>
+<script src="assets/track.js"></script>
+<script>
+  // /trainer-jobs · /coach-jobs · /nutritionist-jobs (or ?role=)
+  const ROLE = (location.pathname.match(/(trainer|coach|nutritionist)/i) || [])[1]?.toLowerCase()
+            || (new URLSearchParams(location.search).get('role') || 'trainer').toLowerCase().replace(/[^a-z]/g, '');
+  const R = {
+    trainer: { word: 'Personal trainers', one: 'trainer', h1: 'Personal trainer jobs.<br><em>Pay shown upfront.</em>',
+      lead: '<b>Free profile in 60 seconds.</b> Gyms and studios see your experience and certifications — and you see the salary before you apply.',
+      who: 'Personal trainers, floor trainers, group fitness, yoga, Pilates, martial arts and dance fitness instructors.',
+      profs: ['personal_trainer', 'group_fitness', 'functional', 'yoga', 'pilates', 'martial_arts', 'dance_fitness', 'swim_coach'] },
+    coach: { word: 'Fitness coaches', one: 'coach', h1: 'Fitness coach jobs.<br><em>Get hired for what you know.</em>',
+      lead: '<b>Strength, functional, online and sports coaches</b> — a free profile that shows your certifications and specialties, and jobs with the pay always shown.',
+      who: 'Strength & conditioning, functional, online, sports and wellness coaches.',
+      profs: ['sc_coach', 'functional', 'online_coach', 'sports_coach', 'group_fitness', 'wellness_coach', 'yoga'] },
+    nutritionist: { word: 'Nutritionists', one: 'nutritionist', h1: 'Nutritionist jobs.<br><em>Gyms &amp; clinics are hiring.</em>',
+      lead: '<b>Gyms, clinics and wellness centres need nutritionists and dietitians.</b> Create your free profile, add your qualifications, and apply with the pay shown upfront.',
+      who: 'Nutritionists, dietitians and health coaches — fresh graduates and experienced.',
+      profs: ['nutritionist', 'dietitian', 'wellness_coach'] },
+  }[ROLE] || null;
+  const C = R || { word: 'Fitness professionals', one: 'trainer', h1: 'Fitness jobs.<br><em>Pay shown upfront.</em>', lead: '', who: '', profs: ['personal_trainer'] };
+  document.title = `${C.word} jobs — pay shown upfront | The Fit Lab`;
+  document.getElementById('yr').textContent = new Date().getFullYear();
+  const I = (n) => FL.icon(n, 20);
+  document.getElementById('page').innerHTML = `
+    <section class="lp-hero">
+      <div class="eyebrow">The Fit Lab · Jobs for ${FL.esc(C.word.toLowerCase())}</div>
+      <h1>${C.h1}</h1>
+      <p class="lead">${C.lead}</p>
+      <div class="lp-facts"><span><i></i>Free to join</span><span><i></i>Pay on every job</span><span><i></i>Any valid certification</span><span><i></i>Job alerts</span></div>
+      <div class="lp-cta-row"><a class="btn btn-primary" href="#signup" data-pick="go">Create my free profile</a><a class="btn" href="academy?utm_source=site&utm_medium=jobs_page&utm_campaign=jobs_to_course">Get certified for ₹99</a></div>
+    </section>
+    <section class="lp-sec"><div class="eyebrow">Why The Fit Lab</div><h2>Built for ${FL.esc(C.word.toLowerCase())}</h2>
+      <div class="lp-cards">
+        <div class="lp-card"><div class="ic">${I('rupee')}</div><h3>Pay on every job</h3><p>Every job shows the salary or rate before you apply — no guessing, no wasted interviews.</p></div>
+        <div class="lp-card"><div class="ic">${I('award')}</div><h3>Your certifications count</h3><p>K11, ACE, NASM, ISSA, REPs, diplomas, degrees — add any valid certification and it shows on your profile.</p></div>
+        <div class="lp-card"><div class="ic">${I('briefcase')}</div><h3>#OpenToWork</h3><p>Employers searching for a ${FL.esc(C.one)} in your city can find you and message you directly.</p></div>
+        <div class="lp-card"><div class="ic">${I('bell')}</div><h3>Job alerts</h3><p>We tell you the moment a matching job is posted near you.</p></div>
+        <div class="lp-card"><div class="ic">${I('check')}</div><h3>See where you stand</h3><p>Live status on every application: viewed, shortlisted, interview, offer.</p></div>
+        <div class="lp-card"><div class="ic">${I('shield')}</div><h3>No fees to apply</h3><p>No job on The Fit Lab can ask you for a fee or deposit. Report any that does.</p></div>
+      </div></section>
+    <section class="lp-sec"><div class="eyebrow">3 steps</div><h2>Get hired</h2>
+      <ol class="lp-steps">
+        <li><div><b>Create your free profile</b><br><span>Name, city, role and experience — 60 seconds.</span></div></li>
+        <li><div><b>Add your certifications &amp; specialties</b><br><span>Any valid certification. A photo and work history make you stand out.</span></div></li>
+        <li><div><b>Apply — or get messaged</b><br><span>Apply with one tap, or let gyms find you through #OpenToWork.</span></div></li>
+      </ol></section>
+    <section class="lp-sec"><div class="lp-card pick" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+      <div style="flex:1;min-width:220px"><div class="eyebrow">Stand out</div><h3 style="font-size:19px">Add a QR-verified certificate — ₹99</h3>
+      <p>Take the Fit Lab coaching exam directly, or learn the 30-day course first. Gyms can verify your certificate in seconds.</p></div>
+      <a class="btn" href="certify?utm_source=site&utm_medium=jobs_page&utm_campaign=jobs_to_certify">Get certified</a></div></section>
+    <section class="lp-sec lp-faq"><div class="eyebrow">Questions</div><h2>Good to know</h2>
+      <details><summary>Is it really free?</summary><p>Yes. Creating your profile, getting job alerts and applying are free. Premium is optional.</p></details>
+      <details><summary>Who is it for?</summary><p>${FL.esc(C.who)}</p></details>
+      <details><summary>I don't have a Fit Lab certificate. Can I still apply?</summary><p>Of course. Employers see every valid certification you add — from any provider.</p></details>
+      <details><summary>Who can see my mobile number?</summary><p>Nobody. Your mobile number and date of birth are private. Employers contact you inside The Fit Lab.</p></details>
+    </section>
+    <section class="lp-final"><h2>Your next job is one profile away</h2><p class="ash" style="margin:0 0 16px">Free · 60 seconds · pay shown on every job</p>
+      <a class="btn btn-primary" href="#signup" data-pick="go">Create my free profile</a></section>`;
+  window.FUNNEL = {
+    kind: 'jobs', funnel: 'jobs-' + ROLE, role: ROLE,
+    formEyebrow: `Jobs for ${C.word.toLowerCase()}`, formTitle: 'Create your free profile',
+    formSub: 'Get found by gyms, studios and clinics. Takes 60 seconds.',
+    professions: C.profs, fine: 'Free · your mobile number stays private',
+  };
+</script>
+<script src="assets/funnel.js"></script>
+</body>
+</html>

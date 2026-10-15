@@ -144,7 +144,7 @@
       <form class="jform" id="jf" novalidate>
         <div class="field"><label for="jPage" class="req">Hiring organisation</label><select id="jPage" ${j ? 'disabled' : ''}>${pages.map((p) => `<option value="${p.page_id}" ${(j ? j.page.page_id : want) === p.page_id ? 'selected' : ''}>${esc(p.name)}${p.verified ? ' ✓' : ''}</option>`).join('')}</select></div>
         <div class="field"><label for="jTitle" class="req">Job title</label><input id="jTitle" maxlength="120" list="jTitles" value="${esc(j ? j.title : '')}" placeholder="e.g. Personal Trainer"><datalist id="jTitles">${TITLES.map((t) => `<option value="${t}">`).join('')}</datalist></div>
-        <div class="field"><label for="jProf">Profession</label><select id="jProf">${FL.professionOptions(profs, j ? j.profession : '', 'Choose — helps the right people find it')}</select></div>
+        <div class="field"><label for="jProf">Profession</label><select id="jProf">${FL.professionOptions(profs, j ? j.profession : ({ trainer: 'personal_trainer', coach: 'sc_coach', nutritionist: 'nutritionist' })[FL.param('role')] || '', 'Choose — helps the right people find it')}</select></div>
         <div class="row2"><div class="field"><label for="jType" class="req">Job type</label><select id="jType">${opt([['', 'Choose']].concat(Object.entries(FL.JOB_TYPES)), j ? j.employment_type : '')}</select></div>
           <div class="field"><label for="jWork" class="req">Workplace</label><select id="jWork">${opt([['', 'Choose']].concat(Object.entries(FL.WORKPLACES)), j ? j.workplace : 'on_site')}</select></div></div>
         <div class="row2"><div class="field"><label for="jCity" id="jCityL" class="req">City</label><input id="jCity" maxlength="80" value="${esc(j ? j.city || '' : (pages.find((p) => p.page_id === want) || pages[0]).city || '')}"></div>
@@ -316,7 +316,6 @@
     $('main').innerHTML = `<div class="box"><div class="box-head"><div><h2>Find candidates ${I('crown', 16)}</h2><div class="sub">Recruiter Premium · open-to-work members by default</div></div>
         <span style="display:flex;gap:12px"><a class="txt-btn" href="hiring.html?tab=pipeline">${I('bookmark', 16)}Pipeline</a><a class="txt-btn" href="hiring.html">${I('back', 16)}Hiring</a></span></div>
       <form id="cf"><div class="cfilters">
-          <input id="cq" type="search" placeholder="Name or headline" aria-label="Name or headline">
           <select id="cp" aria-label="Profession">${FL.professionOptions(profs, '', 'Any profession')}</select>
           <input id="cc" type="search" placeholder="City" aria-label="City" value="${esc(me.city || '')}">
           <input id="cs" placeholder="Skills, comma separated" aria-label="Skills">
@@ -327,7 +326,7 @@
       <div id="cr"></div></div>`;
     const run = async () => {
       $('cr').innerHTML = '<div class="skeleton" style="height:70px;margin:14px"></div>';
-      const { data, error } = await sb.rpc('search_candidates', { p: { q: $('cq').value.trim(), profession: $('cp').value, city: $('cc').value.trim(),
+      const { data, error } = await sb.rpc('search_candidates', { p: { q: '', profession: $('cp').value, city: $('cc').value.trim(),
         skills: $('cs').value.split(',').map((s) => s.trim()).filter(Boolean), min_years: $('cy').value, open_to_work: $('co').checked,
         verified: $('cv').checked, certified: $('ct').checked } });
       if (error) { $('cr').innerHTML = `<div class="empty">${esc(FL.friendly(error))}</div>`; return; }

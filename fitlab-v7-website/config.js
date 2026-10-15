@@ -9,5 +9,7 @@ window.FITLAB_CONFIG = {
   SUPPORT_EMAIL: "fitwithsabir@gmail.com",
   INSTAGRAM: "https://instagram.com/thefitlab.in",
   // public half of the pop-up notification key (the private half is an Edge Function secret)
+  // Meta Pixel ID (Events Manager → Data sources). Public — safe here. Empty = no Meta tracking.
+  META_PIXEL_ID: "633616436052228",
   VAPID_PUBLIC_KEY: "BBYIcyrGpWjMpg8B3m_IGktu_99hqC0-7L-N8Lkxr-jHdy3sNuiiXiqLWSI6nO1Ocd5FuIOgMjmIMrsw9GDAcuw"
 };
