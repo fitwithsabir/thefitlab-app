@@ -46,6 +46,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
 <script src="assets/app.js"></script>
+<script src="assets/track.js"></script>
 <script>
 (async () => {
   const $ = (id) => document.getElementById(id);
@@ -136,7 +137,7 @@
   }
   async function buy(c, track, btn) {
     FL.busy(btn, true, 'Opening…');
-    const { data, error } = await FL.fn('premium-checkout', { action: 'course_order', course: c.id, track });
+    const { data, error } = await FL.fn('premium-checkout', { action: 'course_order', course: c.id, track, meta: window.FLTrack ? FLTrack.meta('courses-page') : {} });
     FL.busy(btn, false);
     if (error) return FL.toast('Payments couldn\'t be opened. Please try again.', 'err');
     if (!data || !data.ok) {
@@ -144,6 +145,8 @@
       return FL.toast((data && data.message) || 'Payments couldn\'t be opened.', 'err');
     }
     try { await loadRazorpay(); } catch (e) { return FL.toast('Couldn\'t load the payment window. Check your connection and try again.', 'err'); }
+    const cid = `${c.slug}-${track}`;
+    window.FLTrack && FLTrack.event('InitiateCheckout', { content_name: c.title, content_ids: [cid], content_type: 'product', value: data.amount / 100, currency: 'INR', num_items: 1 });
     const rz = new window.Razorpay({
       key: data.key_id, amount: data.amount, currency: data.currency, order_id: data.order_id,
       name: 'The Fit Lab Academy', description: `${data.name} · ${data.description}`, prefill: data.prefill,
@@ -153,6 +156,7 @@
         FL.toast('Confirming your payment…');
         const v = await FL.fn('premium-checkout', { action: 'verify', order_id: resp.razorpay_order_id, payment_id: resp.razorpay_payment_id, signature: resp.razorpay_signature });
         if (v.data && v.data.ok) {
+          window.FLTrack && FLTrack.event('Purchase', { content_name: c.title, content_ids: [cid], content_type: 'product', value: data.amount / 100, currency: 'INR', num_items: 1 }, resp.razorpay_order_id);
           FL.toast(track === 'direct' ? 'Paid — your exam is ready' : 'Paid — Day 1 is open', 'ok');
           location.href = track === 'direct' ? `exam.html?course=${encodeURIComponent(c.slug)}` : `courses.html?c=${encodeURIComponent(c.slug)}`;
         } else FL.toast((v.data && v.data.message) || 'We couldn\'t confirm the payment yet. If money was taken, access opens within a few minutes.', 'err');

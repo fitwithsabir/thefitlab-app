@@ -56,7 +56,7 @@
           <div class="field"><label for="suEmail">Email</label><input id="suEmail" type="email" autocomplete="email" required placeholder="you@example.com"></div>
           <div class="field"><label for="suPass">Password</label><input id="suPass" type="password" autocomplete="new-password" required minlength="8" placeholder="At least 8 characters"></div>
           <button class="btn btn-primary btn-block" type="submit">Create my account</button>
-          <p class="help" style="margin:12px 0 0">Free for the current cohort. After signup you'll complete your member profile and receive your Fit Lab Unique ID.</p>
+          <p class="help" style="margin:12px 0 0">Joining The Fit Lab is free. After signup you'll complete your member profile and receive your Fit Lab Unique ID.</p>
         </form>
 
         <form id="formForgot" class="hidden" novalidate>
@@ -98,6 +98,7 @@
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="assets/app.js"></script>
+<script src="assets/track.js"></script>
 <script>
 (async function () {
   document.getElementById('yr').textContent = new Date().getFullYear();

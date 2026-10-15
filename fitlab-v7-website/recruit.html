@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Hire Trainers, Coaches &amp; Nutritionists | The Fit Lab</title>
+<meta name="description" content="Gyms, studios and clinics: post jobs free, see candidates' certifications and experience, and message applicants directly. Hire personal trainers, fitness coaches and nutritionists.">
+<meta property="og:title" content="Hire trainers, coaches and nutritionists — free to post">
+<meta property="og:description" content="Post a job in minutes. See certifications and experience. Message applicants directly.">
+<meta property="og:image" content="https://thefitlab-com.netlify.app/assets/logo-600.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="icon" href="assets/favicon.png">
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b">
+<script src="assets/theme.js"></script>
+<link rel="stylesheet" href="assets/styles.css">
+<link rel="stylesheet" href="assets/funnel.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="lp-top">
+    <a class="brand" href="index.html" aria-label="The Fit Lab"><img class="logomark logo-d" src="assets/logo-600.png" alt="The Fit Lab"><img class="logomark logo-l" src="assets/logo-600-light.png" alt="" aria-hidden="true"></a>
+    <nav><a href="hire.html">Certified coaches</a><a class="in" href="index.html">Log in</a></nav>
+  </header>
+  <div class="lp-grid">
+    <main class="lp-main" id="page"></main>
+    <aside class="lp-side"><div id="signup"></div></aside>
+  </div>
+  <footer class="lp-foot"><span>© <span id="yr"></span> The Fit Lab</span><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a><a href="mailto:fitwithsabir@gmail.com">fitwithsabir@gmail.com</a></footer>
+</div>
+<div class="lp-sticky"><div><b>Free</b><span>Post your first jobs</span></div><a class="btn btn-primary" href="#signup" data-pick="go">Start hiring</a></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="assets/app.js"></script>
+<script src="assets/track.js"></script>
+<script>
+  // /hire-trainers · /hire-coaches · /hire-nutritionists (or ?role=)
+  const ROLE = (location.pathname.match(/(trainer|coach|nutritionist)/i) || [])[1]?.toLowerCase()
+            || (new URLSearchParams(location.search).get('role') || 'trainer').toLowerCase().replace(/[^a-z]/g, '');
+  const R = {
+    trainer: { many: 'personal trainers', h1: 'Hire personal trainers<br><em>who know their craft.</em>',
+      lead: '<b>Post a job free.</b> See each trainer\'s certifications, experience and specialties — and message applicants directly. No agency fees.' },
+    coach: { many: 'fitness coaches', h1: 'Hire fitness coaches<br><em>faster.</em>',
+      lead: '<b>Strength, functional, online and sports coaches</b> in one place. Post a job free, filter by city and experience, and message applicants directly.' },
+    nutritionist: { many: 'nutritionists & dietitians', h1: 'Hire nutritionists<br><em>&amp; dietitians.</em>',
+      lead: '<b>For gyms, clinics and wellness centres.</b> Post a job free, see qualifications and experience, and message applicants directly.' },
+  }[ROLE] || { many: 'fitness professionals', h1: 'Hire fitness professionals<br><em>faster.</em>', lead: '' };
+  document.title = `Hire ${R.many} | The Fit Lab`;
+  document.getElementById('yr').textContent = new Date().getFullYear();
+  const I = (n) => FL.icon(n, 20), E = FL.esc;
+  document.getElementById('page').innerHTML = `
+    <section class="lp-hero">
+      <div class="eyebrow">The Fit Lab · For gyms, studios &amp; clinics</div>
+      <h1>${R.h1}</h1>
+      <p class="lead">${R.lead}</p>
+      <div class="lp-facts"><span><i></i>Free to post</span><span><i></i>Certifications shown</span><span><i></i>Message applicants</span><span><i></i>No agency fees</span></div>
+      <div class="lp-cta-row"><a class="btn btn-primary" href="#signup" data-pick="go">Start hiring — free</a><a class="btn" href="hire.html">See certified coaches</a></div>
+    </section>
+    <section class="lp-sec"><div class="eyebrow">Why hire here</div><h2>Hiring made for fitness</h2>
+      <div class="lp-cards">
+        <div class="lp-card"><div class="ic">${I('briefcase')}</div><h3>Post jobs free</h3><p>Two free job posts from your gym's page — ten once your page is verified.</p></div>
+        <div class="lp-card"><div class="ic">${I('award')}</div><h3>See real qualifications</h3><p>Candidates list any valid certification — K11, ACE, NASM, diplomas, degrees — plus QR-verified Fit Lab certificates.</p></div>
+        <div class="lp-card"><div class="ic">${I('messages')}</div><h3>Talk to applicants directly</h3><p>Message anyone who applies — free. Reach other #OpenToWork members with Premium.</p></div>
+        <div class="lp-card"><div class="ic">${I('filter')}</div><h3>Shortlist in minutes</h3><p>Move applicants through Viewed → Shortlisted → Interview → Offer. With Recruiter, search every open-to-work candidate by city, role and experience.</p></div>
+        <div class="lp-card"><div class="ic">${I('rupee')}</div><h3>Pay shown = better applicants</h3><p>Every job shows the pay, so the people who apply already accept your range.</p></div>
+        <div class="lp-card"><div class="ic">${I('tick')}</div><h3>Verified gym page</h3><p>Get the verified tick on your page so candidates know you're genuine.</p></div>
+      </div></section>
+    <section class="lp-sec"><div class="eyebrow">3 steps</div><h2>Hire this week</h2>
+      <ol class="lp-steps">
+        <li><div><b>Create your account and gym page</b><br><span>Your name, gym name, type and city — about a minute.</span></div></li>
+        <li><div><b>Post the job with the pay</b><br><span>Role, timings, pay range and requirements. Matching members get an alert.</span></div></li>
+        <li><div><b>Review, message, hire</b><br><span>See each applicant's certifications and experience, message them, and track every stage.</span></div></li>
+      </ol></section>
+    <section class="lp-sec lp-faq"><div class="eyebrow">Questions</div><h2>Good to know</h2>
+      <details><summary>What does it cost?</summary><p>Creating your page and posting your first jobs is free. Premium is optional — for more job posts and messaging members who haven't applied.</p></details>
+      <details><summary>Do candidates need a Fit Lab certificate?</summary><p>No. You hire on any valid certification and experience. A Fit Lab certificate is an extra, QR-verified signal.</p></details>
+      <details><summary>Who can I hire?</summary><p>Personal trainers, group fitness and yoga instructors, strength &amp; conditioning, functional and online coaches, nutritionists, dietitians and health coaches.</p></details>
+      <details><summary>Can I ask candidates for a fee?</summary><p>No. Jobs that ask applicants for a fee or deposit are removed — it keeps the platform trusted for everyone.</p></details>
+    </section>
+    <section class="lp-final"><h2>Your next great hire is here</h2><p class="ash" style="margin:0 0 16px">Free to start · no agency fees</p>
+      <a class="btn btn-primary" href="#signup" data-pick="go">Start hiring — free</a></section>`;
+  window.FUNNEL = {
+    kind: 'hire', funnel: 'hire-' + ROLE, role: ['coach', 'trainer', 'nutritionist'].includes(ROLE) ? ROLE : 'trainer',
+    formEyebrow: `Hire ${R.many}`, formTitle: 'Start hiring — free',
+    formSub: 'Create your account and gym page. Then post your first job.',
+    fine: 'Free to start · no agency fees',
+  };
+</script>
+<script src="assets/funnel.js"></script>
+</body>
+</html>

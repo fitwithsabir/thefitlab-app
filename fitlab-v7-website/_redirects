@@ -1,0 +1,9 @@
+# Promotion links (the address bar keeps the short link; UTM parameters pass through)
+/academy              /academy.html    200
+/certify              /academy.html    200
+/trainer-jobs         /work.html       200
+/coach-jobs           /work.html       200
+/nutritionist-jobs    /work.html       200
+/hire-trainers        /recruit.html    200
+/hire-coaches         /recruit.html    200
+/hire-nutritionists   /recruit.html    200
