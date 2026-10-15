@@ -43,6 +43,19 @@
   .work span{font-size:12.5px;color:var(--ash)}
   .perk-row{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:12px 20px;border-top:1px solid var(--line);flex-wrap:wrap}
   .perk-row .t-sm{color:var(--ash)}
+  .team-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:20px;padding:0 20px 20px}
+  @media (max-width:760px){ .team-grid{grid-template-columns:1fr} }
+  .team-grid ul{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+  .team-grid li{display:flex;gap:10px;font-size:14px;line-height:1.45}
+  .team-grid li svg{color:var(--lime);flex:none;margin-top:2px}
+  .tbuy{border:1px solid var(--line-2);border-radius:14px;padding:16px;background:var(--panel-2)}
+  .tbuy .row2{gap:10px}
+  .tprice{font:700 26px/1.1 var(--body);margin:6px 0 2px}
+  .tprice small{font-size:13px;color:var(--ash);font-weight:600}
+  .seat{display:flex;gap:12px;align-items:center;padding:10px 20px;border-top:1px solid var(--line)}
+  .seat .ent-main{flex:1;min-width:0}
+  .addseat{display:flex;gap:8px;padding:12px 20px 16px;border-top:1px solid var(--line);flex-wrap:wrap}
+  .addseat input{flex:1;min-width:200px}
 </style>
 </head>
 <body data-page="me">
@@ -68,6 +81,8 @@
   const [{ data: plans }, prem, use0] = await Promise.all([sb.rpc('premium_plans_list'), me ? sb.rpc('my_premium').then((r) => r.data) : Promise.resolve(null),
     me ? sb.rpc('premium_usage').then((r) => r.data) : Promise.resolve(null)]);
   let use = use0;
+  let team = me ? await sb.rpc('team_info').then((r) => r.data, () => null) : null;
+  let tPlan = (plans || []).some((p) => p.code === 'pro') ? 'pro' : ((plans || [])[0] || {}).code, tSeats = 5;
   let st = prem, period = 'month';
   const want = FL.param('plan');
   // suggest a plan from the member's situation
@@ -83,7 +98,7 @@
       const left = Math.max(0, (u.inmail_total || 0) - (u.inmail_used || 0));
       return `<div class="box"><div class="mine"><span class="ic">${I('crown', 24)}</span>
         <div style="flex:1;min-width:200px"><b style="font-size:16px">You're on ${esc(st.name)}${trial ? ' (free trial)' : ''}</b>
-          <div class="t-sm muted">${trial ? 'Trial ends' : 'Active until'} ${fmtDay(st.expires_at)}${u.days_left != null ? ` · ${u.days_left} day${u.days_left === 1 ? '' : 's'} left` : ''} · nothing renews automatically</div></div></div>
+          <div class="t-sm muted">${st.source === 'team' ? 'Team plan · ' : ''}${trial ? 'Trial ends' : 'Active until'} ${fmtDay(st.expires_at)}${u.days_left != null ? ` · ${u.days_left} day${u.days_left === 1 ? '' : 's'} left` : ''} · nothing renews automatically</div></div></div>
         <div class="box-head" style="padding-top:0"><h3 style="font-size:15px">Your Premium at work · last 30 days</h3></div>
         <div class="work">
           <a href="insights.html"><b>${u.views_30d ?? 0}</b><span>profile views</span></a>
@@ -128,6 +143,53 @@
         <div class="note">${canTrial ? 'No card needed for the trial · ' : ''}No automatic renewal</div></div></div>`;
   }
 
+  // ---------------------------------------------------------------- gym team plan
+  const teamPrice = (code, seats) => {
+    const p = (plans || []).find((x) => x.code === code); if (!p || !(seats >= 2 && seats <= 50)) return null;
+    const each = period === 'year' ? p.price_year : p.price_month;
+    return { each, list: each * seats, total: Math.round(each * seats * (seats >= 3 ? 0.8 : 1) / 100) * 100, off: seats >= 3, name: p.name };
+  };
+  function teamBuyer() {
+    const q = teamPrice(tPlan, tSeats);
+    return `<div class="tbuy"><div class="row2">
+        <div class="field" style="margin:0"><label for="tPlan">Plan for every seat</label><select id="tPlan">${(plans || []).map((p) => `<option value="${p.code}" ${p.code === tPlan ? 'selected' : ''}>${esc(p.name)} — ${esc(p.tagline || '')}</option>`).join('')}</select></div>
+        <div class="field" style="margin:0"><label for="tSeats">Seats (2–50)</label><input id="tSeats" type="number" inputmode="numeric" min="2" max="50" value="${tSeats}"></div></div>
+      <div id="tQuote">${q ? `<div class="tprice">${FL.paise(q.total)}<small> / ${period === 'year' ? 'year' : 'month'} for ${tSeats} seats</small></div>
+        <div class="t-sm muted">${q.off ? `<s>${FL.paise(q.list)}</s> · 20% off · ` : ''}${FL.paise(Math.round(q.total / tSeats))} per seat${q.off ? '' : ' · 20% off from 3 seats'}</div>` : '<div class="t-sm muted" style="margin:10px 0">Choose 2 to 50 seats.</div>'}</div>
+      <button class="pill gold block lg" id="tBuy" style="margin-top:12px" ${q ? '' : 'disabled'}>${team && team.is_owner ? 'Renew team plan' : 'Buy team plan'}${q ? ' · ' + FL.paise(q.total) : ''}</button>
+      <div class="t-xs muted" style="margin-top:8px;text-align:center">${period === 'year' ? 'Yearly' : 'Monthly'} — switch above · no automatic renewal${team && team.is_owner ? ' · adds time to your current team plan' : ''}</div></div>`;
+  }
+  function teamBox() {
+    if (team && !team.is_owner) {
+      return `<div class="box" id="team"><div class="mine"><span class="ic">${I('users', 22)}</span>
+        <div><b style="font-size:16px">You're on ${esc(team.owner.full_name)}'s team plan</b>
+        <div class="t-sm muted">${esc(team.plan_name)} · ${team.active ? 'until ' + fmtDay(team.expires_at) : 'ended ' + fmtDay(team.expires_at)} · paid by your gym</div></div></div></div>`;
+    }
+    const head = `<div class="box-head"><div><h2>Team plan for gyms &amp; studios</h2><div class="sub">Premium for your whole staff on one payment · 20% off from 3 seats</div></div></div>`;
+    if (team && team.is_owner) {
+      const free = team.seats - team.used;
+      return `<div class="box" id="team">${head}
+        <div class="mine" style="padding-top:0"><span class="ic">${I('users', 22)}</span><div style="flex:1;min-width:200px">
+          <b style="font-size:16px">${team.seats} × ${esc(team.plan_name)}</b><div class="t-sm muted">${team.active ? 'Active until ' + fmtDay(team.expires_at) : 'Ended ' + fmtDay(team.expires_at) + ' — renew below'} · ${team.used} of ${team.seats} seats in use</div></div></div>
+        ${(team.members || []).map((m) => `<div class="seat">${FL.ringAvatar(m, 'avatar sm')}<div class="ent-main"><b class="ent-name" style="font-size:14px">${esc(m.full_name)}</b>
+            <div class="ent-meta">@${esc(m.username)}${m.user_id === me.id ? ' · you' : ''}</div></div>
+            ${m.user_id === me.id ? '' : `<button class="pill ghost sm" data-unseat="${m.user_id}" data-name="${esc(m.full_name)}">Remove</button>`}</div>`).join('')}
+        ${team.active ? `<form class="addseat" id="addSeat"><input id="seatH" maxlength="60" placeholder="${free > 0 ? 'Staff member\'s @username or Fit Lab ID' : 'All seats are in use'}" ${free > 0 ? '' : 'disabled'} aria-label="Add a staff member">
+          <button class="pill solid" ${free > 0 ? '' : 'disabled'}>${I('userplus', 15)}Give a seat</button></form>` : ''}
+        <div class="team-grid" style="padding-top:12px"><div><b>Renew or change seats</b><p class="t-sm muted" style="line-height:1.55;margin:6px 0 0">Buying again adds a ${period === 'year' ? 'year' : 'month'} to your team plan and sets the number of seats. With fewer seats, the most recently added staff lose theirs first.</p></div>${teamBuyer()}</div></div>`;
+    }
+    return `<div class="box" id="team">${head}<div class="team-grid"><ul>
+        <li>${I('check', 16)}<span>One payment covers your trainers, coaches and front desk — each seat gets every feature of the plan.</span></li>
+        <li>${I('check', 16)}<span>You hold the first seat. Give the others to staff by their @username — they're told straight away.</span></li>
+        <li>${I('check', 16)}<span>Staff leave? Remove them and give the seat to someone new.</span></li>
+        <li>${I('check', 16)}<span>A seat never shortens Premium a member already pays for.</span></li>
+        <li>${I('check', 16)}<span>No automatic renewal — pay for a month or a year at a time.</span></li></ul>
+      ${teamBuyer()}</div></div>`;
+  }
+  async function refreshTeam() {
+    team = (await sb.rpc('team_info')).data; st = (await sb.rpc('my_premium')).data; use = (await sb.rpc('premium_usage')).data;
+  }
+
   function render() {
     const saving = (plans || []).length ? Math.round(100 - (plans[0].price_year / (plans[0].price_month * 12)) * 100) : 0;
     $('main').innerHTML = `${mine()}
@@ -137,6 +199,7 @@
         <div class="seg2" role="group" aria-label="Billing period"><button data-per="month" class="${period === 'month' ? 'on' : ''}">Monthly</button>
           <button data-per="year" class="${period === 'year' ? 'on' : ''}">Yearly${saving > 0 ? `<span class="save-tag">save ${saving}%</span>` : ''}</button></div></div>
         <div class="plans" id="plans">${(plans || []).map(planCard).join('')}</div></div>
+      ${teamBox()}
 
       <div class="box freebox"><div class="box-head"><div><h2>Free for everyone, always</h2><div class="sub">The basics that other networks charge for, or don't do at all</div></div></div>
         <ul><li>${I('rupee', 16)}<span>Pay is shown on every job — no guessing</span></li>
@@ -159,10 +222,12 @@
         <details><summary>Who can see that I viewed their profile? ${I('down', 16)}</summary><p>Premium members see the names of verified employers and recruiters who viewed them. Everyone else appears only as numbers — profession and city — so you can browse freely and no one is followed around.</p></details>
         <details><summary>What is InMail? ${I('down', 16)}</summary><p>InMail lets you message someone you aren't connected to about work. Pro reaches people who are hiring; Business and Recruiter can also reach members who are open to work. They can accept or decline, and replies are free. Messaging an employer about a job you've applied to is always free.</p></details>
         <details><summary>What is Open Profile? ${I('down', 16)}</summary><p>With Premium you can switch on Open Profile so any member — a potential client, a gym, a patient's family — can message you for free without connecting first. You can switch it off any time, and you can still block or report anyone.</p></details>
+        <details><summary>How does the team plan work? ${I('down', 16)}</summary><p>A gym or studio buys several seats in one payment — 20% off from 3 seats. The buyer holds the first seat and gives the rest to staff by @username. Removing someone frees the seat for another person, and their team Premium ends.</p></details>
         <details><summary>Can I switch plans? ${I('down', 16)}</summary><p>Yes — buying a different plan switches you to it straight away, and any paid time left is added on.</p></details>
       </div>`;
   }
   render();
+  if (location.hash === '#team' && $('team')) setTimeout(() => $('team').scrollIntoView(), 50);
 
   async function checkout(plan) {
     if (!me) return login();
@@ -180,9 +245,27 @@
       }
       return FL.toast((data && data.message) || 'Payments couldn\'t be opened.', 'err');
     }
+    openPay(data, `premium-${plan}-${period}`, 1, async () => {
+      FL.toast('Welcome to Premium!', 'ok'); st = (await sb.rpc('my_premium')).data; use = (await sb.rpc('premium_usage')).data;
+      FL.renderHeader(me); render(); window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+  async function checkoutTeam() {
+    if (!me) return login();
+    const b = $('tBuy'); FL.busy(b, true, 'Opening…');
+    const { data, error } = await FL.fn('premium-checkout', { action: 'team_order', plan: tPlan, period, seats: tSeats, meta: window.FLTrack ? FLTrack.meta('premium-team') : {} });
+    FL.busy(b, false);
+    if (error) return FL.toast('Payments couldn\'t be opened. Please try again.', 'err');
+    if (!data || !data.ok) return FL.toast((data && data.message) || 'Payments couldn\'t be opened.', 'err');
+    openPay(data, `premium-${tPlan}-${period}-team`, data.seats || tSeats, async () => {
+      FL.toast('Your team plan is active — now give seats to your staff', 'ok'); await refreshTeam();
+      FL.renderHeader(me); render(); $('team').scrollIntoView({ behavior: 'smooth' });
+    });
+  }
+  // one Razorpay window for single and team purchases
+  async function openPay(data, cid, items, done) {
     try { await loadRazorpay(); } catch (e) { return FL.toast('Couldn\'t load the payment window. Check your connection and try again.', 'err'); }
-    const cid = `premium-${plan}-${period}`;
-    window.FLTrack && FLTrack.event('InitiateCheckout', { content_name: data.name, content_ids: [cid], content_type: 'product', value: data.amount / 100, currency: 'INR', num_items: 1 });
+    window.FLTrack && FLTrack.event('InitiateCheckout', { content_name: data.name, content_ids: [cid], content_type: 'product', value: data.amount / 100, currency: 'INR', num_items: items });
     const rz = new window.Razorpay({
       key: data.key_id, amount: data.amount, currency: data.currency, order_id: data.order_id,
       name: 'The Fit Lab', description: `${data.name} · ${data.description}`, prefill: data.prefill,
@@ -191,7 +274,7 @@
       handler: async (resp) => {
         FL.toast('Confirming your payment…');
         const v = await FL.fn('premium-checkout', { action: 'verify', order_id: resp.razorpay_order_id, payment_id: resp.razorpay_payment_id, signature: resp.razorpay_signature });
-        if (v.data && v.data.ok) { window.FLTrack && FLTrack.event('Purchase', { content_name: data.name, content_ids: [cid], content_type: 'product', value: data.amount / 100, currency: 'INR', num_items: 1 }, resp.razorpay_order_id); FL.toast('Welcome to Premium!', 'ok'); st = (await sb.rpc('my_premium')).data; use = (await sb.rpc('premium_usage')).data; FL.renderHeader(me); render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        if (v.data && v.data.ok) { window.FLTrack && FLTrack.event('Purchase', { content_name: data.name, content_ids: [cid], content_type: 'product', value: data.amount / 100, currency: 'INR', num_items: items }, resp.razorpay_order_id); await done(); }
         else FL.toast((v.data && v.data.message) || 'We couldn\'t confirm the payment yet. If money was taken, Premium switches on within a few minutes.', 'err');
       },
     });
@@ -214,8 +297,31 @@
     const p = e.target.closest('[data-per]'); if (p) { period = p.dataset.per; render(); return; }
     const b = e.target.closest('[data-buy]'); if (b) return checkout(b.dataset.buy);
     const t = e.target.closest('[data-trial]'); if (t) return trial(t.dataset.trial);
+    if (e.target.closest('#tBuy')) return checkoutTeam();
+    const u = e.target.closest('[data-unseat]');
+    if (u) return (async () => {
+      if (!(await FL.confirm(`Remove ${u.dataset.name}?`, 'Their team Premium ends now and the seat is free for someone else.', 'Remove', true))) return;
+      const r = await FL.call('team_remove_seat', { p_user: u.dataset.unseat });
+      if (r) { FL.toast('Seat freed', 'ok'); await refreshTeam(); render(); $('team').scrollIntoView(); }
+    })();
+  });
+  $('main').addEventListener('submit', async (e) => {
+    if (e.target.id !== 'addSeat') return;
+    e.preventDefault();
+    const h = $('seatH').value.trim(); if (!h) return;
+    const btn = e.target.querySelector('button'); FL.busy(btn, true, 'Adding…');
+    const r = await FL.call('team_add_seat', { p_handle: h });
+    FL.busy(btn, false);
+    if (r) { FL.toast('Seat given — they\'ve been told', 'ok'); await refreshTeam(); render(); $('team').scrollIntoView(); }
+  });
+  $('main').addEventListener('input', (e) => {
+    if (e.target.id !== 'tSeats') return;
+    tSeats = Math.max(0, Math.min(50, Math.floor(+e.target.value || 0)));
+    const q = $('tQuote'), html = document.createElement('div'); html.innerHTML = teamBuyer();
+    q.innerHTML = html.querySelector('#tQuote').innerHTML; $('tBuy').outerHTML = html.querySelector('#tBuy').outerHTML;
   });
   $('main').addEventListener('change', async (e) => {
+    if (e.target.id === 'tPlan') { tPlan = e.target.value; const y = scrollY; render(); scrollTo(0, y); return; }
     if (e.target.id === 'openp') {
       const r = await FL.call('set_open_profile', { p_on: e.target.checked });
       if (!r) { e.target.checked = !e.target.checked; return; }

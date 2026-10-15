@@ -18,6 +18,12 @@
   .trust{display:flex;gap:16px;flex-wrap:wrap;padding:10px 16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--ash)}
   .trust span{display:inline-flex;gap:6px;align-items:center}
   .trust svg{color:var(--lime)}
+  .pnote{font-weight:600;color:var(--lime)}
+  .tline{display:flex;gap:6px;align-items:center;margin-top:6px;font-size:12.5px;font-weight:700;color:var(--lime)}
+  .trialbox{border:1px solid var(--accent-line);background:var(--accent-soft);border-radius:12px;padding:14px 16px;margin:12px 0}
+  .trialbox h3{font:700 16px var(--body);margin:0 0 6px;letter-spacing:0;text-transform:none;display:flex;gap:8px;align-items:center}
+  .trialbox .t-sm{line-height:1.6}
+  .trialbox .jacts{margin:12px 0 0}
 </style>
 </head>
 <body data-page="jobs">
@@ -81,7 +87,7 @@
   const pageFilter = FL.param('page');
 
   const login = () => { location.href = 'index.html?next=' + encodeURIComponent(location.pathname.split('/').pop() + location.search); };
-  const ago = (d) => FL.timeAgo(d) + ' ago';
+  const ago = (d) => { const t = FL.timeAgo(d); return t === 'now' ? 'just now' : t + ' ago'; };
   const STEPS = ['submitted', 'viewed', 'shortlisted', 'interview', 'offered', 'hired'];
   const STEP_LBL = { submitted: 'Applied', viewed: 'Viewed', shortlisted: 'Shortlisted', interview: 'Interview', offered: 'Offer', hired: 'Hired', not_selected: 'Not selected', withdrawn: 'Withdrawn' };
   const steps = (s) => {
@@ -98,8 +104,10 @@
         <h4>${esc(j.title)}</h4>
         <div class="co">${esc(j.page.name)}${FL.tick(j.page.verified, 14)}</div>
         <div class="meta">${esc([j.city, j.workplace_label, j.type_label].filter(Boolean).join(' · '))}</div>
-        <div class="pay">${FL.pay(j)}</div>
-        ${app ? steps(app.status) + (app.closed_without_reply ? '<div class="t-xs muted" style="margin-top:4px">Closed without a reply</div>' : '') : `
+        <div class="pay">${FL.pay(j)}${j.pay_note ? ` <span class="pnote">${esc(j.pay_note)}</span>` : ''}</div>
+        ${app ? steps(app.status) + (app.closed_without_reply ? '<div class="t-xs muted" style="margin-top:4px">Closed without a reply</div>' : '')
+          + (app.trial && ['proposed', 'confirmed'].includes(app.trial.status) && app.trial.upcoming
+            ? `<div class="tline">${I('calendar', 13)}Trial ${esc(app.trial.when)}${app.trial.status === 'proposed' ? ' — please reply' : ' · confirmed'}</div>` : '') : `
         <div class="foot">${j.promoted ? `<span class="promo">${I('zap', 13)} Promoted</span>` : ''}
           ${j.why ? `<span class="mt">${I('sparkles', 13)} ${esc(j.why)}</span>` : ''}
           ${j.match && j.match.total ? `<span class="mt">${I('check', 13)} ${j.match.met} of ${j.match.total} match</span>` : ''}
@@ -156,13 +164,15 @@
       <div class="t-sm muted">${esc([j.city, j.state].filter(Boolean).join(', ') || j.workplace_label)} · ${ago(j.created_at)} · ${j.applicants} applicant${j.applicants === 1 ? '' : 's'}</div>
       <div style="margin-top:8px">${r != null ? `<span class="resp">${I('check', 14)} Responds to ${r}% of applicants</span>` : `<span class="t-xs muted">New employer on The Fit Lab</span>`}</div>
       <div class="jfacts">
-        <div>${I('rupee', 18)}<b>${FL.pay(j)}</b></div>
+        <div>${I('rupee', 18)}<span><b>${FL.pay(j)}</b>${j.pay_note ? ` <span class="pnote">${esc(j.pay_note)}</span>` : ''}</span></div>
         <div>${I('briefcase', 18)}${esc(j.type_label)} · ${esc(j.workplace_label)}${j.openings > 1 ? ` · ${j.openings} openings` : ''}</div>
         ${j.profession_label ? `<div>${I('target', 18)}${esc(j.profession_label)}${j.experience_years ? ` · ${j.experience_years}+ years` : ' · Freshers welcome'}</div>` : ''}
         ${j.timings ? `<div>${I('clock', 18)}${esc(j.timings)}</div>` : ''}
       </div>
       ${!j.open ? `<div class="notice">${I('clock', 18)}<div>This job is no longer accepting applications.</div></div>` : ''}
-      ${app ? `<div class="match" style="margin-top:6px"><h3>Your application</h3><div class="t-sm muted">Applied ${ago(app.created_at)}</div>${steps(app.status)}</div>` : ''}
+      ${app ? `<div class="match" style="margin-top:6px"><h3>Your application</h3><div class="t-sm muted">Applied ${ago(app.created_at)}</div>${steps(app.status)}
+        ${app.screened_out ? `<div class="t-sm" style="margin-top:10px;line-height:1.55">${esc(j.page.name)} needed a different answer to one of their questions for this role, so they won't be moving forward. It isn't a judgement of you — keep applying.</div>` : ''}</div>` : ''}
+      ${app && app.trial ? trialBox(app.trial, j) : ''}
       <div class="jacts">
         ${open_ ? `<button class="pill solid lg" id="apply">${I('send', 16)}${j.questions && j.questions.length ? 'Apply' : 'Easy apply'}</button>` : ''}
         ${j.my_role ? `<a class="pill solid lg" href="hiring.html?job=${j.id}">Manage applicants</a>` : ''}
@@ -195,6 +205,7 @@
         <div class="ent-sub">${esc(j.page.kind_label)}${j.page.city ? ' · ' + esc(j.page.city) : ''} · ${j.page.followers} follower${j.page.followers === 1 ? '' : 's'}</div>
         ${j.page.tagline ? `<div class="ent-meta">${esc(j.page.tagline)}</div>` : ''}</div></div></div>`;
     const b = $('back'); if (b) b.onclick = () => { $('shell').classList.remove('open'); st.cur = null; };
+    $('det').querySelectorAll('[data-tr]').forEach((x) => { x.onclick = () => respond(app.trial, x.dataset.tr === 'yes', j); });
     const ap = $('apply'); if (ap) ap.onclick = () => me ? apply(j) : login();
     const sv = $('save'); if (sv) sv.onclick = async () => { const x = await FL.call('toggle_save_job', { p_job: j.id }); if (x) { sv.innerHTML = I('bookmark', 16) + (x.saved ? 'Saved' : 'Save'); markSaved(j.id, x.saved); } };
     $('share').onclick = async () => { const link = location.origin + location.pathname + '?job=' + j.id;
@@ -207,6 +218,33 @@
       if (ok && ok.ok) return FL.inmail(j.poster, ok);
       FL.upsell('Message the hiring team', (ok && ok.reason) || 'Apply first to message the hiring team for free, or use Premium InMail.', 'pro');
     };
+  }
+  // trial session invites from employers
+  function trialBox(t, j) {
+    const live = ['proposed', 'confirmed'].includes(t.status) && t.upcoming;
+    const said = { proposed: t.upcoming ? 'Please confirm or decline' : 'The time has passed', confirmed: 'You confirmed', declined: 'You declined',
+      cancelled: 'Cancelled by the employer', done: 'Completed', no_show: 'Marked as missed' }[t.status] || '';
+    return `<div class="trialbox"><h3>${I('calendar', 18)}Trial session</h3>
+      <div class="t-sm"><b>${esc(t.when)}</b> · ${t.minutes} minutes${t.place ? `<br>${I('pin', 14)} ${esc(t.place)}` : ''}</div>
+      ${t.note ? `<div class="t-sm muted" style="margin-top:4px">${esc(t.note)}</div>` : ''}
+      <div class="t-sm" style="margin-top:6px"><b>${esc(said)}</b>${t.reply ? ` · “${esc(t.reply)}”` : ''}</div>
+      ${live ? `<div class="jacts">${t.status === 'proposed' ? `<button class="pill solid" data-tr="yes">${I('check', 15)}Confirm</button>` : ''}
+        <button class="pill ghost" data-tr="no">Can't make it</button></div>` : ''}</div>`;
+  }
+  async function respond(t, yes, j) {
+    if (yes) {
+      const r = await FL.call('respond_trial', { p_trial: t.id, p_accept: true, p_reply: null });
+      if (r) { FL.toast(`Confirmed — ${j.page.name} has been told`, 'ok'); open(j.id); if (st.tab === 'applied') load(); }
+      return;
+    }
+    FL.form({ title: 'Can\'t make the trial?', saveLabel: 'Send', note: `${j.page.name} will be told. A short reason helps them offer another time.`,
+      fields: [{ k: 'reply', label: 'Message (optional)', type: 'textarea', max: 300, rows: 80, ph: 'e.g. I have an exam that day — could we do Saturday morning?' }],
+      onSave: async (v) => {
+        const { data, error } = await sb.rpc('respond_trial', { p_trial: t.id, p_accept: false, p_reply: v.reply || null });
+        if (error) throw error;
+        if (data && data.ok === false) throw new Error(data.message);
+        FL.toast('Sent', 'ok'); open(j.id); if (st.tab === 'applied') load();
+      } });
   }
   function markSaved(id, on) { const c = document.querySelector(`[data-save="${id}"]`); if (c) c.style.color = on ? 'var(--lime)' : ''; }
 
@@ -229,7 +267,7 @@
       const r = await FL.call('apply_job', { p_job: j.id, p_note: m.q('#apN').value.trim() || null, p_answers: answers });
       FL.busy(e.target, false);
       if (!r) return;
-      m.close(); FL.toast('Application sent', 'ok');
+      m.close(); FL.toast(r.screened_out ? 'Sent — this employer needs a different answer to one question, so they won\'t move forward. Keep applying!' : 'Application sent', r.screened_out ? '' : 'ok');
       open(j.id); const c = st.list.find((x) => x.id === j.id); if (c) c.my_status = 'submitted';
     };
   }
