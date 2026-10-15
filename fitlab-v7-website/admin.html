@@ -291,7 +291,7 @@
   const spinner = '<div class="empty"><span class="spin cr-spin"></span></div>';
   const errBox = (e) => `<div class="box"><div class="empty"><b>Couldn't load this</b>${E(FL.friendly(e))}</div></div>`;
   const debounce = (f, ms = 300) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => f(...a), ms); }; };
-  const SRC = { trial: 'free trial', razorpay: 'paid', admin: 'given by admin', gift: 'gift' };
+  const SRC = { trial: 'free trial', razorpay: 'paid', admin: 'given by admin', gift: 'gift', team: 'team plan' };
   // run an admin action: shows the error, or a success toast
   async function act(fn, args, okMsg) {
     const { data, error } = await sb.rpc(fn, args);

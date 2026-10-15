@@ -20,9 +20,26 @@
   .jform h3{font:700 16px var(--body);margin:20px 0 10px;letter-spacing:0;text-transform:none;color:var(--bone)}
   .payrow{display:grid;grid-template-columns:1fr 1fr 150px;gap:10px}
   @media (max-width:560px){ .payrow{grid-template-columns:1fr 1fr} .payrow .per{grid-column:1/-1} }
-  .qrow{display:grid;grid-template-columns:1fr 130px 36px;gap:8px;margin-bottom:8px;align-items:center}
-  @media (max-width:560px){ .qrow{grid-template-columns:1fr 36px} .qrow select{grid-column:1/2} }
+  .qrow{display:grid;grid-template-columns:1fr 150px 140px 36px;gap:8px;margin-bottom:8px;align-items:center}
+  .qrow .must.off{visibility:hidden}
+  @media (max-width:560px){ .qrow{grid-template-columns:1fr 1fr 36px} .qrow input{grid-column:1/-1} .qrow .must.off{display:none} }
   .paypv{font:700 15px var(--body);color:var(--lime);margin-top:4px;min-height:20px}
+  .tpls{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 6px}
+  .tpls .pill.on{background:var(--lime);color:var(--on-lime);border-color:var(--lime)}
+  .nchips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .nchips button{font:600 12px var(--body);padding:4px 10px;border-radius:999px;border:1px dashed var(--line-2);background:none;color:var(--ash);cursor:pointer}
+  .nchips button:hover{color:var(--bone);border-color:var(--ash)}
+  .paychk{display:flex;gap:10px;align-items:flex-start;margin:10px 0 4px;padding:12px 14px;border:1px solid var(--line-2);border-radius:12px;font-size:13.5px;line-height:1.5}
+  .paychk svg{flex:none;margin-top:2px;color:var(--lime)}
+  .paychk.low{border-color:var(--warn)} .paychk.low svg{color:var(--warn)}
+  .paychk b{color:var(--bone)}
+  .creds{display:grid;gap:8px;margin-top:6px}
+  .cred{display:flex;gap:10px;align-items:center;font-size:14px}
+  .cred svg{flex:none;color:var(--ash)} .cred.fl svg{color:var(--lime)}
+  .cred span{flex:1;min-width:0} .cred .t-xs{display:block}
+  .trialbox{border:1px solid var(--line-2);border-radius:12px;padding:12px 14px;margin:12px 0 4px;font-size:14px;line-height:1.55}
+  .trialbox .ent-act{margin-top:10px}
+  .chip.warn{border-color:var(--warn);color:var(--warn)}
   .apl{border-top:1px solid var(--line)}
   .apl-head{display:flex;gap:12px;padding:14px 20px;cursor:pointer;align-items:flex-start}
   .apl-head:hover{background:var(--hover)}
@@ -82,7 +99,8 @@
         <span style="display:flex;gap:8px;flex-wrap:wrap"><a class="pill sm" href="hiring.html?tab=candidates">Search candidates</a><a class="pill ghost sm" href="hiring.html?tab=pipeline">Talent pipeline</a></span></div>
       <div class="box box-pad"><b>Good job posts get better applicants</b>
         <ul class="checklist" style="margin-top:10px"><li>${I('check', 15)}Pay is required — be specific</li><li>${I('check', 15)}List the shift timings</li>
-        <li>${I('check', 15)}Name 3–5 must-have skills</li><li>${I('check', 15)}Reply to everyone — your response rate is public</li></ul></div>
+        <li>${I('check', 15)}Name 3–5 must-have skills</li><li>${I('check', 15)}Set a needed answer to filter automatically</li>
+        <li>${I('check', 15)}Book a trial session before you hire</li><li>${I('check', 15)}Reply to everyone — your response rate is public</li></ul></div>
       ${FL.siteFootHtml(true)}`;
     FL.wireCommon($('side'));
   }
@@ -138,10 +156,61 @@
     const opt = (o, v) => o.map(([k, l]) => `<option value="${k}" ${String(v) === String(k) ? 'selected' : ''}>${esc(l)}</option>`).join('');
     const TITLES = ['Personal Trainer', 'Strength & Conditioning Coach', 'Group Fitness Instructor', 'Yoga Instructor', 'Pilates Instructor', 'Physiotherapist',
       'Sports Physiotherapist', 'Dietitian', 'Nutritionist', 'Massage Therapist', 'Gym Manager', 'Front Desk Executive', 'Fitness Sales Executive', 'Head Coach', 'Swimming Coach', 'Zumba Instructor'];
+    // ready-made job posts for the roles gyms hire most — everything stays editable
+    const CERT_Q = { q: 'Do you hold a recognised certification for this role?', type: 'yesno', must: 'yes' };
+    const SHIFT_Q = { q: 'Can you work the shift timings above?', type: 'yesno', must: 'yes' };
+    const TPL = {
+      trainer: { label: 'Personal trainer', title: 'Personal Trainer', profession: 'personal_trainer', type: 'full_time', exp: 1,
+        timings: '6–11 am and 5–9 pm, one weekly off', note: '+ incentives on PT sales',
+        skills: ['Strength Training', 'Client Assessment', 'Program Design', 'Exercise Technique'], certs: ['Recognised PT certification', 'CPR & First Aid'],
+        does: ['Coach members on the gym floor and keep every workout safe', 'Run fitness assessments and write personal programmes', 'Sell and deliver personal training packages', 'Keep the floor tidy, welcoming and well organised'],
+        wants: ['A recognised personal training certification', 'Clear communication in English and the local language', 'Punctual, reliable and well presented'],
+        qs: [CERT_Q, SHIFT_Q, { q: 'How many clients have you trained one-to-one?', type: 'text' }] },
+      group: { label: 'Group fitness', title: 'Group Fitness Instructor', profession: 'group_fitness', type: 'part_time', exp: 1,
+        timings: 'Morning and evening batches', note: '',
+        skills: ['Class Planning', 'Music & Cueing', 'Zumba / Aerobics', 'Functional Circuits'], certs: ['Group fitness or Zumba certification'],
+        does: ['Plan and lead energetic group classes', 'Adapt every class for beginners and regulars', 'Help members stay consistent and come back'],
+        wants: ['Experience leading group classes', 'Strong voice, cueing and energy', 'A group fitness, Zumba or aerobics certification'],
+        qs: [CERT_Q, SHIFT_Q, { q: 'Which class formats can you lead?', type: 'text' }] },
+      coach: { label: 'S&C coach', title: 'Strength & Conditioning Coach', profession: 'sc_coach', type: 'full_time', exp: 2,
+        timings: 'Morning and evening sessions', note: '+ incentives on PT sales',
+        skills: ['Periodisation', 'Olympic Lifting', 'Speed & Agility', 'Athlete Monitoring'], certs: ['S&C certification', 'CPR & First Aid'],
+        does: ['Design strength and conditioning programmes for members and athletes', 'Coach lifting technique and track progress', 'Run testing sessions and report results'],
+        wants: ['An S&C certification or a degree in sports science', 'Experience coaching athletes or advanced lifters', 'Good record keeping'],
+        qs: [CERT_Q, { q: 'Have you coached competitive athletes?', type: 'yesno' }, { q: 'Which sports or athletes have you coached?', type: 'text' }] },
+      yoga: { label: 'Yoga', title: 'Yoga Instructor', profession: 'yoga', type: 'part_time', exp: 1,
+        timings: '6–8 am and 6–8 pm batches', note: '',
+        skills: ['Hatha Yoga', 'Pranayama', 'Class Sequencing', 'Alignment Cues'], certs: ['Yoga certification (e.g. YCB or RYT 200)'],
+        does: ['Lead morning and evening yoga batches', 'Offer safe options for beginners and members with limitations', 'Build a regular, loyal batch'],
+        wants: ['A recognised yoga teaching certification', 'Calm, clear teaching style', 'Regular attendance'],
+        qs: [CERT_Q, SHIFT_Q] },
+      nutrition: { label: 'Nutritionist', title: 'Nutritionist', profession: 'nutritionist', type: 'full_time', exp: 1,
+        timings: '10 am – 7 pm, one weekly off', note: '+ incentives on diet plans',
+        skills: ['Diet Planning', 'Body Composition Analysis', 'Client Counselling', 'Sports Nutrition'], certs: ['B.Sc / M.Sc in Nutrition or Dietetics'],
+        does: ['Assess members and write personalised diet plans', 'Run follow-ups and track body composition', 'Work with trainers on each member\'s goals'],
+        wants: ['A degree or diploma in nutrition or dietetics', 'Good counselling and follow-up habits', 'Knowledge of Indian diets and foods'],
+        qs: [{ q: 'Do you hold a degree or diploma in nutrition or dietetics?', type: 'yesno', must: 'yes' }, { q: 'Have you counselled clients for weight loss or muscle gain?', type: 'yesno' }] },
+      sales: { label: 'Sales / front desk', title: 'Fitness Sales Executive', profession: 'fitness_sales', type: 'full_time', exp: 0,
+        timings: '9 am – 6 pm or 1 – 10 pm shift', note: '+ commission on memberships sold',
+        skills: ['Membership Sales', 'Walk-in Handling', 'Follow-up Calls', 'Customer Service'], certs: [],
+        does: ['Welcome walk-ins and show them around', 'Sell and renew memberships', 'Follow up with enquiries and members due for renewal'],
+        wants: ['Confident, friendly communication', 'Interest in fitness', 'Sales experience is a plus — freshers welcome'],
+        qs: [SHIFT_Q, { q: 'Have you worked in sales or customer service?', type: 'yesno' }] },
+      manager: { label: 'Gym manager', title: 'Gym Manager', profession: 'gym_manager', type: 'full_time', exp: 3,
+        timings: 'Full day, one weekly off', note: '+ monthly target bonus',
+        skills: ['Team Management', 'Membership Sales', 'Gym Operations', 'Member Retention'], certs: [],
+        does: ['Run daily operations and the staff roster', 'Hit monthly sales and renewal targets', 'Keep members happy and the gym spotless'],
+        wants: ['3+ years in a gym or fitness business', 'Team leadership and sales experience', 'Comfortable with numbers and reports'],
+        qs: [{ q: 'Have you managed a gym or fitness team before?', type: 'yesno', must: 'yes' }, { q: 'What monthly sales target did you last manage?', type: 'text' }] },
+    };
+    const NOTE_CHIPS = ['+ incentives on PT sales', '+ commission on memberships', '+ monthly target bonus', '+ free gym access', '+ certification support', '+ uniform provided'];
+    const ROLE_TPL = { trainer: 'trainer', coach: 'coach', nutritionist: 'nutrition' }[FL.param('role')] || '';
     $('main').innerHTML = `<div class="box">
       <div class="box-head"><div><h2>${j ? 'Edit job' : 'Post a job'}</h2><div class="sub">Free · pay is shown on every job · closes after 30 days unless you renew</div></div>
         <a class="txt-btn" href="hiring.html">${I('back', 16)}Hiring</a></div>
       <form class="jform" id="jf" novalidate>
+        ${j ? '' : `<div class="field"><label>Start from a ready-made post <span class="t-xs muted" style="font-weight:500">optional — edit anything</span></label>
+          <div class="tpls" id="tpls">${Object.entries(TPL).map(([k, t]) => `<button type="button" class="pill ghost sm" data-tpl="${k}">${esc(t.label)}</button>`).join('')}</div></div>`}
         <div class="field"><label for="jPage" class="req">Hiring organisation</label><select id="jPage" ${j ? 'disabled' : ''}>${pages.map((p) => `<option value="${p.page_id}" ${(j ? j.page.page_id : want) === p.page_id ? 'selected' : ''}>${esc(p.name)}${p.verified ? ' ✓' : ''}</option>`).join('')}</select></div>
         <div class="field"><label for="jTitle" class="req">Job title</label><input id="jTitle" maxlength="120" list="jTitles" value="${esc(j ? j.title : '')}" placeholder="e.g. Personal Trainer"><datalist id="jTitles">${TITLES.map((t) => `<option value="${t}">`).join('')}</datalist></div>
         <div class="field"><label for="jProf">Profession</label><select id="jProf">${FL.professionOptions(profs, j ? j.profession : ({ trainer: 'personal_trainer', coach: 'sc_coach', nutritionist: 'nutritionist' })[FL.param('role')] || '', 'Choose — helps the right people find it')}</select></div>
@@ -154,7 +223,11 @@
         <div class="payrow"><div class="field"><label for="jMin" class="req">Minimum (₹)</label><input id="jMin" type="number" inputmode="numeric" min="1" value="${j ? j.salary_min : ''}" placeholder="20000"></div>
           <div class="field"><label for="jMax" class="req">Maximum (₹)</label><input id="jMax" type="number" inputmode="numeric" min="1" value="${j ? j.salary_max : ''}" placeholder="30000"></div>
           <div class="field per"><label for="jPer" class="req">Per</label><select id="jPer">${opt([['month', 'Month'], ['year', 'Year'], ['hour', 'Hour'], ['session', 'Session']], j ? j.salary_period : 'month')}</select></div></div>
+        <div class="field" style="margin-top:6px"><label for="jNote">Extra pay or perks <span class="t-xs muted" style="font-weight:500">optional</span></label>
+          <input id="jNote" maxlength="140" value="${esc(j ? j.pay_note || '' : '')}" placeholder="e.g. + 30% of PT sales, monthly incentives">
+          <div class="nchips" id="nChips">${NOTE_CHIPS.map((c) => `<button type="button" data-n="${esc(c)}">${esc(c)}</button>`).join('')}</div></div>
         <div class="paypv" id="payPv"></div>
+        <div class="paychk hidden" id="payChk" aria-live="polite"></div>
         <p class="t-xs muted" style="margin:0">Pay is required on The Fit Lab. Jobs can never ask applicants for a fee or deposit.</p>
 
         <h3>The role</h3>
@@ -171,6 +244,7 @@
 
         <h3>Screening questions <span class="t-xs muted" style="font-weight:500">optional, up to 3</span></h3>
         <div id="qs"></div><button type="button" class="pill ghost sm" id="addQ">${I('plus', 14)}Add a question</button>
+        <p class="t-xs muted" style="margin:10px 0 0;line-height:1.5">A Yes / No question can have a <b>needed answer</b>. Applicants who answer differently get a kind, automatic reply and are listed last — they never see which answer you need, and you can still move them forward.</p>
 
         <div class="err hidden" id="jErr" style="margin-top:16px"></div>
         <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px"><a class="pill ghost" href="hiring.html">Cancel</a><button class="pill solid lg" id="jGo">${j ? 'Save changes' : 'Post job'}</button></div>
@@ -181,35 +255,94 @@
       if (qs.children.length >= 3) return;
       const row = document.createElement('div'); row.className = 'qrow';
       row.innerHTML = `<input maxlength="200" placeholder="e.g. Can you work early mornings?" value="${esc(q.q)}" aria-label="Question">
-        <select aria-label="Answer type"><option value="text" ${q.type !== 'yesno' ? 'selected' : ''}>Short answer</option><option value="yesno" ${q.type === 'yesno' ? 'selected' : ''}>Yes / No</option></select>
+        <select class="qt" aria-label="Answer type"><option value="text" ${q.type !== 'yesno' ? 'selected' : ''}>Short answer</option><option value="yesno" ${q.type === 'yesno' ? 'selected' : ''}>Yes / No</option></select>
+        <select class="must" aria-label="Needed answer"><option value="">Any answer</option><option value="yes" ${q.must === 'yes' ? 'selected' : ''}>Must be Yes</option><option value="no" ${q.must === 'no' ? 'selected' : ''}>Must be No</option></select>
         <button type="button" class="icon-btn" aria-label="Remove question">${I('trash', 17)}</button>`;
+      const qt = row.querySelector('.qt'), must = row.querySelector('.must');
+      const sync = () => { const yn = qt.value === 'yesno'; must.classList.toggle('off', !yn); must.disabled = !yn; if (!yn) must.value = ''; };
+      qt.onchange = sync; sync();
       row.querySelector('button').onclick = () => { row.remove(); $('addQ').hidden = false; };
       qs.appendChild(row); $('addQ').hidden = qs.children.length >= 3;
     };
     ((j && j.questions) || []).forEach(addQ);
     $('addQ').onclick = () => addQ();
     const pv = () => {
-      const a = +$('jMin').value, b = +$('jMax').value;
-      $('payPv').textContent = a > 0 && b >= a ? 'Shown as: ' + FL.pay({ salary_min: a, salary_max: b, salary_period: $('jPer').value }) : '';
+      const a = +$('jMin').value, b = +$('jMax').value, n = $('jNote').value.trim();
+      $('payPv').textContent = a > 0 && b >= a ? 'Shown as: ' + FL.pay({ salary_min: a, salary_max: b, salary_period: $('jPer').value }) + (n ? ' · ' + n : '') : '';
     };
-    ['jMin', 'jMax', 'jPer'].forEach((id) => $(id).addEventListener('input', pv)); pv();
+    ['jMin', 'jMax', 'jPer', 'jNote'].forEach((id) => $(id).addEventListener('input', pv)); pv();
+    $('nChips').onclick = (e) => {
+      const b = e.target.closest('[data-n]'); if (!b) return;
+      const cur = $('jNote').value.trim(), add = b.dataset.n;
+      if (cur.toLowerCase().includes(add.replace(/^\+ /, '').toLowerCase())) return;
+      const next = cur ? cur + ', ' + add.replace(/^\+ /, '') : add;
+      if (next.length > 140) return FL.toast('The note can be up to 140 characters', 'err');
+      $('jNote').value = next; pv();
+    };
+    // pay check: what similar Fit Lab jobs pay (monthly), city → state → India
+    let benchT = 0, benchSeq = 0;
+    const bench = () => { clearTimeout(benchT); benchT = setTimeout(async () => {
+      const box = $('payChk'), per = $('jPer').value, prof = $('jProf').value;
+      if (!prof || !['month', 'year'].includes(per)) { box.classList.add('hidden'); return; }
+      const seq = ++benchSeq;
+      const { data } = await sb.rpc('job_pay_benchmark', { p_profession: prof, p_city: $('jCity').value.trim() || null, p_state: $('jState').value.trim() || null });
+      if (seq !== benchSeq) return;
+      if (!data || !data.enough) { box.classList.add('hidden'); return; }
+      const k = per === 'year' ? 12 : 1, lo = (+$('jMin').value || 0) / k, hi = (+$('jMax').value || 0) / k;
+      const label = (($('jProf').selectedOptions[0] || {}).textContent || 'similar').trim();
+      let verdict = '', low = false;
+      if (hi > 0 && hi < data.low) { verdict = 'Your top pay is below most similar jobs — you may get fewer applicants.'; low = true; }
+      else if (lo > 0 && lo >= data.median) verdict = 'Above the typical pay — expect strong interest.';
+      else if (hi > 0) verdict = 'Your range is in line with similar jobs.';
+      box.className = 'paychk' + (low ? ' low' : '');
+      box.innerHTML = `${I(low ? 'help' : 'chart', 18)}<div><b>${esc(label)} jobs in ${esc(data.place)}</b> pay about <b>${FL.inr(data.low)}–${FL.inr(data.high).slice(1)}</b> a month (typical ${FL.inr(data.median)}).
+        <span class="t-xs muted">Based on ${data.count} Fit Lab job posts.</span>${verdict ? `<br>${esc(verdict)}` : ''}</div>`;
+    }, 450); };
+    ['jProf', 'jPer'].forEach((id) => $(id).addEventListener('change', bench));
+    ['jCity', 'jState', 'jMin', 'jMax'].forEach((id) => $(id).addEventListener('input', bench)); bench();
     const cityReq = () => { $('jCityL').classList.toggle('req', $('jWork').value !== 'remote'); };
     $('jWork').onchange = cityReq; cityReq();
-    $('tpl').onclick = () => {
-      if ($('jDesc').value.trim() && !confirm('Replace your description with the template?')) return;
-      const org = ($('jPage').selectedOptions[0] || {}).textContent || 'our team';
-      $('jDesc').value = `About the role\nWe're looking for a ${$('jTitle').value.trim() || 'coach'} to join ${org.replace(' ✓', '')}.\n\nWhat you'll do\n• \n• \n• \n\nWhat we're looking for\n• \n• \n\nWhat we offer\n• Pay as shown above\n• \n• `;
+    const orgName = () => (($('jPage').selectedOptions[0] || {}).textContent || 'our team').replace(' ✓', '').trim();
+    const BENEFITS = 'Add your benefits here — e.g. free gym access, uniform, certification support';
+    $('tpl').onclick = async () => {
+      if ($('jDesc').value.trim() && !(await FL.confirm('Replace the description?', 'Your description will be replaced with the template.', 'Replace'))) return;
+      $('jDesc').value = `About the role\nWe're looking for a ${$('jTitle').value.trim() || 'coach'} to join ${orgName()}.\n\nWhat you'll do\n• \n• \n• \n\nWhat we're looking for\n• \n• \n\nWhat we offer\n• Pay as shown above\n• ${BENEFITS}`;
       $('jDesc').focus();
     };
+    const useTpl = (k) => {
+      const t = TPL[k]; if (!t) return;
+      const city = $('jCity').value.trim();
+      $('jTitle').value = t.title; $('jProf').value = t.profession; $('jType').value = t.type; $('jExp').value = String(t.exp);
+      $('jTime').value = t.timings; $('jSkills').value = t.skills.join(', '); $('jCerts').value = t.certs.join(', ');
+      if (!$('jNote').value.trim()) $('jNote').value = t.note;
+      $('jDesc').value = `About the role\nWe're looking for a ${t.title} to join ${orgName()}${city ? ' in ' + city : ''}.\n\nWhat you'll do\n${t.does.map((x) => '• ' + x).join('\n')}\n\n`
+        + `What we're looking for\n${t.wants.map((x) => '• ' + x).join('\n')}\n\nWhat we offer\n• Pay as shown above${t.note ? ' ' + t.note : ''}\n• ${BENEFITS}`;
+      qs.innerHTML = ''; t.qs.forEach(addQ); $('addQ').hidden = qs.children.length >= 3;
+      document.querySelectorAll('#tpls [data-tpl]').forEach((b) => b.classList.toggle('on', b.dataset.tpl === k));
+      pv(); bench();
+    };
+    const tp = $('tpls');
+    if (tp) tp.onclick = async (e) => {
+      const b = e.target.closest('[data-tpl]'); if (!b) return;
+      if (($('jDesc').value.trim() || $('jTitle').value.trim()) && !(await FL.confirm(`Use the ${TPL[b.dataset.tpl].label.toLowerCase()} template?`,
+        'This fills the title, skills, description and screening questions. Your pay stays as it is, and you can edit everything before posting.', 'Use template'))) return;
+      useTpl(b.dataset.tpl);
+      FL.toast('Template added — check the pay, timings and benefits', 'ok');
+    };
+    if (!j && ROLE_TPL) useTpl(ROLE_TPL);
     const list = (v, n) => v.split(',').map((s) => s.trim()).filter(Boolean).slice(0, n);
     $('jf').onsubmit = async (e) => {
       e.preventDefault();
       const err = $('jErr'); const show = (t) => { err.textContent = t; err.classList.remove('hidden'); err.scrollIntoView({ block: 'center' }); };
       const p = { title: $('jTitle').value.trim(), profession: $('jProf').value, employment_type: $('jType').value, workplace: $('jWork').value,
         city: $('jCity').value.trim(), state: $('jState').value.trim(), salary_min: $('jMin').value.trim(), salary_max: $('jMax').value.trim(),
-        salary_period: $('jPer').value, experience_years: $('jExp').value, openings: $('jOpen').value.trim() || '1', timings: $('jTime').value.trim(),
+        salary_period: $('jPer').value, pay_note: $('jNote').value.trim(), experience_years: $('jExp').value, openings: $('jOpen').value.trim() || '1', timings: $('jTime').value.trim(),
         description: $('jDesc').value.trim(), skills: list($('jSkills').value, 10), certifications: list($('jCerts').value, 5),
-        questions: [...qs.children].map((r) => ({ q: r.querySelector('input').value.trim(), type: r.querySelector('select').value })).filter((q) => q.q) };
+        questions: [...qs.children].map((r) => {
+          const q = { q: r.querySelector('input').value.trim(), type: r.querySelector('.qt').value }, m = r.querySelector('.must').value;
+          if (q.type === 'yesno' && m) q.must = m; return q;
+        }).filter((q) => q.q) };
+      if (p.description.includes('Add your benefits here')) return show('Replace the line “Add your benefits here…” in the description with what you offer — or delete it.');
       if (p.title.length < 3) return show('Add a job title.');
       if (!p.employment_type) return show('Choose the job type.');
       if (!p.workplace) return show('Choose the workplace.');
@@ -259,24 +392,80 @@
           <div class="apl-head" tabindex="0" role="button" aria-expanded="${openId === a.application_id}">${FL.ringAvatar(a, 'avatar')}
             <div style="flex:1;min-width:0"><b class="ent-name">${esc(a.full_name)}${FL.tags(a)}</b>
               <div class="ent-sub">${esc(a.headline || a.profession_label || '')}</div>
-              <div class="ent-meta">${esc([a.profession_label, a.city, a.experience_years ? a.experience_years + ' yrs experience' : 'New to the field'].filter(Boolean).join(' · '))} · applied ${FL.timeAgo(a.created_at)} ago</div>
+              <div class="ent-meta">${esc([a.profession_label, a.city, a.experience_years ? a.experience_years + ' yrs experience' : 'New to the field'].filter(Boolean).join(' · '))} · applied ${FL.timeAgo(a.created_at) === 'now' ? 'just now' : FL.timeAgo(a.created_at) + ' ago'}</div>
               <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;align-items:center">${a.premium ? `<span class="feat-chip">${I('crown', 11)}Featured</span>` : ''}
-                <span class="chip ${a.status === 'submitted' ? 'acc' : ''}">${STAGE_LBL[a.status] || a.status}</span></div></div>
+                <span class="chip ${a.status === 'submitted' ? 'acc' : ''}">${STAGE_LBL[a.status] || a.status}</span>
+                ${a.screened_out ? `<span class="chip warn" title="${esc(a.screened_out)}">Needed answer not met</span>` : ''}
+                ${(a.fitlab_certs || []).length ? `<span class="chip acc">${I('award', 12)}Fit Lab certified</span>` : ''}
+                ${(a.credentials || []).filter((c) => !c.expired).length ? `<span class="chip">${plural(a.credentials.filter((c) => !c.expired).length, 'certification')}</span>` : ''}
+                ${a.trial && ['proposed', 'confirmed'].includes(a.trial.status) ? `<span class="chip ${a.trial.status === 'confirmed' ? 'acc' : ''}">${I('calendar', 12)}Trial ${a.trial.status === 'confirmed' ? 'confirmed' : 'invited'}</span>` : ''}</div></div>
             ${a.match && a.match.total ? `<span class="mscore">${a.match.met}/${a.match.total} match</span>` : ''}</div>
           ${openId === a.application_id ? detail(a) : ''}</div>`).join('')
         : `<div class="empty"><b>${all.length ? 'No one at this stage' : 'No applicants yet'}</b>${all.length ? '' : 'You\'ll be notified when someone applies. Promoting the job or sharing its link helps.'}</div>`;
     }
+    const TRIAL_LBL = { proposed: 'Waiting for their reply', confirmed: 'Confirmed', declined: 'Declined', cancelled: 'Cancelled', done: 'Done', no_show: 'Didn\'t turn up' };
+    const safeUrl = (u) => /^https?:\/\//i.test(u || '') ? u : '';
+    function certs(a) {
+      const fl = a.fitlab_certs || [], cr = a.credentials || [];
+      if (!fl.length && !cr.length) return `<div class="qa"><b>Certifications</b>None added yet — ask about them when you message ${esc(a.full_name.split(' ')[0])}.</div>`;
+      return `<div class="qa"><b>Certifications</b><div class="creds">
+        ${fl.map((c) => `<div class="cred fl">${I('award', 17)}<span>${esc(c.title)}<span class="t-xs muted">The Fit Lab · QR-verified${c.issued_at ? ' · ' + new Date(c.issued_at).getFullYear() : ''}</span></span>
+          ${a.unique_id ? `<a class="txt-btn" href="verify.html?id=${encodeURIComponent(a.unique_id)}" target="_blank" rel="noopener">Verify</a>` : ''}</div>`).join('')}
+        ${cr.map((c) => `<div class="cred">${I('award', 17)}<span>${esc(c.name)}${c.expired ? ' <span class="chip warn" style="padding:0 8px">Expired</span>' : ''}<span class="t-xs muted">${esc(c.issuer)} · added by the candidate</span></span>
+          ${safeUrl(c.url) ? `<a class="txt-btn" href="${esc(safeUrl(c.url))}" target="_blank" rel="noopener nofollow">${I('external', 14)}Check</a>` : ''}</div>`).join('')}</div>
+        ${cr.length ? `<span class="t-xs muted" style="display:block;margin-top:8px">Certifications from other providers count just the same — open the link or ask to see the certificate.</span>` : ''}</div>`;
+    }
+    function trial(a) {
+      const t = a.trial;
+      if (!t) return '';
+      const live = ['proposed', 'confirmed'].includes(t.status);
+      return `<div class="trialbox"><b style="display:flex;gap:8px;align-items:center">${I('calendar', 16)}Trial session · <span class="${t.status === 'confirmed' || t.status === 'done' ? 'mscore' : ''}">${TRIAL_LBL[t.status] || t.status}</span></b>
+        <div class="t-sm" style="margin-top:4px">${esc(t.when)} · ${t.minutes} min${t.place ? ' · ' + esc(t.place) : ''}</div>
+        ${t.note ? `<div class="t-sm muted">${esc(t.note)}</div>` : ''}
+        ${t.reply ? `<div class="t-sm" style="margin-top:6px">“${esc(t.reply)}”</div>` : ''}
+        ${live ? `<div class="ent-act">${t.upcoming ? `<button class="pill ghost sm" data-trial="book">Change time</button><button class="pill ghost sm" data-trial="cancelled">Cancel trial</button>`
+          : `<button class="pill sm" data-trial="done">${I('check', 14)}Mark done</button><button class="pill ghost sm" data-trial="no_show">Didn't turn up</button>`}</div>` : ''}</div>`;
+    }
     function detail(a) {
       const m = a.match || { items: [] };
+      const first = esc(a.full_name.split(' ')[0]);
+      const canTrial = !a.trial || !['proposed', 'confirmed'].includes(a.trial.status);
       return `<div class="apl-body">
+        ${a.screened_out ? `<div class="notice warn" style="margin:0 0 10px">${I('help', 18)}<div class="t-sm" style="line-height:1.5">${first} answered “${esc(a.screened_out)}” differently from what you need, and has had a kind automatic reply. You can still move them forward.</div></div>` : ''}
         ${(m.items || []).length ? `<ul class="checklist">${m.items.map((x) => `<li><span style="color:${x.ok ? 'var(--lime)' : 'var(--ash)'}">${I(x.ok ? 'check' : 'close', 15)}</span>${esc(x.label)}</li>`).join('')}</ul>` : ''}
-        ${a.note ? `<div class="qa"><b>Note from ${esc(a.full_name.split(' ')[0])}</b>${FL.linkify(a.note)}</div>` : ''}
+        ${certs(a)}
+        ${a.note ? `<div class="qa"><b>Note from ${first}</b>${FL.linkify(a.note)}</div>` : ''}
         ${(a.answers || []).map((x) => `<div class="qa"><b>${esc(x.q)}</b>${esc(x.a)}</div>`).join('')}
         ${a.employer_note ? `<div class="qa"><b>Your team's note (private)</b>${esc(a.employer_note)}</div>` : ''}
+        ${trial(a)}
         <div class="stagebar">${STAGES.filter(([k]) => !['submitted', 'viewed'].includes(k)).map(([k, l]) => `<button class="pill sm ${a.status === k ? 'on' : k === 'not_selected' ? 'ghost' : ''}" data-st="${k}">${l}</button>`).join('')}</div>
-        <div class="ent-act"><a class="pill ghost sm" href="profile.html?u=${encodeURIComponent(a.username)}" target="_blank" rel="noopener">${I('eye', 15)}Full profile</a>
-          <button class="pill ghost sm" data-msg="1">${I('mail', 15)}Message</button></div>
-        <p class="t-xs muted" style="margin:10px 0 0">${esc(a.full_name.split(' ')[0])} sees each stage you choose. “Not selected” sends a kind, final update — no one is left waiting.</p></div>`;
+        <div class="ent-act"><button class="pill solid sm" data-msg="1">${I('mail', 15)}Message ${first}</button>
+          ${canTrial && !['hired', 'withdrawn'].includes(a.status) ? `<button class="pill sm" data-trial="book">${I('calendar', 15)}Book a trial session</button>` : ''}
+          <a class="pill ghost sm" href="profile.html?u=${encodeURIComponent(a.username)}" target="_blank" rel="noopener">${I('eye', 15)}Full profile</a></div>
+        <p class="t-xs muted" style="margin:10px 0 0">${first} sees each stage you choose. “Not selected” sends a kind, final update — no one is left waiting.</p></div>`;
+    }
+    function bookTrial(a) {
+      const pad = (n) => String(n).padStart(2, '0'), d = new Date(Date.now() + 864e5);
+      const ymd = (x) => `${x.getFullYear()}-${pad(x.getMonth() + 1)}-${pad(x.getDate())}`;
+      const prev = a.trial && ['proposed', 'confirmed'].includes(a.trial.status) ? a.trial : null;
+      FL.form({ title: `Trial session with ${a.full_name.split(' ')[0]}`, saveLabel: prev ? 'Send new time' : 'Send invite',
+        note: `${a.full_name.split(' ')[0]} gets a notification to confirm or decline.${prev ? ' The earlier time is replaced.' : ''}`,
+        values: { date: ymd(d), time: '10:00', minutes: prev ? String(prev.minutes) : '60', place: prev ? prev.place || '' : [j.page.name, j.city].filter(Boolean).join(', '), note: prev ? prev.note || '' : '' },
+        fields: [
+          { k: 'date', label: 'Date', type: 'date', req: true, half: true, min: ymd(new Date()) },
+          { k: 'time', label: 'Time', type: 'time', req: true, half: true },
+          { k: 'minutes', label: 'How long', type: 'select', options: [['30', '30 minutes'], ['45', '45 minutes'], ['60', '1 hour'], ['90', '1½ hours'], ['120', '2 hours']] },
+          { k: 'place', label: 'Where', max: 200, ph: 'Gym name and area' },
+          { k: 'note', label: 'What to expect (optional)', type: 'textarea', max: 500, rows: 80, ph: 'e.g. Bring gym wear. You\'ll take one member through a 30-minute session.' }],
+        onSave: async (v) => {
+          const at = new Date(`${v.date}T${v.time}`);
+          if (isNaN(at)) throw new Error('Choose a date and time.');
+          const { data, error } = await sb.rpc('schedule_trial', { p_app: a.application_id, p_at: at.toISOString(), p_minutes: +v.minutes, p_place: v.place || null, p_note: v.note || null });
+          if (error) throw error;
+          if (data && data.ok === false) throw new Error(data.message);
+          a.trial = data.trial; if (['submitted', 'viewed', 'shortlisted', 'not_selected'].includes(a.status)) { a.status = 'interview'; a.screened_out = null; }
+          FL.toast(`Trial invite sent to ${a.full_name.split(' ')[0]}`, 'ok'); draw();
+        } });
     }
     $('stabs').onclick = (e) => { const b = e.target.closest('[data-s]'); if (!b) return; filter = b.dataset.s; draw(); };
     $('al').addEventListener('click', async (e) => {
@@ -295,6 +484,14 @@
         if (ok && (ok.connected || ok.existing)) return location.href = 'messaging.html?u=' + encodeURIComponent(a.username);
         if (ok && ok.ok) return FL.inmail(a, ok);
         return FL.toast((ok && ok.reason) || 'You can\'t message this member.', 'err');
+      }
+      const tb = e.target.closest('[data-trial]');
+      if (tb) {
+        if (tb.dataset.trial === 'book') return bookTrial(a);
+        if (tb.dataset.trial === 'cancelled' && !(await FL.confirm('Cancel the trial?', `${a.full_name.split(' ')[0]} will be told it's cancelled.`, 'Cancel trial', true))) return;
+        const r = await FL.call('update_trial', { p_trial: a.trial.id, p_status: tb.dataset.trial });
+        if (r) { a.trial = r.trial; FL.toast(tb.dataset.trial === 'cancelled' ? 'Trial cancelled' : 'Trial updated', 'ok'); draw(); }
+        return;
       }
       if (e.target.closest('a,button')) return;
       if (e.target.closest('.apl-head')) {
