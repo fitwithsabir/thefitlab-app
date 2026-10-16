@@ -69,6 +69,11 @@
       <div class="set-row"><div><b>On this device</b><div class="t-sm" id="pushTxt">Checking…</div></div><span id="pushAct"></span></div>
       <div id="pushPrefs"></div></div>
 
+    <div class="box" id="emails"><div class="box-head"><div><h2>Emails</h2><div class="sub">Sent from fitwithsabir@gmail.com to ${esc(me.email || session.user.email || '')}</div></div></div>
+      <div class="set-row"><div><b>Important updates by email</b><div class="t-sm">Bookings and session reminders, trial sessions, shortlists and offers, new applicants for your jobs, verification and Premium reminders.</div></div>
+        <label class="switch"><input type="checkbox" id="swEmail" checked aria-label="Important updates by email"><span></span></label></div>
+      <div class="set-row"><div><b>Always sent</b><div class="t-sm">Your welcome email, payment receipts and certificates.</div></div></div></div>
+
     <div class="box" id="account"><div class="box-head"><h2>Account</h2></div>
       <div class="set-row"><div><b>Email</b><div class="t-sm">${esc(me.email || session.user.email || '')} · used to sign in. Only the Academy can see it.</div></div></div>
       <div class="set-row"><div><b>Username</b><div class="t-sm">@${esc(me.username || '')} — you can sign in with this too.</div></div><a class="pill sm" href="profile.html?edit=1">Change</a></div>
@@ -159,6 +164,7 @@
     }
     const { data: np } = await sb.rpc('my_notify_prefs');
     const prefs = (np && np.prefs) || {};
+    $('swEmail').checked = prefs.email !== false;
     $('pushPrefs').innerHTML = `<div class="set-row" style="padding-bottom:6px"><div><b>What pops up</b><div class="t-sm">On all your devices${np && np.devices ? ` (${np.devices} turned on)` : ''}. Everything still appears under Notifications.</div></div></div>`
       + CATS.map(([k, l, d]) => `<div class="set-row"><div><b style="font-size:14px">${l}</b><div class="t-sm">${d}</div></div>
         <label class="switch"><input type="checkbox" data-np="${k}" ${prefs[k] !== false ? 'checked' : ''} aria-label="${l}"><span></span></label></div>`).join('');
@@ -168,6 +174,10 @@
     const r = await FL.call('set_notify_prefs', { p: { [el.dataset.np]: el.checked } });
     if (!r) el.checked = !el.checked; else FL.toast('Saved', 'ok');
   });
+  $('swEmail').onchange = async (e) => {
+    const r = await FL.call('set_notify_prefs', { p: { email: e.target.checked } });
+    if (!r) e.target.checked = !e.target.checked; else FL.toast(e.target.checked ? 'Update emails are on' : 'Update emails are off — receipts and certificates still come by email', 'ok');
+  };
   pushUI();
   $('btnPw').onclick = () => {
     const m = FL.modal({ title: 'Change password', body: `<div class="field"><label for="pw1">New password</label><input id="pw1" type="password" autocomplete="new-password" minlength="8"></div>
