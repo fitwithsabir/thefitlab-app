@@ -220,26 +220,17 @@
   if (profile.photo_url) $('preview').outerHTML = `<img id="preview" class="avatar lg" src="${FL.esc(profile.photo_url)}" alt="">`;
   else $('preview').textContent = FL.initials($('full_name').value);
 
-  // Photo: preview + square-crop + resize to 800px JPEG (keeps uploads small and consistent)
-  let photoBlob = null;
-  async function processImage(file) {
-    return new Promise((resolve, reject) => {
-      const img = new Image(); const url = URL.createObjectURL(file);
-      img.onload = () => {
-        const S = 800, c = document.createElement('canvas'); c.width = S; c.height = S;
-        const s = Math.min(img.width, img.height), sx = (img.width - s) / 2, sy = (img.height - s) / 2;
-        c.getContext('2d').drawImage(img, sx, sy, s, s, 0, 0, S, S);
-        c.toBlob((b) => { URL.revokeObjectURL(url); b ? resolve(b) : reject(new Error('Could not process the image')); }, 'image/jpeg', 0.88);
-      };
-      img.onerror = () => reject(new Error('That file is not a readable image'));
-      img.src = url;
-    });
-  }
+  // Photo: square-crop + resize to 800px JPEG on the device, and checked for nudity before it's used
+  let photoBlob = null, photoCheck = null;
   async function takeFile(file) {
     if (!file) return;
     if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return FL.toast('Use a JPG, PNG or WebP image', 'err');
     try {
-      photoBlob = await processImage(file);
+      FL.toast('Checking your photo…');
+      const { blob, canvas } = await FL.compressImage(file, { max: 800, square: true, quality: 0.86, format: 'jpeg' });
+      const res = await FL.photoCheck.check(canvas);
+      if (res.verdict === 'blocked') { FL._logPhoto('avatars', null, res); photoBlob = null; $('photo').value = ''; return FL.notice('Choose a different photo', FL.BLOCKED_PHOTO); }
+      photoBlob = blob; photoCheck = res;
       const url = URL.createObjectURL(photoBlob);
       const el = $('preview');
       el.outerHTML = `<img id="preview" class="avatar lg" src="${url}" alt="">`;
@@ -247,6 +238,7 @@
   }
   $('photo').onchange = (e) => takeFile(e.target.files[0]);
   const drop = $('drop');
+  drop.addEventListener('dragenter', () => FL.photoCheck.warm());
   ['dragenter', 'dragover'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('over'); }));
   ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
   drop.addEventListener('drop', (e) => takeFile(e.dataTransfer.files[0]));
@@ -273,6 +265,7 @@
         const path = `${uid}/avatar.jpg`;
         const { error: upErr } = await sb.storage.from('avatars').upload(path, photoBlob, { upsert: true, contentType: 'image/jpeg', cacheControl: '3600' });
         if (upErr) throw upErr;
+        FL._logPhoto('avatars', path, photoCheck);
         photo_url = sb.storage.from('avatars').getPublicUrl(path).data.publicUrl + '?v=' + Date.now();
       }
       const uname = $('username').value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');

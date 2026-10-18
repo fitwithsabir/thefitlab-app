@@ -92,6 +92,11 @@
   .switch input:checked + span::after{transform:translateX(20px)}
   .switch input:focus-visible + span{box-shadow:0 0 0 3px var(--accent-soft)}
   .num{width:92px;height:38px;padding:0 10px;font-size:14px}
+  .case-photo{display:inline-block;position:relative;margin:10px 0 0;border-radius:10px;overflow:hidden;border:1px solid var(--line-2);cursor:pointer;background:var(--panel-2)}
+  .case-photo img{display:block;max-width:min(320px,100%);max-height:260px;filter:blur(18px);transition:filter .2s}
+  .case-photo.shown img{filter:none}
+  .case-photo span{position:absolute;inset:auto 8px 8px 8px;text-align:center;font-size:12px;font-weight:700;background:rgba(0,0,0,.7);color:#fff;border-radius:999px;padding:4px 10px}
+  .case-photo.shown span{display:none}
   .quote{margin:10px 0 0;padding:10px 14px;border-left:3px solid var(--line-2);background:var(--panel-2);border-radius:0 8px 8px 0;font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}
   .tbl{width:100%;border-collapse:collapse;font-size:13.5px}
   .tbl th{text-align:left;font:700 10.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ash);padding:10px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
@@ -1052,15 +1057,18 @@
         return `<div class="case" data-case="${E(c.id)}"><div class="case-top">
             <div class="case-who">${FL.avatarHtml(s, 'avatar sm')}<div style="min-width:0"><div class="nm">${whoLink(s)}${s.community_status && s.community_status !== 'active' ? `<span class="tg ${s.community_status === 'banned' ? 'bad' : 'warn'}">${s.community_status === 'banned' ? 'Removed' : 'Paused'}</span>` : ''}</div>
               <div class="sub">@${E(s.username || '')} · ${E(s.unique_id || '')}</div></div></div>
-            <div><div class="case-meta"><span class="chip">${E(SRCL[c.source] || c.source)}</span><span class="chip">${E(String(c.target_type || '').replace('_', ' '))}</span>${c.category ? `<span class="chip">${E(c.category)}</span>` : ''}${c.severity ? `<span class="st st-${sevSt(c.severity)}">${E(c.severity)}</span>` : ''}</div>
+            <div><div class="case-meta"><span class="chip">${E(c.target_type === 'photo' ? 'Photo check' : SRCL[c.source] || c.source)}</span><span class="chip">${E(String(c.target_type || '').replace('_', ' '))}</span>${c.category ? `<span class="chip">${E(c.category)}</span>` : ''}${c.severity ? `<span class="st st-${sevSt(c.severity)}">${E(c.severity)}</span>` : ''}</div>
               <div class="sub" style="text-align:right;margin-top:4px">${E(fmt(c.created_at))}${c.report_count > 1 ? ` · ${c.report_count} reports` : ''}${c.score ? ` · AI score ${Number(c.score).toFixed(2)}` : ''}</div></div></div>
-          ${c.content ? `<div class="quote">${E(c.content)}</div>` : ''}
+          ${c.target_type === 'photo' ? (/^https:\/\//.test(c.content || '') ? `<div class="case-photo" data-photo><img src="${E(c.content)}" alt="Photo to review" loading="lazy"><span>Tap to show</span></div>`
+              : `<div class="acts" style="margin-top:10px"><button class="pill ghost sm" type="button" data-private="${E(c.content || '')}">${I('eye', 14)}Open private photo</button></div>`)
+            : c.content ? `<div class="quote">${E(c.content)}</div>` : ''}
           ${c.reason ? `<div class="sub" style="margin-top:8px">${E(c.reason)}</div>` : ''}
           ${c.reporter ? `<div class="sub" style="margin-top:4px">Reported by ${whoLink(c.reporter)}</div>` : ''}
           ${c.resolution_note ? `<div class="sub" style="margin-top:4px">Note: ${E(c.resolution_note)}</div>` : ''}
           ${live ? `<div class="acts" style="margin-top:12px">
             <button class="pill ghost sm" type="button" data-res="dismiss">Dismiss${s.community_status === 'suspended' ? ' &amp; restore access' : ''}</button>
             ${['post', 'comment', 'message'].includes(c.target_type) && c.target_id ? '<button class="pill ghost sm" type="button" data-res="remove">Remove content</button>' : ''}
+            ${c.target_type === 'photo' && c.target_id ? '<button class="pill ghost sm" type="button" data-res="remove">Remove photo</button>' : ''}
             ${s.community_status === 'suspended' ? '<button class="pill sm" type="button" data-res="keep">Keep paused</button>' : '<button class="pill ghost sm" type="button" data-res="suspend">Pause member</button>'}
             <button class="pill red-o sm" type="button" data-res="ban">Remove access</button></div>` : ''}</div>`;
       }).join('') : `<div class="empty">${f === 'open' ? '<b>Nothing needs review</b>New reports and flagged content will appear here.' : 'Nothing here.'}</div>`;
@@ -1069,6 +1077,15 @@
       $('modF').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); load(); };
     $('modList').onclick = async (e) => {
       const mb = e.target.closest('[data-member]'); if (mb) return openMember(mb.dataset.member);
+      const ph = e.target.closest('[data-photo]'); if (ph) { ph.classList.toggle('shown'); return; }
+      const pv = e.target.closest('[data-private]');
+      if (pv) {
+        const [bucket, ...rest] = pv.dataset.private.split('/');
+        const { data, error } = await sb.storage.from(bucket).createSignedUrl(rest.join('/'), 300);
+        if (error || !data) return FL.toast('Couldn\'t open the photo — it may already be removed.', 'err');
+        window.open(data.signedUrl, '_blank', 'noopener');
+        return;
+      }
       const ms = e.target.closest('[data-ms]');
       if (ms) {
         const on = ms.dataset.st === 'active';
@@ -1086,12 +1103,18 @@
         suspend: ['resolve', 'suspend', true], ban: ['resolve', 'ban', true] }[a];
       let note = null;
       if (a !== 'dismiss') {
-        const r = await askNote({ title: { remove: 'Remove content', keep: 'Keep paused', suspend: 'Pause member', ban: 'Remove access' }[a],
+        const r = await askNote({ title: { remove: c.target_type === 'photo' ? 'Remove photo' : 'Remove content', keep: 'Keep paused', suspend: 'Pause member', ban: 'Remove access' }[a],
           help: 'Optional note — kept with the case for your records.', okLabel: { remove: 'Remove content', keep: 'Keep paused', suspend: 'Pause member', ban: 'Remove access' }[a], danger: a === 'ban' });
         if (!r) return; note = r.note || null;
       }
       FL.busy(b, true, '…');
+      // for a photo, find its file first: removing the case clears it from profiles, posts and pages, then the file is deleted
+      const file = c.target_type === 'photo' && map[2] ? (await sb.rpc('admin_photo_file', { p_case: c.id })).data : null;
       const ok = await act('admin_resolve_case', { p_case: c.id, p_decision: map[0], p_member_action: map[1], p_remove_content: map[2], p_note: note }, 'Done');
+      if (ok && file && file.path && !file.removed) {
+        const { error: delErr } = await sb.storage.from(file.bucket).remove([file.path]);
+        if (delErr) FL.toast('Photo taken down, but the file couldn\'t be deleted: ' + FL.friendly(delErr), 'err');
+      }
       FL.busy(b, false);
       if (ok) load();
     };

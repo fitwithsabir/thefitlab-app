@@ -377,10 +377,10 @@
         FL.busy(t, true, 'Saving…');
         try {
           let path = null, name = null; const f = $('pgFile').files[0];
-          if (f) { if (f.size > 8 * 1024 * 1024) return FL.toast('Files can be up to 8 MB', 'err');
-            const ext = (f.name.split('.').pop() || 'pdf').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 5);
+          if (f) {
+            const ext = f.type === 'application/pdf' ? 'pdf' : 'jpg';
             path = `${b.id}/program-${Date.now()}.${ext}`; name = f.name.slice(0, 120);
-            const { error } = await sb.storage.from('client-space').upload(path, f, { contentType: f.type, upsert: false }); if (error) return FL.toast(FL.friendly(error), 'err'); }
+            try { await FL.uploadFile('client-space', path, f, 5); } catch (ex) { return FL.toast(FL.friendly(ex), 'err'); } }
           await run('save_program', { p_booking: b.id, p_body: $('pgBody').value, p_file_path: path, p_file_name: name }, 'Program shared with your client');
         } finally { FL.busy(t, false); }
         return;

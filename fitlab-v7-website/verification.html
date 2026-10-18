@@ -196,7 +196,7 @@
       FL.toast('Uploading…');
       try {
         const safe = f.name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-60);
-        const path = await FL.uploadFile('verification-docs', `${me.id}/${Date.now()}-${safe}`, f, 8);
+        const path = await FL.uploadFile('verification-docs', `${me.id}/${Date.now()}-${safe}`, f, 5);
         docs.push({ path, name: f.name }); drawDocs(); FL.toast('Added', 'ok');
       } catch (e) { FL.toast(FL.friendly(e), 'err'); }
     };
