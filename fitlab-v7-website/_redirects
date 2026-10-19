@@ -1,3 +1,6 @@
+# Home page (Cloudflare serves exact file names, so the root needs this line)
+/                     /index.html      200
+
 # Promotion links (the address bar keeps the short link; UTM parameters pass through)
 /academy              /academy.html    200
 /certify              /academy.html    200
