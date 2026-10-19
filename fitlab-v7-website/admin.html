@@ -455,12 +455,12 @@
       if (error || !data) { $('view').innerHTML = errBox(error || {}); return; }
       const stuck = data.waiting > 0 && !data.sent_30d;
       $('view').innerHTML = `<div class="stack">
-        <div class="box"><div class="box-head"><div><h2>Automatic emails</h2><div class="sub">Sent from fitwithsabir@gmail.com · welcome, receipts, certificates, bookings, trial sessions and job updates · Gmail allows about 500 a day</div></div>
+        <div class="box"><div class="box-head"><div><h2>Automatic emails</h2><div class="sub">Sent from hello@thefitlab.in · welcome, receipts, certificates, bookings, trial sessions and job updates · up to 700 a day</div></div>
           <button class="pill solid sm" id="emTest">${I('mail', 15)}Send me a test</button></div>
           <div class="kpis">${[[n(data.sent_24h), 'Sent today'], [n(data.sent_30d), 'Sent in 30 days'], [n(data.waiting), 'Waiting'], [n(data.failed_7d), 'Failed this week']]
             .map(([v, l]) => `<div class="kpi"><b>${E(v)}</b><span>${E(l)}</span></div>`).join('')}</div>
-          ${data.last_error ? `<div class="notice warn" style="margin:0 20px 16px">${I('flag', 18)}<div class="t-sm" style="line-height:1.5"><b>Last problem:</b> ${E(data.last_error)}${/Invalid login|535|Username and Password/i.test(data.last_error) ? '<br>The Gmail App Password is wrong or was deleted. Make a new one at myaccount.google.com/apppasswords and update GMAIL_APP_PASSWORD in Supabase → Edge Functions → Secrets.' : ''}</div></div>`
-            : stuck ? `<div class="notice" style="margin:0 20px 16px">${I('clock', 18)}<div class="t-sm" style="line-height:1.5">Emails are waiting. If they don't go within a few minutes, check that GMAIL_USER and GMAIL_APP_PASSWORD are saved in Supabase → Edge Functions → Secrets.</div></div>` : ''}</div>
+          ${data.last_error ? `<div class="notice warn" style="margin:0 20px 16px">${I('flag', 18)}<div class="t-sm" style="line-height:1.5"><b>Last problem:</b> ${E(data.last_error)}${/Invalid login|535|Username and Password|authentication failed/i.test(data.last_error) ? '<br>The mailbox password was refused. If you changed the hello@thefitlab.in password in Hostinger, update SMTP_PASS in Supabase → Edge Functions → Secrets.' : ''}</div></div>`
+            : stuck ? `<div class="notice" style="margin:0 20px 16px">${I('clock', 18)}<div class="t-sm" style="line-height:1.5">Emails are waiting. If they don't go within a few minutes, check that SMTP_USER and SMTP_PASS are saved in Supabase → Edge Functions → Secrets.</div></div>` : ''}</div>
         <div class="box"><div class="box-head"><h2>Latest emails</h2></div>
           ${(data.recent || []).length ? `<div class="tblwrap"><table class="tbl"><thead><tr><th>When</th><th>To</th><th>Email</th><th>Status</th></tr></thead><tbody>
             ${data.recent.map((r) => `<tr><td>${E(FL.timeAgo(r.created_at))}</td><td>${E(r.to_email)}</td><td>${E(WHAT[r.template] || r.template)}${r.what && r.template === 'notice' ? ' · ' + E(r.what) : ''}</td>
@@ -478,7 +478,7 @@
 
   VIEWS.marketing = async (alive) => {
     let days = 30;
-    const SITE = 'https://thefitlab-com.netlify.app';
+    const SITE = 'https://thefitlab.in';
     const LINKS = [['Full course · ₹99', '/academy', 'fcm_course'], ['Direct certification · ₹99', '/certify', 'fcm_direct'],
       ['Jobs · trainers', '/trainer-jobs', 'jobs_trainer'], ['Jobs · coaches', '/coach-jobs', 'jobs_coach'], ['Jobs · nutritionists', '/nutritionist-jobs', 'jobs_nutritionist'],
       ['Hiring · trainers', '/hire-trainers', 'hire_trainer'], ['Hiring · coaches', '/hire-coaches', 'hire_coach'], ['Hiring · nutritionists', '/hire-nutritionists', 'hire_nutritionist']];
