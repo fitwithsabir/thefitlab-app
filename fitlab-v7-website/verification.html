@@ -47,7 +47,7 @@
   const esc = FL.esc, I = FL.icon;
   const session = await FL.requireAuth(); if (!session) return;
   let me; try { me = await FL.getProfile(); } catch (e) { return FL.toast(FL.friendly(e), 'err'); }
-  if (!me.profile_completed) return location.replace('register.html');
+  if (!me.profile_completed) return location.replace('register');
   FL.renderHeader(me);
   const pageId = FL.param('page');
   const type = pageId ? 'page' : 'user';
@@ -71,7 +71,7 @@
       const { data: mine } = await sb.rpc('my_pages');
       const card = (mine || []).find((p) => p.page_id === pageId);
       if (!card || !['owner', 'admin'].includes(card.my_role)) {
-        $('main').innerHTML = `<div class="box"><div class="empty"><b>Only page admins can apply</b>Ask the page's owner to add you as an admin. <a href="company.html">Browse pages</a></div></div>`; return false;
+        $('main').innerHTML = `<div class="box"><div class="empty"><b>Only page admins can apply</b>Ask the page's owner to add you as an admin. <a href="company">Browse pages</a></div></div>`; return false;
       }
       pg = (await sb.rpc('get_page', { p_slug: card.slug })).data;
       document.title = `Verify ${pg.name} — The Fit Lab`;
@@ -87,7 +87,7 @@
     if (st.verified) return `<div class="box"><div class="v-hero"><span class="big">${I('tick', 56)}</span><div>
       <h1>${type === 'page' ? esc(pg.name) + ' is verified' : 'You\'re verified'}</h1>
       <p>The tick now shows next to ${type === 'page' ? 'the page name, its jobs and posts' : 'your name on your profile, posts, comments and applications'}.${r && r.auto ? ' It was approved automatically because the checks passed.' : ''}</p>
-      <div class="ent-act"><a class="pill sm" href="${type === 'page' ? 'company.html?p=' + encodeURIComponent(pg.slug) : 'profile.html'}">View ${type === 'page' ? 'page' : 'profile'}</a></div></div></div></div>`;
+      <div class="ent-act"><a class="pill sm" href="${type === 'page' ? 'company?p=' + encodeURIComponent(pg.slug) : 'profile'}">View ${type === 'page' ? 'page' : 'profile'}</a></div></div></div></div>`;
     let line = type === 'page' ? `Show members and applicants that ${esc(pg.name)} is a real, checked organisation.` : 'Show gyms, clinics and clients that you are who you say you are.';
     let cls = '';
     if (r && r.status === 'pending') { line = `Your request is in the review queue (sent ${FL.timeAgo(r.created_at)} ago). Higher trust scores are reviewed first — you can still add details below to raise yours.`; }
@@ -112,16 +112,16 @@
     const has = (re) => [...have].some((l) => re.test(l));
     const t = [];
     if (type === 'user') {
-      if (!has(/photo/i)) t.push(['Add a profile photo', 'profile.html?edit=1']);
-      if (!has(/Headline/)) t.push(['Add a headline', 'profile.html?edit=1']);
-      if (!has(/^Profession/)) t.push(['Choose your profession', 'profile.html?edit=1']);
-      if (!has(/About/)) t.push(['Write your About section', 'profile.html']);
-      if (!has(/Experience/)) t.push(['Add your work experience', 'profile.html']);
-      if (!has(/certificate issued/)) t.push(['Earn a Fit Lab certificate', 'courses.html']);
-      if (!has(/connection/)) t.push(['Connect with people you work with', 'network.html']);
+      if (!has(/photo/i)) t.push(['Add a profile photo', 'profile?edit=1']);
+      if (!has(/Headline/)) t.push(['Add a headline', 'profile?edit=1']);
+      if (!has(/^Profession/)) t.push(['Choose your profession', 'profile?edit=1']);
+      if (!has(/About/)) t.push(['Write your About section', 'profile']);
+      if (!has(/Experience/)) t.push(['Add your work experience', 'profile']);
+      if (!has(/certificate issued/)) t.push(['Earn a Fit Lab certificate', 'courses']);
+      if (!has(/connection/)) t.push(['Connect with people you work with', 'network']);
     } else {
-      if (!has(/Logo/)) t.push(['Add a logo', 'company.html?p=' + encodeURIComponent(pg.slug)]);
-      if (!has(/About/)) t.push(['Add an About section', 'company.html?p=' + encodeURIComponent(pg.slug)]);
+      if (!has(/Logo/)) t.push(['Add a logo', 'company?p=' + encodeURIComponent(pg.slug)]);
+      if (!has(/About/)) t.push(['Add an About section', 'company?p=' + encodeURIComponent(pg.slug)]);
       if (!has(/Website ownership/)) t.push(['Prove you own the website (step 1)', '#s1']);
       if (!has(/Valid GST/)) t.push(['Add a valid GST number (step 2)', '#s2']);
     }
@@ -133,8 +133,8 @@
     const lic = prof && prof.requires_licence;
     return `<div class="box"><div class="box-head"><div><h2>Your details</h2><div class="sub">Private — only The Fit Lab's verification team sees them</div></div></div>
       <div class="vstep"><h3><span class="n ${prof ? 'ok' : ''}">1</span>Profession</h3>
-        ${prof ? `<p class="t-sm" style="margin:0">${esc(prof.label)}${lic ? ' — a licensed profession, so a person will check your registration.' : ''} <a href="profile.html?edit=1">Change</a></p>`
-          : `<p class="t-sm" style="margin:0">Choose your profession on your profile first. <a href="profile.html?edit=1">Set profession</a></p>`}</div>
+        ${prof ? `<p class="t-sm" style="margin:0">${esc(prof.label)}${lic ? ' — a licensed profession, so a person will check your registration.' : ''} <a href="profile?edit=1">Change</a></p>`
+          : `<p class="t-sm" style="margin:0">Choose your profession on your profile first. <a href="profile?edit=1">Set profession</a></p>`}</div>
       <div class="vstep"><h3><span class="n">2</span>${lic ? 'Licence or registration' : 'Certification or registration (optional)'}</h3>
         <div class="row2"><div class="field"><label for="vBody" class="${lic ? 'req' : ''}">${lic ? 'Council or registering body' : 'Issued by'}</label>
             <input id="vBody" maxlength="120" value="${esc(ev.licence_body || '')}" placeholder="${lic ? 'e.g. Andhra Pradesh Medical Council' : 'e.g. American Council on Exercise'}"></div>
@@ -155,7 +155,7 @@
     return `<div class="box"><div class="box-head"><div><h2>Prove it's really ${esc(pg.name)}</h2><div class="sub">Two checks a computer can confirm — together they approve the page automatically</div></div></div>
       <div class="vstep" id="s1"><h3><span class="n ${pg.website_verified ? 'ok' : ''}">${pg.website_verified ? I('check', 14) : '1'}</span>Website ownership</h3>
         ${pg.website_verified ? `<p class="t-sm" style="margin:0">${I('check', 14)} Confirmed — the code was found on <b>${esc(pg.website)}</b>.</p>`
-        : !pg.website ? `<p class="t-sm" style="margin:0">Add your website to the page first. <a href="company.html?p=${encodeURIComponent(pg.slug)}">Edit page</a></p>`
+        : !pg.website ? `<p class="t-sm" style="margin:0">Add your website to the page first. <a href="company?p=${encodeURIComponent(pg.slug)}">Edit page</a></p>`
         : `<p class="t-sm" style="margin:0 0 8px;line-height:1.55">Add this code to <b>${esc(pg.website)}</b> in any one of these ways, then press <b>Check my website</b>. Your web designer can do it in a minute.</p>
           <div class="codebox" id="code">${esc(code)}</div>
           <div class="methods">

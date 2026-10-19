@@ -72,7 +72,7 @@
   const esc = FL.esc, I = FL.icon;
   const session = await FL.requireAuth(); if (!session) return;
   let me; try { me = await FL.getProfile(); } catch (e) { return FL.toast(FL.friendly(e), 'err'); }
-  if (!me.profile_completed) return location.replace('register.html');
+  if (!me.profile_completed) return location.replace('register');
   FL.renderHeader(me);
   const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
   const [{ data: pagesRaw }, profs] = await Promise.all([sb.rpc('my_pages'), FL.professions()]);
@@ -89,14 +89,14 @@
 
   function side() {
     $('side').innerHTML = `
-      <div class="box"><div class="box-head"><h3>Your pages</h3><a class="txt-btn" href="company.html?new=1">${I('plus', 15)}New</a></div>
-        ${pages.length ? pages.map((p) => `<div class="ent"><a href="company.html?p=${encodeURIComponent(p.slug)}">${FL.pageLogo(p, 'co-logo sm')}</a>
-          <div class="ent-main"><a class="ent-name" href="company.html?p=${encodeURIComponent(p.slug)}" style="font-size:14px">${esc(p.name)}${FL.tick(p.verified, 14)}</a>
-          <div class="ent-meta">${plural(p.open_jobs, 'open job')}${p.verified ? '' : ' · <a href="verification.html?page=' + p.page_id + '">Get verified</a>'}</div></div></div>`).join('')
+      <div class="box"><div class="box-head"><h3>Your pages</h3><a class="txt-btn" href="company?new=1">${I('plus', 15)}New</a></div>
+        ${pages.length ? pages.map((p) => `<div class="ent"><a href="company?p=${encodeURIComponent(p.slug)}">${FL.pageLogo(p, 'co-logo sm')}</a>
+          <div class="ent-main"><a class="ent-name" href="company?p=${encodeURIComponent(p.slug)}" style="font-size:14px">${esc(p.name)}${FL.tick(p.verified, 14)}</a>
+          <div class="ent-meta">${plural(p.open_jobs, 'open job')}${p.verified ? '' : ' · <a href="verification?page=' + p.page_id + '">Get verified</a>'}</div></div></div>`).join('')
         : `<p class="t-sm muted" style="padding:0 20px 16px;margin:0;line-height:1.5">Jobs are posted by organisation pages. Create your gym, studio or clinic's page first — it takes a minute.</p>`}</div>
       <div class="box box-pad"><b style="display:flex;gap:8px;align-items:center">${I('search', 18)}Find candidates</b>
         <p class="t-sm muted" style="margin:8px 0 12px;line-height:1.5">Search open-to-work trainers, physios and coaches by profession, city, certifications and experience — then InMail them.</p>
-        <span style="display:flex;gap:8px;flex-wrap:wrap"><a class="pill sm" href="hiring.html?tab=candidates">Search candidates</a><a class="pill ghost sm" href="hiring.html?tab=pipeline">Talent pipeline</a></span></div>
+        <span style="display:flex;gap:8px;flex-wrap:wrap"><a class="pill sm" href="hiring?tab=candidates">Search candidates</a><a class="pill ghost sm" href="hiring?tab=pipeline">Talent pipeline</a></span></div>
       <div class="box box-pad"><b>Good job posts get better applicants</b>
         <ul class="checklist" style="margin-top:10px"><li>${I('check', 15)}Pay is required — be specific</li><li>${I('check', 15)}List the shift timings</li>
         <li>${I('check', 15)}Name 3–5 must-have skills</li><li>${I('check', 15)}Set a needed answer to filter automatically</li>
@@ -109,11 +109,11 @@
   async function dashboard() {
     document.title = 'Hiring — The Fit Lab';
     $('main').innerHTML = `<div class="box"><div class="box-head"><div><h2>Hiring</h2><div class="sub">Your job posts and applicants</div></div>
-        ${pages.length ? `<a class="pill solid sm" href="hiring.html?new=1">${I('plus', 15)}Post a job</a>` : ''}</div>
+        ${pages.length ? `<a class="pill solid sm" href="hiring?new=1">${I('plus', 15)}Post a job</a>` : ''}</div>
       <div id="jl"><div class="skeleton" style="height:70px;margin:14px"></div></div></div>`;
     if (!pages.length) {
       $('jl').innerHTML = `<div class="empty"><b>Create a page to start hiring</b>Gyms, studios and clinics post jobs from their page, so applicants know exactly who's hiring.
-        <div style="margin-top:14px"><a class="pill solid" href="company.html?new=1">${I('building', 16)}Create a page</a></div></div>`;
+        <div style="margin-top:14px"><a class="pill solid" href="company?new=1">${I('building', 16)}Create a page</a></div></div>`;
       return;
     }
     const { data, error } = await sb.rpc('my_hiring');
@@ -128,7 +128,7 @@
           <div class="t-sm muted">${esc(j.page.name)} · ${esc([j.city, j.type_label].filter(Boolean).join(' · '))} · ${FL.pay(j)}</div>
           <div class="t-xs muted" style="margin-top:3px">${plural(j.applicants, 'applicant')}${j.new_applicants ? `<span class="newb">${j.new_applicants} new</span>` : ''}
             · ${j.status === 'open' && days > 0 ? `closes in ${plural(days, 'day')}` : 'posted ' + FL.timeAgo(j.created_at) + ' ago'}</div>
-          <div class="ent-act"><a class="pill solid sm" href="hiring.html?job=${j.id}">Applicants</a><a class="pill ghost sm" href="hiring.html?edit=${j.id}">Edit</a>
+          <div class="ent-act"><a class="pill solid sm" href="hiring?job=${j.id}">Applicants</a><a class="pill ghost sm" href="hiring?edit=${j.id}">Edit</a>
             ${j.status === 'open' && !expired ? `<button class="pill ghost sm" data-js="paused" data-id="${j.id}">Pause</button>` : ''}
             ${j.status === 'paused' ? `<button class="pill ghost sm" data-js="open" data-id="${j.id}">Reopen</button>` : ''}
             ${expired || (j.status === 'open' && days <= 5) ? `<button class="pill ghost sm" data-js="renew" data-id="${j.id}">Renew 30 days</button>` : ''}
@@ -148,7 +148,7 @@
     let j = null;
     if (editId) {
       const { data } = await sb.rpc('get_job', { p_job: editId });
-      if (!data || !data.my_role) { $('main').innerHTML = `<div class="box"><div class="empty"><b>Job not found</b><a href="hiring.html">Back to hiring</a></div></div>`; return; }
+      if (!data || !data.my_role) { $('main').innerHTML = `<div class="box"><div class="empty"><b>Job not found</b><a href="hiring">Back to hiring</a></div></div>`; return; }
       j = data;
     }
     document.title = (j ? 'Edit job' : 'Post a job') + ' — The Fit Lab';
@@ -207,7 +207,7 @@
     const ROLE_TPL = { trainer: 'trainer', coach: 'coach', nutritionist: 'nutrition' }[FL.param('role')] || '';
     $('main').innerHTML = `<div class="box">
       <div class="box-head"><div><h2>${j ? 'Edit job' : 'Post a job'}</h2><div class="sub">Free · pay is shown on every job · closes after 30 days unless you renew</div></div>
-        <a class="txt-btn" href="hiring.html">${I('back', 16)}Hiring</a></div>
+        <a class="txt-btn" href="hiring">${I('back', 16)}Hiring</a></div>
       <form class="jform" id="jf" novalidate>
         ${j ? '' : `<div class="field"><label>Start from a ready-made post <span class="t-xs muted" style="font-weight:500">optional — edit anything</span></label>
           <div class="tpls" id="tpls">${Object.entries(TPL).map(([k, t]) => `<button type="button" class="pill ghost sm" data-tpl="${k}">${esc(t.label)}</button>`).join('')}</div></div>`}
@@ -247,7 +247,7 @@
         <p class="t-xs muted" style="margin:10px 0 0;line-height:1.5">A Yes / No question can have a <b>needed answer</b>. Applicants who answer differently get a kind, automatic reply and are listed last — they never see which answer you need, and you can still move them forward.</p>
 
         <div class="err hidden" id="jErr" style="margin-top:16px"></div>
-        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px"><a class="pill ghost" href="hiring.html">Cancel</a><button class="pill solid lg" id="jGo">${j ? 'Save changes' : 'Post job'}</button></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px"><a class="pill ghost" href="hiring">Cancel</a><button class="pill solid lg" id="jGo">${j ? 'Save changes' : 'Post job'}</button></div>
       </form></div>`;
 
     const qs = $('qs');
@@ -354,20 +354,20 @@
       FL.busy($('jGo'), true, j ? 'Saving…' : 'Posting…');
       const r = await FL.call('save_job', { p_page: j ? null : $('jPage').value, p_job: j ? j.id : null, p });
       FL.busy($('jGo'), false);
-      if (r) { FL.toast(j ? 'Job updated' : 'Job posted — followers and matching job alerts are notified', 'ok'); location.href = 'hiring.html?job=' + r.id; }
+      if (r) { FL.toast(j ? 'Job updated' : 'Job posted — followers and matching job alerts are notified', 'ok'); location.href = 'hiring?job=' + r.id; }
     };
   }
 
   // =========================================================== applicants
   async function applicants(jobId) {
     const { data: j } = await sb.rpc('get_job', { p_job: jobId });
-    if (!j || !j.my_role) { $('main').innerHTML = `<div class="box"><div class="empty"><b>Job not found</b>Only the page's team can see applicants. <a href="hiring.html">Back to hiring</a></div></div>`; return; }
+    if (!j || !j.my_role) { $('main').innerHTML = `<div class="box"><div class="empty"><b>Job not found</b>Only the page's team can see applicants. <a href="hiring">Back to hiring</a></div></div>`; return; }
     document.title = `Applicants · ${j.title} — The Fit Lab`;
     let filter = FL.param('s') || '', all = [], openId = null;
     const head = () => `<div class="box"><div class="box-head" style="align-items:flex-start"><div style="display:flex;gap:12px">${FL.pageLogo(j.page, 'co-logo sm')}
         <div><h2 style="font-size:18px">${esc(j.title)}</h2><div class="sub">${esc(j.page.name)} · ${FL.pay(j)} · ${j.open ? 'Open' : j.hold ? 'On hold' : 'Not accepting applications'}</div></div></div>
-        <a class="txt-btn" href="hiring.html">${I('back', 16)}All jobs</a></div>
-      <div class="ent-act" style="padding:0 20px 14px"><a class="pill ghost sm" href="jobs.html?job=${j.id}">View listing</a><a class="pill ghost sm" href="hiring.html?edit=${j.id}">Edit</a>
+        <a class="txt-btn" href="hiring">${I('back', 16)}All jobs</a></div>
+      <div class="ent-act" style="padding:0 20px 14px"><a class="pill ghost sm" href="jobs?job=${j.id}">View listing</a><a class="pill ghost sm" href="hiring?edit=${j.id}">Edit</a>
         ${j.open ? `<button class="pill ghost sm" id="promote">${I('zap', 14)}${j.promoted ? 'Promoted' : 'Promote'}</button>` : ''}
         ${j.status !== 'closed' ? `<button class="pill ghost sm" id="closeJ">Close job</button>` : ''}</div>
       <div class="utabs" id="stabs"></div><div id="al"><div class="skeleton" style="height:80px;margin:14px"></div></div></div>`;
@@ -410,7 +410,7 @@
       if (!fl.length && !cr.length) return `<div class="qa"><b>Certifications</b>None added yet — ask about them when you message ${esc(a.full_name.split(' ')[0])}.</div>`;
       return `<div class="qa"><b>Certifications</b><div class="creds">
         ${fl.map((c) => `<div class="cred fl">${I('award', 17)}<span>${esc(c.title)}<span class="t-xs muted">The Fit Lab · QR-verified${c.issued_at ? ' · ' + new Date(c.issued_at).getFullYear() : ''}</span></span>
-          ${a.unique_id ? `<a class="txt-btn" href="verify.html?id=${encodeURIComponent(a.unique_id)}" target="_blank" rel="noopener">Verify</a>` : ''}</div>`).join('')}
+          ${a.unique_id ? `<a class="txt-btn" href="verify?id=${encodeURIComponent(a.unique_id)}" target="_blank" rel="noopener">Verify</a>` : ''}</div>`).join('')}
         ${cr.map((c) => `<div class="cred">${I('award', 17)}<span>${esc(c.name)}${c.expired ? ' <span class="chip warn" style="padding:0 8px">Expired</span>' : ''}<span class="t-xs muted">${esc(c.issuer)} · added by the candidate</span></span>
           ${safeUrl(c.url) ? `<a class="txt-btn" href="${esc(safeUrl(c.url))}" target="_blank" rel="noopener nofollow">${I('external', 14)}Check</a>` : ''}</div>`).join('')}</div>
         ${cr.length ? `<span class="t-xs muted" style="display:block;margin-top:8px">Certifications from other providers count just the same — open the link or ask to see the certificate.</span>` : ''}</div>`;
@@ -441,7 +441,7 @@
         <div class="stagebar">${STAGES.filter(([k]) => !['submitted', 'viewed'].includes(k)).map(([k, l]) => `<button class="pill sm ${a.status === k ? 'on' : k === 'not_selected' ? 'ghost' : ''}" data-st="${k}">${l}</button>`).join('')}</div>
         <div class="ent-act"><button class="pill solid sm" data-msg="1">${I('mail', 15)}Message ${first}</button>
           ${canTrial && !['hired', 'withdrawn'].includes(a.status) ? `<button class="pill sm" data-trial="book">${I('calendar', 15)}Book a trial session</button>` : ''}
-          <a class="pill ghost sm" href="profile.html?u=${encodeURIComponent(a.username)}" target="_blank" rel="noopener">${I('eye', 15)}Full profile</a></div>
+          <a class="pill ghost sm" href="profile?u=${encodeURIComponent(a.username)}" target="_blank" rel="noopener">${I('eye', 15)}Full profile</a></div>
         <p class="t-xs muted" style="margin:10px 0 0">${first} sees each stage you choose. “Not selected” sends a kind, final update — no one is left waiting.</p></div>`;
     }
     function bookTrial(a) {
@@ -481,7 +481,7 @@
       }
       if (e.target.closest('[data-msg]')) {
         const { data: ok } = await sb.rpc('inmail_allowed', { p_from: me.id, p_to: a.user_id });
-        if (ok && (ok.connected || ok.existing)) return location.href = 'messaging.html?u=' + encodeURIComponent(a.username);
+        if (ok && (ok.connected || ok.existing)) return location.href = 'messaging?u=' + encodeURIComponent(a.username);
         if (ok && ok.ok) return FL.inmail(a, ok);
         return FL.toast((ok && ok.reason) || 'You can\'t message this member.', 'err');
       }
@@ -511,7 +511,7 @@
   async function candidates() {
     document.title = 'Find candidates — The Fit Lab';
     $('main').innerHTML = `<div class="box"><div class="box-head"><div><h2>Find candidates ${I('crown', 16)}</h2><div class="sub">Recruiter Premium · open-to-work members by default</div></div>
-        <span style="display:flex;gap:12px"><a class="txt-btn" href="hiring.html?tab=pipeline">${I('bookmark', 16)}Pipeline</a><a class="txt-btn" href="hiring.html">${I('back', 16)}Hiring</a></span></div>
+        <span style="display:flex;gap:12px"><a class="txt-btn" href="hiring?tab=pipeline">${I('bookmark', 16)}Pipeline</a><a class="txt-btn" href="hiring">${I('back', 16)}Hiring</a></span></div>
       <form id="cf"><div class="cfilters">
           <select id="cp" aria-label="Profession">${FL.professionOptions(profs, '', 'Any profession')}</select>
           <input id="cc" type="search" placeholder="City" aria-label="City" value="${esc(me.city || '')}">
@@ -530,16 +530,16 @@
       if (data && data.ok === false) {
         $('cr').innerHTML = `<div class="prem-box" style="margin:6px 20px 20px"><h3>${I('crown', 16)}Candidate search is part of Recruiter</h3>
           <div class="t-sm" style="line-height:1.55">Search every open-to-work trainer, physio, dietitian and coach by profession, city, skills, experience and certification — and InMail them directly. Try it free for 14 days.</div>
-          <a class="pill gold sm" href="premium.html?plan=recruiter" style="margin-top:10px">Try Recruiter free</a></div>`;
+          <a class="pill gold sm" href="premium?plan=recruiter" style="margin-top:10px">Try Recruiter free</a></div>`;
         return;
       }
       const list = (data && data.results) || [];
-      $('cr').innerHTML = list.length ? list.map((c) => `<div class="ent"><a href="profile.html?u=${encodeURIComponent(c.username)}" target="_blank" rel="noopener">${FL.ringAvatar(c, 'avatar')}</a>
-          <div class="ent-main"><a class="ent-name" href="profile.html?u=${encodeURIComponent(c.username)}" target="_blank" rel="noopener">${esc(c.full_name)}${FL.tags(c)}</a>
+      $('cr').innerHTML = list.length ? list.map((c) => `<div class="ent"><a href="profile?u=${encodeURIComponent(c.username)}" target="_blank" rel="noopener">${FL.ringAvatar(c, 'avatar')}</a>
+          <div class="ent-main"><a class="ent-name" href="profile?u=${encodeURIComponent(c.username)}" target="_blank" rel="noopener">${esc(c.full_name)}${FL.tags(c)}</a>
             <div class="ent-sub">${esc(c.headline || '')}</div>
             <div class="ent-meta">${esc([c.profession_label, c.city, c.experience_years ? c.experience_years + ' yrs' : 'Fresher'].filter(Boolean).join(' · '))}${c.certified ? ' · Fit Lab certified' : ''}</div>
             ${(c.skills || []).length ? `<div class="ph-badges" style="margin-top:6px">${c.skills.map((s) => `<span class="chip">${esc(s)}</span>`).join('')}</div>` : ''}
-            <div class="ent-act">${c.can_inmail && (c.can_inmail.connected || c.can_inmail.existing) ? `<a class="pill sm" href="messaging.html?u=${encodeURIComponent(c.username)}">Message</a>`
+            <div class="ent-act">${c.can_inmail && (c.can_inmail.connected || c.can_inmail.existing) ? `<a class="pill sm" href="messaging?u=${encodeURIComponent(c.username)}">Message</a>`
               : c.can_inmail && c.can_inmail.ok ? `<button class="pill sm" data-im="${c.user_id}">${I('mail', 14)}InMail</button>` : `<span class="t-xs muted">${esc((c.can_inmail && c.can_inmail.reason) || '')}</span>`}
               <button class="pill ghost sm" data-save="${c.user_id}">${I('bookmark', 14)}Save</button></div></div></div>`).join('')
         : `<div class="empty"><b>No candidates match</b>Try fewer filters or a nearby city.</div>`;
@@ -556,7 +556,7 @@
     const PST = [['saved', 'Saved'], ['contacted', 'Contacted'], ['interview', 'Interview'], ['offer', 'Offer'], ['hired', 'Hired'], ['not_now', 'Not now']];
     let stage = null;
     $('main').innerHTML = `<div class="box"><div class="box-head"><div><h2>Talent pipeline ${I('crown', 16)}</h2><div class="sub">Candidates you've saved, with your private notes and stages</div></div>
-        <span style="display:flex;gap:12px"><a class="txt-btn" href="hiring.html?tab=candidates">${I('search', 16)}Find candidates</a><a class="txt-btn" href="hiring.html">${I('back', 16)}Hiring</a></span></div>
+        <span style="display:flex;gap:12px"><a class="txt-btn" href="hiring?tab=candidates">${I('search', 16)}Find candidates</a><a class="txt-btn" href="hiring">${I('back', 16)}Hiring</a></span></div>
       <div class="catbar" id="pst"></div><div id="pl"><div class="skeleton" style="height:70px;margin:14px"></div></div></div>`;
     async function load() {
       const { data, error } = await sb.rpc('saved_candidates_list', { p_stage: stage });
@@ -565,21 +565,21 @@
         $('pst').innerHTML = '';
         $('pl').innerHTML = `<div class="prem-box" style="margin:6px 20px 20px"><h3>${I('crown', 16)}The talent pipeline is part of Recruiter</h3>
           <div class="t-sm" style="line-height:1.55">Save promising trainers, physios and coaches as you search, add notes, and move them through Contacted → Interview → Offer → Hired.</div>
-          <a class="pill gold sm" href="premium.html?plan=recruiter" style="margin-top:10px">Try Recruiter free</a></div>`;
+          <a class="pill gold sm" href="premium?plan=recruiter" style="margin-top:10px">Try Recruiter free</a></div>`;
         return;
       }
       const counts = data.counts || {}, total = Object.values(counts).reduce((a, b) => a + b, 0);
       $('pst').innerHTML = [[null, 'All', total]].concat(PST.map(([k, l]) => [k, l, counts[k] || 0]))
         .map(([k, l, n]) => `<button class="${stage === k ? 'on' : ''}" data-ps="${k || ''}">${l} <b>${n}</b></button>`).join('');
       const list = data.results || [];
-      $('pl').innerHTML = list.length ? list.map((c) => `<div class="ent" data-c="${c.user_id}"><a href="profile.html?u=${encodeURIComponent(c.username)}">${FL.ringAvatar(c, 'avatar')}</a>
-          <div class="ent-main"><a class="ent-name" href="profile.html?u=${encodeURIComponent(c.username)}">${esc(c.full_name)}${FL.tags(c)}</a>
+      $('pl').innerHTML = list.length ? list.map((c) => `<div class="ent" data-c="${c.user_id}"><a href="profile?u=${encodeURIComponent(c.username)}">${FL.ringAvatar(c, 'avatar')}</a>
+          <div class="ent-main"><a class="ent-name" href="profile?u=${encodeURIComponent(c.username)}">${esc(c.full_name)}${FL.tags(c)}</a>
             <div class="ent-sub">${esc(c.headline || '')}</div>
             <div class="ent-meta">${esc([c.profession_label, c.city].filter(Boolean).join(' · '))} · saved ${FL.timeAgo(c.saved_at)} ago</div>
             ${c.note ? `<div class="inv-note" style="margin-top:6px">${esc(c.note)}</div>` : ''}
             <div class="ent-act"><select class="inv-tag" data-stage aria-label="Stage">${PST.map(([k, l]) => `<option value="${k}" ${k === c.stage ? 'selected' : ''}>${l}</option>`).join('')}</select>
               <button class="pill ghost sm" data-note>${I('edit', 14)}Note</button>
-              ${c.can_inmail && (c.can_inmail.connected || c.can_inmail.existing || c.can_inmail.context === 'open') ? `<a class="pill sm" href="messaging.html?u=${encodeURIComponent(c.username)}">Message</a>`
+              ${c.can_inmail && (c.can_inmail.connected || c.can_inmail.existing || c.can_inmail.context === 'open') ? `<a class="pill sm" href="messaging?u=${encodeURIComponent(c.username)}">Message</a>`
                 : c.can_inmail && c.can_inmail.ok ? `<button class="pill sm" data-im>${I('mail', 14)}InMail</button>` : ''}
               <button class="txt-btn" data-rm>Remove</button></div></div></div>`).join('')
         : `<div class="empty"><b>${stage ? 'No one at this stage' : 'Your pipeline is empty'}</b>${stage ? '' : 'Tap “Save” on candidates in search to keep track of them here.'}</div>`;

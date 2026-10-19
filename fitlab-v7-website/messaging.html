@@ -44,7 +44,7 @@
   const esc = FL.esc, I = FL.icon;
   const session = await FL.requireAuth(); if (!session) return;
   let me; try { me = await FL.getProfile(); } catch (e) { return FL.toast(FL.friendly(e), 'err'); }
-  if (!me.profile_completed) return location.replace('register.html');
+  if (!me.profile_completed) return location.replace('register');
   FL.renderHeader(me);
   $('emptyIc').innerHTML = I('messages', 44);
 
@@ -63,18 +63,18 @@
         ${FL.avatarHtml(c, 'avatar')}<div class="meta"><div class="top"><b>${esc(c.full_name)}${FL.tick(c.verified, 13)}${c.inmail ? `<span class="im-tag">${c.inmail.context === 'open' ? 'Open Profile' : 'InMail'}</span>` : ''}</b><span>${c.last_at ? FL.timeAgo(c.last_at) : ''}</span></div>
         <div class="prev">${c.last_body ? (c.last_mine ? 'You: ' : '') + esc(c.last_body) : `<span style="font-style:italic">${esc(c.headline || 'Say hello')}</span>`}</div></div>
         ${c.unread ? '<span class="dot" aria-label="unread"></span>' : ''}</div>`).join('')
-      : `<div class="empty">${convs.length ? 'No matches.' : '<b>No connections yet</b>Connect with coaches on <a href="network.html">My Network</a> to message them.'}</div>`;
+      : `<div class="empty">${convs.length ? 'No matches.' : '<b>No connections yet</b>Connect with coaches on <a href="network">My Network</a> to message them.'}</div>`;
   }
 
   async function open(userId) {
     active = convs.find((c) => c.user_id === userId); if (!active) return;
     $('shell').classList.add('open');
     drawConvs();
-    history.replaceState(null, '', 'messaging.html?u=' + encodeURIComponent(active.username));
+    history.replaceState(null, '', 'messaging?u=' + encodeURIComponent(active.username));
     $('thread').innerHTML = `
       <div class="thread-head"><button class="icon-btn" id="back" aria-label="Back to conversations" style="${window.innerWidth < 768 ? '' : 'display:none'}">${I('back', 20)}</button>
-        <a href="profile.html?u=${encodeURIComponent(active.username)}">${FL.avatarHtml(active, 'avatar')}</a>
-        <div class="meta"><a href="profile.html?u=${encodeURIComponent(active.username)}" style="color:var(--bone)"><b>${esc(active.full_name)}${FL.tick(active.verified, 14)}</b></a><span>${esc(active.headline || '')}</span></div>
+        <a href="profile?u=${encodeURIComponent(active.username)}">${FL.avatarHtml(active, 'avatar')}</a>
+        <div class="meta"><a href="profile?u=${encodeURIComponent(active.username)}" style="color:var(--bone)"><b>${esc(active.full_name)}${FL.tick(active.verified, 14)}</b></a><span>${esc(active.headline || '')}</span></div>
         <div style="position:relative"><button class="icon-btn" id="tmore" aria-label="Conversation options">${I('more', 20)}</button></div></div>
       ${imBanner(active)}
       <div class="msgs" id="msgs" aria-live="polite"><div class="skeleton" style="height:40px;width:60%"></div></div>
@@ -85,9 +85,9 @@
     if (ia) ia.onclick = async () => { const r = await FL.call('respond_inmail', { p_other: active.user_id, p_accept: true }); if (r) { await loadConvs(); open(active.user_id); } };
     if (id_) id_.onclick = async () => {
       if (!(await FL.confirm('Decline this InMail?', `${active.full_name} won't be able to message you again unless you connect.`, 'Decline'))) return;
-      const r = await FL.call('respond_inmail', { p_other: active.user_id, p_accept: false }); if (r) { FL.toast('Declined', 'ok'); location.href = 'messaging.html'; } };
+      const r = await FL.call('respond_inmail', { p_other: active.user_id, p_accept: false }); if (r) { FL.toast('Declined', 'ok'); location.href = 'messaging'; } };
     if (active.inmail && active.inmail.mine && active.inmail.status === 'pending') { $('body').disabled = true; $('body').placeholder = 'Waiting for a reply to your InMail…'; }
-    $('back').onclick = () => { $('shell').classList.remove('open'); active = null; drawConvs(); clearInterval(poll); history.replaceState(null, '', 'messaging.html'); };
+    $('back').onclick = () => { $('shell').classList.remove('open'); active = null; drawConvs(); clearInterval(poll); history.replaceState(null, '', 'messaging'); };
     const ta = $('body'), btn = $('send');
     ta.addEventListener('input', () => { btn.disabled = !ta.value.trim(); ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 160) + 'px'; });
     ta.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && window.innerWidth >= 768) { e.preventDefault(); if (!btn.disabled) $('comp').requestSubmit(); } });
@@ -105,7 +105,7 @@
       e.stopPropagation();
       const old = $('thread').querySelector('.menu-pop'); if (old) return old.remove();
       const pop = document.createElement('div'); pop.className = 'menu-pop'; pop.style.top = '40px'; pop.style.right = '0';
-      pop.innerHTML = `<a href="profile.html?u=${encodeURIComponent(active.username)}">${I('eye', 18)}View profile</a>
+      pop.innerHTML = `<a href="profile?u=${encodeURIComponent(active.username)}">${I('eye', 18)}View profile</a>
         <button data-m="report">${I('flag', 18)}Report ${esc(active.full_name.split(' ')[0])}</button>
         <button data-m="block" class="danger">${I('block', 18)}Block</button>`;
       $('tmore').parentElement.appendChild(pop);
@@ -113,7 +113,7 @@
         const b = ev.target.closest('[data-m]'); if (!b) return; pop.remove();
         if (b.dataset.m === 'report') FL.report('profile', active.user_id, { userId: active.user_id, name: active.full_name, onDone: () => location.reload() });
         if (b.dataset.m === 'block' && await FL.confirm(`Block ${active.full_name}?`, 'You\'ll stop seeing each other\'s profiles and posts, and the connection is removed. They aren\'t told.', 'Block', true)) {
-          const r = await FL.call('block_member', { p_user_id: active.user_id }); if (r) location.href = 'messaging.html';
+          const r = await FL.call('block_member', { p_user_id: active.user_id }); if (r) location.href = 'messaging';
         }
       };
     };

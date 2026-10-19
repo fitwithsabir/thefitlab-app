@@ -5,13 +5,13 @@
   // links, then #hashtags and @mentions (only after a space / start, so URLs and emails are untouched)
   function rich(text) {
     return FL.linkify(text)
-      .replace(/(^|[\s(>])#([A-Za-z][A-Za-z0-9_]{1,39})\b/g, (m, pre, tag) => `${pre}<a class="hashtag" href="feed.html?tag=${encodeURIComponent(tag.toLowerCase())}">#${tag}</a>`)
-      .replace(/(^|[\s(>])@([A-Za-z0-9_](?:[A-Za-z0-9_.]{1,28}[A-Za-z0-9_]))/g, (m, pre, u) => `${pre}<a class="mention" href="profile.html?u=${encodeURIComponent(u.toLowerCase())}">@${u}</a>`);
+      .replace(/(^|[\s(>])#([A-Za-z][A-Za-z0-9_]{1,39})\b/g, (m, pre, tag) => `${pre}<a class="hashtag" href="feed?tag=${encodeURIComponent(tag.toLowerCase())}">#${tag}</a>`)
+      .replace(/(^|[\s(>])@([A-Za-z0-9_](?:[A-Za-z0-9_.]{1,28}[A-Za-z0-9_]))/g, (m, pre, u) => `${pre}<a class="mention" href="profile?u=${encodeURIComponent(u.toLowerCase())}">@${u}</a>`);
   }
 
   function author(p) {
     const a = p.author || {};
-    const link = p.page ? `company.html?p=${encodeURIComponent(p.page.slug)}` : `profile.html?u=${encodeURIComponent(a.username || '')}`;
+    const link = p.page ? `company?p=${encodeURIComponent(p.page.slug)}` : `profile?u=${encodeURIComponent(a.username || '')}`;
     return { a, link };
   }
 
@@ -30,7 +30,7 @@
     const body = p.kind === 'milestone'
       ? `<div class="post-milestone"><span class="medal">${icon('award', 24)}</span><div style="flex:1;min-width:0">
            <b style="display:block;font-size:15px">${esc(p.body)}</b>
-           ${p.link_url ? `<a class="t-sm" href="${esc(p.link_url)}" style="font-weight:700">View verified certificate →</a>` : ''}</div></div>`
+           ${p.link_url ? `<a class="t-sm" href="${esc(FL.href(p.link_url))}" style="font-weight:700">View verified certificate →</a>` : ''}</div></div>`
       : `<div class="post-body ${long && !opts.expanded ? 'clamp' : ''}">${rich(p.body)}</div>
          ${long && !opts.expanded ? `<button class="morebtn" data-act="seemore" style="padding:0 16px 8px">…see more</button>` : ''}
          ${p.image_url ? `<img class="post-img" src="${esc(p.image_url)}" alt="Image shared by ${esc(a.full_name || '')}" loading="lazy" data-act="zoom">` : ''}`;
@@ -61,7 +61,7 @@
 
   function commentHtml(c) {
     const a = c.author || {};
-    const link = `profile.html?u=${encodeURIComponent(a.username || '')}`;
+    const link = `profile?u=${encodeURIComponent(a.username || '')}`;
     return `<div class="c-item" data-comment="${c.id}">
       <a href="${link}">${FL.avatarHtml(a, 'avatar xs')}</a>
       <div class="bubble"><div style="display:flex;gap:6px;align-items:flex-start">
@@ -129,13 +129,13 @@
         return;
       }
       if (act === 'share') {
-        const url = new URL('feed.html?post=' + art.dataset.post, location.href).href;
+        const url = new URL('feed?post=' + art.dataset.post, location.href).href;
         try { await navigator.clipboard.writeText(url); FL.toast('Link copied', 'ok'); } catch (_) { FL.toast(url); }
         return;
       }
       if (act === 'message-author') {
         const u = art.querySelector('.who a').getAttribute('href').split('u=')[1];
-        location.href = 'messaging.html?u=' + u; return;
+        location.href = 'messaging?u=' + u; return;
       }
       if (act === 'zoom') {
         const m = FL.modal({ title: 'Image', wide: true, body: `<img src="${esc(t.src)}" alt="" style="width:100%;border-radius:8px">` });
@@ -230,9 +230,9 @@
         .map(([v, l]) => `<div class="kpi"><b>${v}</b><span>${l}</span></div>`).join('')}</div>
       ${d.premium ? `<h4 style="margin:6px 0">Who it reached — by profession</h4>${(d.by_profession || []).length ? bars(d.by_profession) : '<p class="t-sm muted">No views yet.</p>'}
         <h4 style="margin:14px 0 6px">By city</h4>${(d.by_city || []).length ? bars(d.by_city) : '<p class="t-sm muted">No views yet.</p>'}
-        ${(d.engaged || []).length ? `<h4 style="margin:14px 0 6px">People who engaged</h4><div style="display:flex;flex-wrap:wrap;gap:8px">${d.engaged.map((u) => `<a class="chip" href="profile.html?u=${encodeURIComponent(u.username)}">${esc(u.full_name)}</a>`).join('')}</div>` : ''}`
+        ${(d.engaged || []).length ? `<h4 style="margin:14px 0 6px">People who engaged</h4><div style="display:flex;flex-wrap:wrap;gap:8px">${d.engaged.map((u) => `<a class="chip" href="profile?u=${encodeURIComponent(u.username)}">${esc(u.full_name)}</a>`).join('')}</div>` : ''}`
       : `<div class="prem-box"><h3>${icon('crown', 16)}See who your post reached</h3><div class="t-sm" style="line-height:1.55">With Premium, see the professions and cities of the people who viewed your posts, and exactly who engaged.</div>
-          <a class="pill gold sm" href="premium.html?plan=pro" style="margin-top:10px">Try Premium free for 14 days</a></div>`}
+          <a class="pill gold sm" href="premium?plan=pro" style="margin-top:10px">Try Premium free for 14 days</a></div>`}
       <p class="t-xs muted" style="margin:12px 0 0">Views count each member once a day, and never your own.</p>` });
   }
 

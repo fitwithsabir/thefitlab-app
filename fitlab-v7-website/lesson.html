@@ -35,10 +35,10 @@
 
   let profile;
   try { profile = await FL.getProfile(); } catch (e) { FL.toast(FL.friendly(e), 'err'); return; }
-  if (!profile.profile_completed) { location.replace('register.html'); return; }
+  if (!profile.profile_completed) { location.replace('register'); return; }
   FL.renderHeader(profile);
 
-  const stop = (title, text) => { host.innerHTML = `<div class="lcard" style="margin-top:36px"><h2>${title}</h2><p class="ash">${text}</p><a class="btn" href="courses.html${slug ? '?c=' + encodeURIComponent(slug) : ''}">← Course</a></div>`; };
+  const stop = (title, text) => { host.innerHTML = `<div class="lcard" style="margin-top:36px"><h2>${title}</h2><p class="ash">${text}</p><a class="btn" href="courses${slug ? '?c=' + encodeURIComponent(slug) : ''}">← Course</a></div>`; };
   if (!slug) return stop('No course selected', 'Open a lesson from the Courses tab.');
 
   const { data: course } = await sb.from('courses').select('*').eq('slug', slug).maybeSingle();
@@ -105,7 +105,7 @@
     const dots = flow.map((c, k) => `<b class="${k === i ? 'cur' : ''} ${k < st.unlocked || (k === st.unlocked && k < i) ? 'done' : ''} ${c.type === 'check' ? 'check' : ''}" data-go="${k}" title="${c.type === 'intro' ? 'Introduction' : c.type === 'done' ? 'Finish' : esc(c.title || c.type)}" ${k > st.unlocked ? 'disabled' : ''}></b>`).join('');
     const top = `
       <div class="stepbar">
-        <a class="btn btn-ghost small" href="courses.html?c=${encodeURIComponent(course.slug)}">← All days</a>
+        <a class="btn btn-ghost small" href="courses?c=${encodeURIComponent(course.slug)}">← All days</a>
         <div class="track"><i style="width:${pct}%"></i></div>
         <span class="count">DAY ${String(day).padStart(2, '0')} · CARD ${i + 1}/${N}</span>
       </div>`;
@@ -200,11 +200,11 @@
       </div>
       ${lesson.preview ? `<div class="recap" style="margin:0 0 20px"><b style="color:var(--lime);font-family:var(--mono);font-size:11px;letter-spacing:.16em">TOMORROW</b><br>${esc(lesson.preview)}</div>` : ''}
       <div class="btn-row" style="justify-content:center">
-        ${completed && !isLast && nextExists ? `<a class="btn btn-primary" href="lesson.html?course=${course.slug}&day=${day + 1}">Continue to Day ${day + 1} →</a>` : ''}
+        ${completed && !isLast && nextExists ? `<a class="btn btn-primary" href="lesson?course=${course.slug}&day=${day + 1}">Continue to Day ${day + 1} →</a>` : ''}
         ${completed && !isLast && !nextExists ? `<span class="badge warn">Day ${day + 1} is being published</span>` : ''}
         ${completed ? `<button class="btn" data-nav="1">↺ Review Day ${day} from the start</button>` : ''}
-        ${day > 1 ? `<a class="btn btn-ghost" href="lesson.html?course=${encodeURIComponent(course.slug)}&day=${day - 1}">← Day ${day - 1}</a>` : ''}
-        <a class="btn btn-ghost" href="courses.html?c=${encodeURIComponent(course.slug)}">All days</a>
+        ${day > 1 ? `<a class="btn btn-ghost" href="lesson?course=${encodeURIComponent(course.slug)}&day=${day - 1}">← Day ${day - 1}</a>` : ''}
+        <a class="btn btn-ghost" href="courses?c=${encodeURIComponent(course.slug)}">All days</a>
         ${!completed ? `<button class="btn btn-ghost" data-nav="${N - 2}">← Back to the assignment</button>` : ''}
       </div>
     </div>`;
@@ -329,9 +329,9 @@
         <p style="color:var(--ash);line-height:1.6;margin:0 0 22px">${FL.esc(mot ? mot.message : 'Well done — keep the streak going.')}</p>
         <div class="btn-row" style="justify-content:center">
           ${allDone
-            ? '<a class="btn btn-primary" href="exam.html?course=' + encodeURIComponent(course.slug) + '">Go to the exam</a>'
-            : '<a class="btn btn-primary" href="lesson.html?day=' + (day + 1) + '&course=' + encodeURIComponent(course.slug) + '">Start day ' + (day + 1) + '</a>'}
-          <a class="btn btn-ghost" href="courses.html?c=${encodeURIComponent(course.slug)}">All days</a>
+            ? '<a class="btn btn-primary" href="exam?course=' + encodeURIComponent(course.slug) + '">Go to the exam</a>'
+            : '<a class="btn btn-primary" href="lesson?day=' + (day + 1) + '&course=' + encodeURIComponent(course.slug) + '">Start day ' + (day + 1) + '</a>'}
+          <a class="btn btn-ghost" href="courses?c=${encodeURIComponent(course.slug)}">All days</a>
         </div>
         <p class="ash" style="font-size:11px;margin:18px 0 0">A note is on its way to your inbox too.</p>
       </div>`;

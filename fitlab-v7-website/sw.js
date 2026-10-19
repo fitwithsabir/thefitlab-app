@@ -1,12 +1,12 @@
-// The Fit Lab — service worker (v10)
+// The Fit Lab — service worker (v11: clean page addresses)
 // Shows pop-up notifications on phones and computers, opens the right page
 // when one is tapped, shows a proper screen when the device is offline, and
 // receives photos and links shared from other apps ("Share to Fit Lab").
 // Pages are never cached, so the site is always the latest version.
 
-const OFFLINE = 'fl-offline-v10';
+const OFFLINE = 'fl-offline-v11';
 const SHARE = 'fl-share';
-const OFFLINE_FILES = ['offline.html', 'assets/logo-600.png', 'assets/logo-600-light.png', 'assets/icon-192.png'];
+const OFFLINE_FILES = ['offline', 'assets/logo-600.png', 'assets/logo-600-light.png', 'assets/icon-192.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(OFFLINE).then((c) => c.addAll(OFFLINE_FILES)).catch(() => {}).then(() => self.skipWaiting()));
@@ -37,14 +37,14 @@ self.addEventListener('fetch', (event) => {
         if (file && typeof file === 'object' && file.size) await cache.put('shared-image', new Response(file, { headers: { 'Content-Type': file.type || 'image/jpeg' } }));
         else await cache.delete('shared-image');
       } catch (_) {}
-      return Response.redirect(new URL('feed.html?shared=1', self.registration.scope).href, 303);
+      return Response.redirect(new URL('feed?shared=1', self.registration.scope).href, 303);
     })());
     return;
   }
 
   // pages: always from the network; the offline screen only when there is no connection
   if (req.mode === 'navigate') {
-    event.respondWith(fetch(req).catch(async () => (await caches.match('offline.html', { cacheName: OFFLINE })) || Response.error()));
+    event.respondWith(fetch(req).catch(async () => (await caches.match('offline', { cacheName: OFFLINE })) || Response.error()));
   }
 });
 
@@ -58,7 +58,7 @@ self.addEventListener('push', (event) => {
     badge: d.badge || 'assets/badge-96.png',
     tag: d.tag || undefined,
     renotify: !!d.tag,
-    data: { url: d.url || 'notifications.html' },
+    data: { url: d.url || 'notifications' },
   };
   event.waitUntil((async () => {
     await self.registration.showNotification(title, options);
@@ -72,7 +72,7 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const rel = (event.notification.data && event.notification.data.url) || 'notifications.html';
+  const rel = ((event.notification.data && event.notification.data.url) || 'notifications').replace(/^([a-z0-9_-]+)\.html(?=[?#]|$)/i, '$1');
   const url = new URL(rel, self.registration.scope);
   if (url.origin !== self.location.origin) return;
   event.waitUntil((async () => {

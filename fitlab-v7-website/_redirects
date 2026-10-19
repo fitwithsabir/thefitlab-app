@@ -1,12 +1,11 @@
-# Home page (Cloudflare serves exact file names, so the root needs this line)
-/                     /index.html      200
+# Cloudflare serves /page for page.html and sends old /page.html links to /page
+# (wrangler.jsonc: html_handling "auto-trailing-slash").
 
 # Promotion links (the address bar keeps the short link; UTM parameters pass through)
-/academy              /academy.html    200
-/certify              /academy.html    200
-/trainer-jobs         /work.html       200
-/coach-jobs           /work.html       200
-/nutritionist-jobs    /work.html       200
-/hire-trainers        /recruit.html    200
-/hire-coaches         /recruit.html    200
-/hire-nutritionists   /recruit.html    200
+/certify              /academy         200
+/trainer-jobs         /work            200
+/coach-jobs           /work            200
+/nutritionist-jobs    /work            200
+/hire-trainers        /recruit         200
+/hire-coaches         /recruit         200
+/hire-nutritionists   /recruit         200

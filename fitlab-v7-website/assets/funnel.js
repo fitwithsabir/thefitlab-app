@@ -90,7 +90,7 @@
         ${needAccount ? '' : `<div class="field"><label for="fPhone">Mobile</label><input id="fPhone" type="tel" inputmode="tel" maxlength="16" placeholder="98765 43210" value="${esc((me && me.phone) || '')}"></div>`}` : ''}
         ${needProfile || F.kind !== 'course' ? roleFields : ''}
         ${needProfile ? optional : ''}
-        ${needProfile ? `<label class="check" style="margin:6px 0 4px"><input type="checkbox" id="fAgree"><span>I agree to the <a href="terms.html" target="_blank" rel="noopener">terms</a>, <a href="privacy.html" target="_blank" rel="noopener">privacy policy</a> and community guidelines, and that my name${F.kind === 'course' ? ', photo and certificate result' : ' and profile'} can be shown to members and employers.</span></label>` : ''}
+        ${needProfile ? `<label class="check" style="margin:6px 0 4px"><input type="checkbox" id="fAgree"><span>I agree to the <a href="terms" target="_blank" rel="noopener">terms</a>, <a href="privacy" target="_blank" rel="noopener">privacy policy</a> and community guidelines, and that my name${F.kind === 'course' ? ', photo and certificate result' : ' and profile'} can be shown to members and employers.</span></label>` : ''}
         <div class="err hidden" id="fErr" role="alert" style="margin-top:8px"></div>
         <button class="btn btn-primary btn-block" type="submit" id="fGo" style="margin-top:12px">${esc(ctaText())}</button>
         <p class="fine">${esc(F.fine || '')}</p>
@@ -176,7 +176,7 @@
         if (error) {
           if (/registered|already|exists/i.test(error.message || '')) {
             const r = await sb.auth.signInWithPassword({ email: v.email, password: v.pass });
-            if (r.error) { FL.busy(btn, false); return err(`This email already has a Fit Lab account. Enter that account's password, or <a href="index.html#forgot">reset it</a>.`); }
+            if (r.error) { FL.busy(btn, false); return err(`This email already has a Fit Lab account. Enter that account's password, or <a href="/#forgot">reset it</a>.`); }
             session = r.data.session;
           } else { FL.busy(btn, false); return err(esc(FL.friendly(error))); }
         } else if (!data.session) {
@@ -288,17 +288,17 @@
   // ------------------------------------------------------------------ results
   function done(what, already) {
     const slug = F.courseSlug;
-    const photo = me && !me.photo_url ? `<a class="btn" href="profile.html?edit=1">Add your photo — it goes on your certificate</a>` : '';
+    const photo = me && !me.photo_url ? `<a class="btn" href="profile?edit=1">Add your photo — it goes on your certificate</a>` : '';
     const box = {
       full: { t: already ? 'You\'re already enrolled' : 'You\'re in!', p: 'Day 1 is open. One chapter a day — then the certification exam.',
-        a: `<a class="btn btn-primary" href="lesson.html?course=${slug}&day=1">Start Day 1</a>${photo}<a class="btn btn-ghost" href="feed.html">Explore The Fit Lab</a>` },
+        a: `<a class="btn btn-primary" href="lesson?course=${slug}&day=1">Start Day 1</a>${photo}<a class="btn btn-ghost" href="feed">Explore The Fit Lab</a>` },
       direct: { t: already ? 'You\'re already enrolled' : 'Your exam is ready', p: `${course?.exam_question_count || 60} questions · ${course?.exam_seconds_per_question || 60} seconds each · stay on the page until you finish. Take it now or whenever you're ready.`,
-        a: `<a class="btn btn-primary" href="exam.html?course=${slug}">Take the exam</a>${photo}<a class="btn btn-ghost" href="courses.html?c=${slug}">Study the course first</a>` },
+        a: `<a class="btn btn-primary" href="exam?course=${slug}">Take the exam</a>${photo}<a class="btn btn-ghost" href="courses?c=${slug}">Study the course first</a>` },
       jobs: { t: 'You\'re visible to employers', p: `Your profile is live with #OpenToWork, and we'll alert you when a matching job is posted.`,
-        a: `<a class="btn btn-primary" href="jobs.html">See jobs for you</a><a class="btn" href="profile.html?edit=1">Add photo &amp; experience</a>`,
+        a: `<a class="btn btn-primary" href="jobs">See jobs for you</a><a class="btn" href="profile?edit=1">Add photo &amp; experience</a>`,
         up: `<b>Stand out to gyms:</b> add a QR-verified Fit Lab certificate to your profile for ${price}. <a href="certify?utm_source=site&utm_medium=funnel&utm_campaign=jobs_upsell">Get certified →</a>` },
       hire: { t: 'Your hiring page is ready', p: `Post your first job — the pay is always shown, so serious ${ROLE_WORD[F.role] || 'candidates'} apply. You can message candidates directly.`,
-        a: `<a class="btn btn-primary" href="hiring.html?new=1&role=${encodeURIComponent(F.role || '')}">Post a job</a><a class="btn" href="hiring.html?tab=candidates">Browse candidates</a>` },
+        a: `<a class="btn btn-primary" href="hiring?new=1&role=${encodeURIComponent(F.role || '')}">Post a job</a><a class="btn" href="hiring?tab=candidates">Browse candidates</a>` },
     }[what];
     $('suBody').innerHTML = `<div class="done"><div class="tick">${icon('check', 30)}</div><h2>${esc(box.t)}</h2><p>${esc(box.p)}</p>${box.a}${box.up ? `<div class="upsell">${box.up}</div>` : ''}</div>`;
     root.scrollIntoView({ block: 'start', behavior: 'smooth' });

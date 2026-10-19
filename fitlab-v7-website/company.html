@@ -57,12 +57,12 @@
   let me = null;
   if (session) {
     try { me = await FL.getProfile(); } catch (e) { return FL.toast(FL.friendly(e), 'err'); }
-    if (!me.profile_completed) return location.replace('register.html');
+    if (!me.profile_completed) return location.replace('register');
   }
   FL.renderHeader(me);
   const KINDS = Object.entries(FL.PAGE_KINDS);
   const SIZES = [['', 'Select'], ['1', 'Just me'], ['2-10', '2–10 people'], ['11-50', '11–50 people'], ['51-200', '51–200 people'], ['201-500', '201–500 people'], ['500+', '500+ people']];
-  const login = () => { location.href = 'index.html?next=' + encodeURIComponent('company.html' + location.search); };
+  const login = () => { location.href = '/?next=' + encodeURIComponent('company' + location.search); };
   const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
   const sideFoot = () => FL.siteFootHtml(true);
 
@@ -92,7 +92,7 @@
         <div class="field"><label for="cAbout">About</label><textarea id="cAbout" maxlength="3000" style="min-height:110px" placeholder="What you do, who you serve, what makes you different."></textarea></div>
         <label class="check" style="color:var(--bone);margin:4px 0 14px"><input type="checkbox" id="cAuth"><span>I'm an authorised representative of this organisation, and I can create and manage this page for it.</span></label>
         <div class="err hidden" id="cErr"></div>
-        <div style="display:flex;gap:8px;justify-content:flex-end"><a class="pill ghost" href="company.html">Cancel</a><button class="pill solid" id="cGo">Create page</button></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end"><a class="pill ghost" href="company">Cancel</a><button class="pill solid" id="cGo">Create page</button></div>
       </form></div>`;
     $('side').innerHTML = `<div class="box box-pad"><b style="font-size:15px">Page preview</b>
       <div class="preview-card" style="margin-top:12px"><div class="cv"></div><div class="bd">${FL.pageLogo(null)}
@@ -122,7 +122,7 @@
         website: web, city: $('cCity').value.trim(), state: $('cState').value.trim(), size: $('cSize').value,
         founded: $('cFounded').value.trim(), about: $('cAbout').value.trim() } });
       FL.busy($('cGo'), false);
-      if (r) location.href = 'company.html?p=' + encodeURIComponent(r.slug) + '&welcome=1';
+      if (r) location.href = 'company?p=' + encodeURIComponent(r.slug) + '&welcome=1';
     };
   }
 
@@ -131,7 +131,7 @@
     document.title = 'Pages — The Fit Lab';
     $('main').innerHTML = `<div class="box">
       <div class="box-head"><div><h2>Pages</h2><div class="sub">Gyms, studios, clinics, hospitals, academies and brands</div></div>
-        <a class="pill solid sm" href="company.html?new=1">${I('plus', 15)}Create a page</a></div>
+        <a class="pill solid sm" href="company?new=1">${I('plus', 15)}Create a page</a></div>
       <form id="df" style="display:flex;gap:8px;flex-wrap:wrap;padding:6px 20px 14px">
         <input id="dq" type="search" placeholder="Search by name" aria-label="Search pages" style="flex:2 1 180px;min-width:0;height:38px">
         <select id="dk" aria-label="Type" style="flex:1 1 140px;width:auto;height:38px"><option value="">Any type</option>${KINDS.map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>
@@ -142,7 +142,7 @@
     FL.wireCommon($('side'));
     if (me) {
       const { data: mine } = await sb.rpc('my_pages');
-      $('mine').innerHTML = `<div class="box"><div class="box-head"><h3>Your pages</h3></div>${(mine || []).length ? mine.map((p) => `<a class="ent" href="company.html?p=${encodeURIComponent(p.slug)}" style="color:inherit">
+      $('mine').innerHTML = `<div class="box"><div class="box-head"><h3>Your pages</h3></div>${(mine || []).length ? mine.map((p) => `<a class="ent" href="company?p=${encodeURIComponent(p.slug)}" style="color:inherit">
           ${FL.pageLogo(p, 'co-logo sm')}<div class="ent-main"><b class="ent-name">${esc(p.name)}${FL.tick(p.verified, 14)}</b><div class="ent-meta">${esc(p.my_role === 'recruiter' ? 'Recruiter' : 'Admin')} · ${plural(p.followers, 'follower')}</div></div></a>`).join('')
         : `<p class="t-sm muted" style="padding:0 20px 16px;margin:0;line-height:1.5">Run a gym, studio or clinic? Create its page to post jobs and share updates.</p>`}</div>`;
     }
@@ -152,12 +152,12 @@
       if (error) { $('dres').innerHTML = `<div class="empty">${esc(FL.friendly(error))}</div>`; return; }
       const list = data || [];
       $('dres').innerHTML = list.length ? list.map((p) => `<div class="ent">
-          <a href="company.html?p=${encodeURIComponent(p.slug)}">${FL.pageLogo(p)}</a>
-          <div class="ent-main"><a class="ent-name" href="company.html?p=${encodeURIComponent(p.slug)}">${esc(p.name)}${FL.tick(p.verified, 15)}</a>
+          <a href="company?p=${encodeURIComponent(p.slug)}">${FL.pageLogo(p)}</a>
+          <div class="ent-main"><a class="ent-name" href="company?p=${encodeURIComponent(p.slug)}">${esc(p.name)}${FL.tick(p.verified, 15)}</a>
             <div class="ent-sub">${esc(p.tagline || p.kind_label)}</div>
-            <div class="ent-meta">${esc([p.kind_label, p.city].filter(Boolean).join(' · '))} · ${plural(p.followers, 'follower')}${p.open_jobs ? ` · <a href="jobs.html?page=${p.page_id}">${plural(p.open_jobs, 'open job')}</a>` : ''}</div></div>
+            <div class="ent-meta">${esc([p.kind_label, p.city].filter(Boolean).join(' · '))} · ${plural(p.followers, 'follower')}${p.open_jobs ? ` · <a href="jobs?page=${p.page_id}">${plural(p.open_jobs, 'open job')}</a>` : ''}</div></div>
           ${me ? `<button class="pill sm ${p.is_following ? 'ghost' : ''}" data-follow="${p.page_id}">${p.is_following ? 'Following' : I('plus', 15) + 'Follow'}</button>` : ''}</div>`).join('')
-        : `<div class="empty"><b>No pages found</b>Try another name or city — or <a href="company.html?new=1">create your organisation's page</a>.</div>`;
+        : `<div class="empty"><b>No pages found</b>Try another name or city — or <a href="company?new=1">create your organisation's page</a>.</div>`;
     };
     $('df').onsubmit = (e) => { e.preventDefault(); run(); };
     $('dk').onchange = run;
@@ -178,7 +178,7 @@
     async function load() {
       const { data, error } = await sb.rpc('get_page', { p_slug: slug });
       if (error || !data) {
-        $('main').innerHTML = `<div class="box"><div class="empty"><b>Page not found</b>It may have been renamed or removed. <a href="company.html">Browse pages</a></div></div>`;
+        $('main').innerHTML = `<div class="box"><div class="empty"><b>Page not found</b>It may have been renamed or removed. <a href="company">Browse pages</a></div></div>`;
         $('side').innerHTML = sideFoot(); return false;
       }
       pg = data; document.title = `${pg.name} — The Fit Lab`;
@@ -193,10 +193,10 @@
       let acts = '';
       if (isAdmin()) {
         acts = `<button class="pill solid" data-a="post">${I('edit', 16)}Create a post</button>
-          <a class="pill" href="hiring.html?new=1&page=${pg.page_id}">${I('briefcase', 16)}Post a job</a>
+          <a class="pill" href="hiring?new=1&page=${pg.page_id}">${I('briefcase', 16)}Post a job</a>
           <button class="pill ghost" data-a="edit">Edit page</button>`;
       } else if (pg.my_role === 'recruiter') {
-        acts = `<a class="pill solid" href="hiring.html?new=1&page=${pg.page_id}">${I('briefcase', 16)}Post a job</a>`;
+        acts = `<a class="pill solid" href="hiring?new=1&page=${pg.page_id}">${I('briefcase', 16)}Post a job</a>`;
       } else {
         acts = `<button class="pill ${pg.is_following ? 'ghost' : 'solid'}" data-a="follow">${pg.is_following ? I('check', 16) + 'Following' : I('plus', 16) + 'Follow'}</button>`;
       }
@@ -222,14 +222,14 @@
 
     function banners() {
       let h = '';
-      if (FL.param('welcome') && isAdmin()) h += `<div class="notice">${I('sparkles', 20)}<div><b>Your page is live.</b><br><span class="t-sm">Add a logo and an About section, then post your first job or update. When you're ready, <a href="verification.html?page=${pg.page_id}">apply for the verified tick</a>.</span></div></div>`;
+      if (FL.param('welcome') && isAdmin()) h += `<div class="notice">${I('sparkles', 20)}<div><b>Your page is live.</b><br><span class="t-sm">Add a logo and an About section, then post your first job or update. When you're ready, <a href="verification?page=${pg.page_id}">apply for the verified tick</a>.</span></div></div>`;
       if (pg.status !== 'active') h += `<div class="notice bad">${I('shield', 20)}<div><b>This page is ${esc(pg.status)}</b><br><span class="t-sm">It's hidden from members while The Fit Lab team reviews it. Contact the Academy team if you think this is a mistake.</span></div></div>`;
       if (isAdmin() && !pg.verified) {
         const v = pg.admin && pg.admin.verification;
         const st = v ? ({ pending: 'Your request is in the review queue.', needs_info: 'The team asked for more information.', rejected: 'Your last request wasn\'t approved.', approved: 'Approved.' })[v.status] : 'Verified pages get up to 10 open jobs, rank higher in search, and earn applicants\' trust.';
         h += `<div class="box box-pad" style="display:flex;gap:14px;align-items:center;flex-wrap:wrap"><span style="color:var(--lime)">${I('tick', 30)}</span>
           <div style="flex:1;min-width:200px"><b>Get the verified tick</b><div class="t-sm muted" style="margin-top:2px">${esc(st)}${v && v.note ? ' “' + esc(v.note) + '”' : ''}</div></div>
-          <a class="pill solid sm" href="verification.html?page=${pg.page_id}">${v ? 'View request' : 'Apply now'}</a></div>`;
+          <a class="pill solid sm" href="verification?page=${pg.page_id}">${v ? 'View request' : 'Apply now'}</a></div>`;
       }
       return h;
     }
@@ -252,8 +252,8 @@
       }
       if (tab === 'jobs') {
         el.innerHTML = `<div class="box"><div class="box-head"><div><h2>Jobs</h2><div class="sub">Pay is shown on every job · applicants see each step</div></div>
-          ${isTeam() ? `<a class="pill solid sm" href="hiring.html?new=1&page=${pg.page_id}">${I('plus', 15)}Post a job</a>` : ''}</div><div id="jl"><div class="skeleton" style="height:70px;margin:14px"></div></div>
-          ${isTeam() ? `<div class="box-foot"><a href="hiring.html">Manage jobs and applicants →</a></div>` : ''}</div>`;
+          ${isTeam() ? `<a class="pill solid sm" href="hiring?new=1&page=${pg.page_id}">${I('plus', 15)}Post a job</a>` : ''}</div><div id="jl"><div class="skeleton" style="height:70px;margin:14px"></div></div>
+          ${isTeam() ? `<div class="box-foot"><a href="hiring">Manage jobs and applicants →</a></div>` : ''}</div>`;
         const { data } = await sb.rpc('search_jobs', { p_q: null, p_profession: null, p_city: null, p_type: null, p_workplace: null, p_min_pay: null, p_verified_only: false, p_page: pg.page_id, p_limit: 50, p_offset: 0 });
         $('jl').innerHTML = (data || []).length ? data.map(jobRow).join('') : `<div class="empty"><b>No open jobs</b>${pg.is_following ? 'You\'ll be notified when this page posts one.' : 'Follow the page to hear when they post one.'}</div>`;
         return;
@@ -286,7 +286,7 @@
         sb.rpc('search_jobs', { p_q: null, p_profession: null, p_city: null, p_type: null, p_workplace: null, p_min_pay: null, p_verified_only: false, p_page: pg.page_id, p_limit: 3, p_offset: 0 }),
         sb.rpc('page_people', { p_page: pg.page_id, p_limit: 6 })]);
       $('hj').innerHTML = (jobs.data || []).length ? jobs.data.map(jobRow).join('') + (pg.open_jobs > 3 ? `<div class="box-foot"><button data-go="jobs">See all ${pg.open_jobs} jobs →</button></div>` : '')
-        : `<p class="t-sm muted" style="padding:0 20px 16px;margin:0">No open jobs right now.${isTeam() ? ` <a href="hiring.html?new=1&page=${pg.page_id}">Post one</a>` : ''}</p>`;
+        : `<p class="t-sm muted" style="padding:0 20px 16px;margin:0">No open jobs right now.${isTeam() ? ` <a href="hiring?new=1&page=${pg.page_id}">Post one</a>` : ''}</p>`;
       $('hpe').innerHTML = (people.data || []).length ? `<div class="pgrid">${people.data.map(personCard).join('')}</div>`
         : `<p class="t-sm muted" style="padding:0 20px 16px;margin:0">Members who work here appear when they add this page to their experience.</p>`;
       if (me) {
@@ -311,15 +311,15 @@
       if (list.length) feedOldest = list[list.length - 1].created_at;
       $('moreF').hidden = list.length < 10;
     }
-    const jobRow = (j) => `<a class="jrow" href="jobs.html?job=${j.id}">${FL.pageLogo(j.page, 'co-logo sm')}<div style="flex:1;min-width:0">
+    const jobRow = (j) => `<a class="jrow" href="jobs?job=${j.id}">${FL.pageLogo(j.page, 'co-logo sm')}<div style="flex:1;min-width:0">
         <b>${esc(j.title)}</b><div class="t-sm">${esc([j.city, j.workplace_label, j.type_label].filter(Boolean).join(' · '))}</div>
         <div class="t-sm" style="font-weight:700;margin-top:2px">${FL.pay(j)}</div>
         <div class="t-xs muted" style="margin-top:2px">${FL.timeAgo(j.created_at)} ago · ${plural(j.applicants, 'applicant')}${j.promoted ? ' · Promoted' : ''}</div></div></a>`;
     const personCard = (p) => `<div class="pcard"><div class="cov" ${p.cover_url ? `style="background-image:url('${esc(p.cover_url)}')"` : ''}></div>
-        <a href="profile.html?u=${encodeURIComponent(p.username)}">${FL.ringAvatar(p, 'avatar')}</a>
-        <a class="nm" href="profile.html?u=${encodeURIComponent(p.username)}">${esc(p.full_name)}${FL.tags(p)}</a>
+        <a href="profile?u=${encodeURIComponent(p.username)}">${FL.ringAvatar(p, 'avatar')}</a>
+        <a class="nm" href="profile?u=${encodeURIComponent(p.username)}">${esc(p.full_name)}${FL.tags(p)}</a>
         <p class="hl">${esc(p.title || p.headline || '')}</p><div class="why">${esc(p.profession_label || '')}</div>
-        <a class="pill sm" href="profile.html?u=${encodeURIComponent(p.username)}">View profile</a></div>`;
+        <a class="pill sm" href="profile?u=${encodeURIComponent(p.username)}">View profile</a></div>`;
 
     async function insights(el) {
       el.innerHTML = '<div class="box skeleton" style="height:220px"></div>';
@@ -339,7 +339,7 @@
           <div class="box"><div class="box-head"><h3>Visitors by profession</h3></div>${(d.visitor_professions || []).length ? hb(d.visitor_professions) : '<p class="t-sm muted" style="padding:0 20px 16px">No visits yet.</p>'}<div style="height:12px"></div></div>
           <div class="box"><div class="box-head"><h3>Followers by city</h3></div>${(d.follower_cities || []).length ? hb(d.follower_cities) : '<p class="t-sm muted" style="padding:0 20px 16px">No followers yet.</p>'}<div style="height:12px"></div></div>`
         : `<div class="prem-box"><h3>${I('crown', 16)}See who visits your page</h3><div class="t-sm" style="line-height:1.55">Business and Recruiter Premium show visitors by profession, followers by city, and weekly trends — so you know who you're reaching.</div>
-            <a class="pill gold sm" href="premium.html?plan=business" style="margin-top:10px">Try Business free for 14 days</a></div>`}`;
+            <a class="pill gold sm" href="premium?plan=business" style="margin-top:10px">Try Business free for 14 days</a></div>`}`;
     }
 
     async function admins(el) {
@@ -348,7 +348,7 @@
       const owner = pg.my_role === 'owner';
       const ROLE = { owner: 'Owner', admin: 'Admin', recruiter: 'Recruiter' };
       el.innerHTML = `<div class="box"><div class="box-head"><div><h2>Page team</h2><div class="sub">Admins edit the page and post as it. Recruiters post jobs and manage applicants.</div></div></div>
-        ${(data || []).map((a) => `<div class="ent">${FL.avatarHtml(a, 'avatar')}<div class="ent-main"><a class="ent-name" href="profile.html?u=${encodeURIComponent(a.username)}">${esc(a.full_name)}${FL.tags(a)}</a>
+        ${(data || []).map((a) => `<div class="ent">${FL.avatarHtml(a, 'avatar')}<div class="ent-main"><a class="ent-name" href="profile?u=${encodeURIComponent(a.username)}">${esc(a.full_name)}${FL.tags(a)}</a>
           <div class="ent-meta">@${esc(a.username)} · ${ROLE[a.role]}</div></div>
           ${owner && a.role !== 'owner' ? `<button class="pill ghost sm" data-rm="${esc(a.username)}">Remove</button>` : ''}</div>`).join('')}
         ${owner ? `<div class="box-head" style="padding-top:8px"><h3 style="font-size:15px">Add someone</h3></div>
@@ -408,8 +408,8 @@
       const old = document.querySelector('.menu-pop'); if (old) { old.remove(); return; }
       const pop = document.createElement('div'); pop.className = 'menu-pop'; pop.style.left = '0'; pop.style.right = 'auto'; pop.style.top = '40px';
       pop.innerHTML = `<button data-m="share">${I('link', 18)}Copy link to page</button>
-        ${pg.open_jobs ? `<a href="jobs.html?page=${pg.page_id}">${I('briefcase', 18)}See open jobs</a>` : ''}
-        ${isAdmin() ? `<a href="verification.html?page=${pg.page_id}">${I('tick', 18)}${pg.verified ? 'Verified page' : 'Get the verified tick'}</a>` : ''}
+        ${pg.open_jobs ? `<a href="jobs?page=${pg.page_id}">${I('briefcase', 18)}See open jobs</a>` : ''}
+        ${isAdmin() ? `<a href="verification?page=${pg.page_id}">${I('tick', 18)}${pg.verified ? 'Verified page' : 'Get the verified tick'}</a>` : ''}
         ${me && !isTeam() ? `<button data-m="report" class="danger">${I('flag', 18)}Report page</button>` : ''}`;
       btn.parentElement.appendChild(pop);
       pop.onclick = async (e) => {
@@ -426,12 +426,12 @@
         const { data } = await sb.rpc('suggested_pages', { p_limit: 4 });
         const list = (data || []).filter((x) => x.page_id !== pg.page_id);
         if (list.length) h += `<div class="box"><div class="box-head"><h3>Pages you may like</h3></div>${list.map((p) => `<div class="ent">
-          <a href="company.html?p=${encodeURIComponent(p.slug)}">${FL.pageLogo(p, 'co-logo sm')}</a><div class="ent-main"><a class="ent-name" href="company.html?p=${encodeURIComponent(p.slug)}" style="font-size:14px">${esc(p.name)}${FL.tick(p.verified, 14)}</a>
+          <a href="company?p=${encodeURIComponent(p.slug)}">${FL.pageLogo(p, 'co-logo sm')}</a><div class="ent-main"><a class="ent-name" href="company?p=${encodeURIComponent(p.slug)}" style="font-size:14px">${esc(p.name)}${FL.tick(p.verified, 14)}</a>
           <div class="ent-meta">${esc(p.kind_label)} · ${plural(p.followers, 'follower')}</div>
           <div class="ent-act"><button class="pill sm" data-sfollow="${p.page_id}">${I('plus', 14)}Follow</button></div></div></div>`).join('')}
-          <div class="box-foot"><a href="company.html">Browse all pages →</a></div></div>`;
+          <div class="box-foot"><a href="company">Browse all pages →</a></div></div>`;
       } else {
-        h += `<div class="box box-pad"><b>Join The Fit Lab</b><p class="t-sm muted" style="margin:6px 0 12px;line-height:1.5">Follow ${esc(pg.name)}, apply to jobs and connect with the team.</p><a class="pill solid sm" href="index.html">Sign in or join</a></div>`;
+        h += `<div class="box box-pad"><b>Join The Fit Lab</b><p class="t-sm muted" style="margin:6px 0 12px;line-height:1.5">Follow ${esc(pg.name)}, apply to jobs and connect with the team.</p><a class="pill solid sm" href="/">Sign in or join</a></div>`;
       }
       $('side').innerHTML = h + sideFoot();
       FL.wireCommon($('side'));

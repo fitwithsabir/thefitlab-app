@@ -43,18 +43,18 @@
   <div class="layout l-side-main">
     <aside class="col-nav"><div class="sticky-col">
       <div class="box mn"><div class="box-head" style="padding-bottom:8px"><h3 style="font-size:16px">Bookings</h3></div>
-        <a href="bookings.html#client" data-v="client">My bookings <b id="nClient"></b></a>
-        <a href="bookings.html#coach" data-v="coach">My clients <b id="nCoach"></b></a>
-        <a href="bookings.html#settings" data-v="settings">Booking settings</a>
-        <a href="requests.html">Client requests</a>
-        <a href="hire.html">Find a professional</a>
+        <a href="bookings#client" data-v="client">My bookings <b id="nClient"></b></a>
+        <a href="bookings#coach" data-v="coach">My clients <b id="nCoach"></b></a>
+        <a href="bookings#settings" data-v="settings">Booking settings</a>
+        <a href="requests">Client requests</a>
+        <a href="hire">Find a professional</a>
       </div>
       <div id="footL"></div>
     </div></aside>
     <section class="stack">
       <div class="box mn-mobile"><div class="utabs" id="mtabs">
-        <a href="bookings.html#client" data-v="client">My bookings</a><a href="bookings.html#coach" data-v="coach">My clients</a>
-        <a href="bookings.html#settings" data-v="settings">Settings</a><a href="requests.html">Requests</a></div></div>
+        <a href="bookings#client" data-v="client">My bookings</a><a href="bookings#coach" data-v="coach">My clients</a>
+        <a href="bookings#settings" data-v="settings">Settings</a><a href="requests">Requests</a></div></div>
       <div id="notice"></div>
       <div id="view" class="stack"><div class="box skeleton" style="height:320px"></div></div>
     </section>
@@ -70,12 +70,12 @@
   const esc = FL.esc, I = FL.icon, B = FLBook;
   const session = await FL.requireAuth(); if (!session) return;
   let me; try { me = await FL.getProfile(); } catch (e) { return FL.toast(FL.friendly(e), 'err'); }
-  if (!me.profile_completed) return location.replace('register.html');
+  if (!me.profile_completed) return location.replace('register');
   FL.renderHeader(me);
   $('notice').innerHTML = FL.communityNotice(me);
   $('footL').innerHTML = FL.siteFootHtml(true); FL.wireCommon($('footL'));
   const view = $('view');
-  const plink = (u) => `profile.html?u=${encodeURIComponent(u)}`;
+  const plink = (u) => `profile?u=${encodeURIComponent(u)}`;
   const WD = [[1, 'Monday'], [2, 'Tuesday'], [3, 'Wednesday'], [4, 'Thursday'], [5, 'Friday'], [6, 'Saturday'], [0, 'Sunday']];
   const hm = (m) => { const h = Math.floor(m / 60), mm = m % 60; const d = new Date(Date.UTC(2000, 0, 1, h, mm)); return m === 1440 ? '12:00 am (midnight)' : d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }); };
   const TIMES = Array.from({ length: 49 }, (_, i) => i * 30).filter((m) => m >= 300);
@@ -91,7 +91,7 @@
   const row = (b) => {
     const nxt = b.next ? `Next: ${B.fmtWhen(b.next)}` : b.left > 0 && b.status === 'confirmed' ? `${b.left} session${b.left === 1 ? '' : 's'} left to book` : '';
     const ACT = { confirm: 'Confirm or decline', check_payment: 'Check payment', pay: 'Pay', review: 'Leave a review', schedule: 'Book next session' };
-    return `<a class="bkrow" href="bookings.html?b=${b.id}">${FL.avatarHtml(b.member, 'avatar')}
+    return `<a class="bkrow" href="bookings?b=${b.id}">${FL.avatarHtml(b.member, 'avatar')}
       <div class="m"><span class="t">${esc(b.title)}</span>
         <span class="t-sm">${b.role === 'coach' ? 'Client' : 'With'} <b>${esc(b.member.full_name)}</b> · ${b.used} of ${b.sessions_total} done</span>
         ${nxt ? `<span class="t-sm muted">${esc(nxt)}</span>` : ''}
@@ -108,13 +108,13 @@
       if (agenda) {
         const byDay = {}; agenda.forEach((s) => { (byDay[B.fmtDay(s.starts_at)] ||= []).push(s); });
         ag = `<div class="box agenda"><div class="box-head"><div><h2>Next 14 days</h2><div class="sub">${agenda.length} session${agenda.length === 1 ? '' : 's'} booked</div></div></div>
-          ${agenda.length ? Object.entries(byDay).map(([d, ss]) => `<div class="day">${esc(d)}</div>${ss.map((s) => `<a class="bkrow" href="bookings.html?b=${s.booking_id}">${FL.avatarHtml(s.member, 'avatar')}
+          ${agenda.length ? Object.entries(byDay).map(([d, ss]) => `<div class="day">${esc(d)}</div>${ss.map((s) => `<a class="bkrow" href="bookings?b=${s.booking_id}">${FL.avatarHtml(s.member, 'avatar')}
               <div class="m"><span class="t">${B.fmtTime(s.starts_at)} · ${esc(s.member.full_name)}</span><span class="t-sm muted">${esc(s.title)}${s.pending ? ' · waiting for your reply' : ''}</span></div></a>`).join('')}`).join('')
             : '<div class="empty">No sessions in the next two weeks.</div>'}</div>`;
       }
       const empty = role === 'coach'
-        ? `<div class="empty"><b>No client bookings yet</b>Add a bookable package to your profile and open bookings, and clients can book your free times. <a href="bookings.html#settings">Set up bookings</a></div>`
-        : `<div class="empty"><b>No bookings yet</b>Find a trainer, physio or dietitian, or post what you need and let up to five professionals reply.<div class="btn-row" style="justify-content:center;margin-top:12px"><a class="pill sm" href="hire.html">Find a professional</a><a class="pill ghost sm" href="requests.html#post">Post what you need</a></div></div>`;
+        ? `<div class="empty"><b>No client bookings yet</b>Add a bookable package to your profile and open bookings, and clients can book your free times. <a href="bookings#settings">Set up bookings</a></div>`
+        : `<div class="empty"><b>No bookings yet</b>Find a trainer, physio or dietitian, or post what you need and let up to five professionals reply.<div class="btn-row" style="justify-content:center;margin-top:12px"><a class="pill sm" href="hire">Find a professional</a><a class="pill ghost sm" href="requests#post">Post what you need</a></div></div>`;
       view.innerHTML = `${ag}<div class="box"><div class="box-head"><div><h2>${role === 'coach' ? 'My clients' : 'My bookings'}</h2>
           <div class="sub">${role === 'coach' ? 'Bookings clients made with you' : 'Packages and sessions you booked'}</div></div></div>
         <div class="seg" id="seg" role="tablist"><button type="button" class="${filter === 'active' ? 'on' : ''}" data-f="active">Active</button><button type="button" class="${filter === 'past' ? 'on' : ''}" data-f="past">Past</button></div>
@@ -141,7 +141,7 @@
     view.innerHTML = `<div class="box"><div class="box-head"><div><h2>Booking settings</h2><div class="sub">Clients can book your free times for the packages you mark as bookable on your profile.</div></div></div>
         <div class="sw"><div><b>Take bookings</b><span class="t-sm muted">Shows a Book button on your bookable packages.</span></div><label class="switch"><input type="checkbox" aria-label="Take bookings" id="sOn" ${s.booking_on ? 'checked' : ''}><span></span></label></div>
         <div class="sw"><div><b>Instant booking</b><span class="t-sm muted">Confirm bookings automatically instead of approving each one.</span></div><label class="switch"><input type="checkbox" aria-label="Instant booking" id="sAuto" ${s.auto_confirm ? 'checked' : ''}><span></span></label></div>
-        <div class="sw"><div><b>Bookable packages</b><span class="t-sm muted">${s.bookable_services || 0} on your profile.</span></div><a class="pill ghost sm" href="profile.html#svcBox">Manage packages</a></div></div>
+        <div class="sw"><div><b>Bookable packages</b><span class="t-sm muted">${s.bookable_services || 0} on your profile.</span></div><a class="pill ghost sm" href="profile#svcBox">Manage packages</a></div></div>
       <div class="box"><div class="box-head"><div><h2>When you coach</h2><div class="sub">Times are in India time (IST).</div></div><button class="txt-btn" type="button" id="copyMon">Copy Monday to weekdays</button></div>
         <div class="pad"><div class="hrs" id="hrs"></div></div></div>
       <div class="box"><div class="box-head"><div><h2>How clients pay you</h2></div></div>
@@ -202,7 +202,7 @@
   async function showBooking(id) {
     document.querySelectorAll('[data-v]').forEach((a) => a.classList.remove('on'));
     const { data: b, error } = await sb.rpc('booking_detail', { p_booking: id });
-    if (error || !b) { view.innerHTML = '<div class="box"><div class="empty"><b>Booking not found</b>It may belong to someone else. <a href="bookings.html">See your bookings</a></div></div>'; return; }
+    if (error || !b) { view.innerHTML = '<div class="box"><div class="empty"><b>Booking not found</b>It may belong to someone else. <a href="bookings">See your bookings</a></div></div>'; return; }
     const isCoach = b.role === 'coach', isClient = b.role === 'client';
     const other = isCoach ? b.client : b.coach;
     const now = Date.now();
@@ -298,11 +298,11 @@
       ${b.transformations.length ? `<div class="tf-grid">${b.transformations.map(tfCard).join('')}</div>` : `<div class="empty" style="padding:12px 20px">${isCoach ? 'Uses two of your client\'s check-in photos.' : ''}</div>`}</div>` : '';
 
     view.innerHTML = `<div class="box">
-        <div class="dhead"><a class="t-sm" href="bookings.html#${isCoach ? 'coach' : 'client'}">${I('back', 15)} ${isCoach ? 'My clients' : 'My bookings'}</a>
+        <div class="dhead"><a class="t-sm" href="bookings#${isCoach ? 'coach' : 'client'}">${I('back', 15)} ${isCoach ? 'My clients' : 'My bookings'}</a>
           <h1>${esc(b.title)}</h1>
           <div class="chips">${B.statusChip(b.status)}${B.payChip(b)}<span class="chip mono">${esc(b.ref)}</span></div>
           <div class="who"><a href="${plink(other.username)}">${FL.avatarHtml(other, 'avatar')}</a><div style="flex:1;min-width:0"><a class="ent-name" href="${plink(other.username)}">${esc(other.full_name)} ${FL.tick(other.verified, 14)}</a><div class="t-sm muted">${isCoach ? 'Client' : esc(other.headline || '')}</div></div>
-            <a class="pill ghost sm" href="messaging.html?u=${encodeURIComponent(other.username)}">${I('messages', 15)}Message</a></div></div>
+            <a class="pill ghost sm" href="messaging?u=${encodeURIComponent(other.username)}">${I('messages', 15)}Message</a></div></div>
         <div class="facts">
           <div><span>Sessions</span><b>${b.used} of ${b.sessions_total} done</b></div>
           <div><span>Length</span><b>${b.session_min} min</b></div>
@@ -460,7 +460,7 @@
   }
   window.addEventListener('hashchange', () => { if (!FL.param('b')) route(); });
   document.querySelectorAll('a[data-v]').forEach((a) => a.addEventListener('click', (e) => {
-    if (FL.param('b')) return; e.preventDefault(); history.replaceState(null, '', 'bookings.html#' + a.dataset.v); route(); }));
+    if (FL.param('b')) return; e.preventDefault(); history.replaceState(null, '', 'bookings#' + a.dataset.v); route(); }));
   await loadCounts();
   await route();
 })();

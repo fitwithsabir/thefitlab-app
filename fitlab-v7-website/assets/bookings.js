@@ -59,7 +59,7 @@
   // ---------------------------------------------------------- the booking window
   async function open(serviceId, { proposal = null, price = null } = {}) {
     const session = await FL.session();
-    if (!session) { location.href = 'index.html?next=' + encodeURIComponent(location.pathname + location.search); return; }
+    if (!session) { location.href = '/?next=' + encodeURIComponent(location.pathname + location.search); return; }
     const { data: o, error } = await sb.rpc('booking_options', { p_service: serviceId });
     if (error || !o) return FL.toast(FL.friendly(error || new Error('Booking isn\'t available')), 'err');
     if (!o.ok) return FL.notice('Booking isn\'t available', o.message);
@@ -110,7 +110,7 @@
         }
         m.close();
         if (r.pay_method === 'online') return payOnline(r.id);
-        location.href = 'bookings.html?b=' + r.id;
+        location.href = 'bookings?b=' + r.id;
       } finally { FL.busy(go, false); sync(); }
     };
     sync();
@@ -130,22 +130,22 @@
         return FL.notice('Online payment is coming soon', msg);
       }
       FL.toast(msg, 'err');
-      location.href = 'bookings.html?b=' + bookingId;
+      location.href = 'bookings?b=' + bookingId;
       return;
     }
     try { await loadScript('https://checkout.razorpay.com/v1/checkout.js', 'Razorpay'); }
-    catch (_) { FL.toast('Couldn\'t load the payment window. Check your connection and try again.', 'err'); location.href = 'bookings.html?b=' + bookingId; return; }
+    catch (_) { FL.toast('Couldn\'t load the payment window. Check your connection and try again.', 'err'); location.href = 'bookings?b=' + bookingId; return; }
     const rz = new window.Razorpay({
       key: data.key_id, amount: data.amount, currency: data.currency, order_id: data.order_id,
       name: 'The Fit Lab', description: data.description, prefill: data.prefill,
       theme: { color: getComputedStyle(document.documentElement).getPropertyValue('--lime').trim() || '#a3e635' },
-      modal: { ondismiss: () => { location.href = 'bookings.html?b=' + bookingId; } },
+      modal: { ondismiss: () => { location.href = 'bookings?b=' + bookingId; } },
       handler: async (resp) => {
         FL.toast('Confirming your payment…');
         const v = await FL.fn('booking-checkout', { action: 'verify', order_id: resp.razorpay_order_id, payment_id: resp.razorpay_payment_id, signature: resp.razorpay_signature });
         if (v.data && v.data.ok) FL.toast(v.data.confirmed === false ? 'Paid. That time was released, so we\'ll refund you.' : 'Booked and paid', v.data.confirmed === false ? 'err' : 'ok');
         else FL.toast((v.data && v.data.message) || 'We couldn\'t confirm the payment yet. If money was taken, your booking is confirmed within a few minutes.', 'err');
-        setTimeout(() => { location.href = 'bookings.html?b=' + bookingId; }, 900);
+        setTimeout(() => { location.href = 'bookings?b=' + bookingId; }, 900);
       },
     });
     rz.on('payment.failed', (r) => FL.toast((r && r.error && r.error.description) || 'Payment failed. No money was taken.', 'err'));

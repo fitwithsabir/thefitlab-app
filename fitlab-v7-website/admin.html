@@ -239,7 +239,7 @@
     <div class="empty" style="padding:40px 24px">
       <b>Control Room access only</b>
       This area is for The Fit Lab admin team. If you should have access, ask the owner to add you to the team.
-      <div style="margin-top:16px"><a class="pill" href="feed.html">Back to home</a></div>
+      <div style="margin-top:16px"><a class="pill" href="feed">Back to home</a></div>
     </div>
   </div>
 
@@ -427,9 +427,9 @@
       const d = data || {}; let html = '';
       if ((d.members || []).length) html += '<h5>Members</h5>' + d.members.map((m) => `<button type="button" data-member="${E(m.user_id)}">${FL.avatarHtml(m, 'avatar xs')}<span class="r-t"><b>${E(m.full_name)}</b>${FL.tick(m.verified, 13)}
           <span>@${E(m.username || '')} · ${E(m.unique_id || '')}${m.community_status && m.community_status !== 'active' ? ' · ' + (m.community_status === 'banned' ? 'removed' : 'paused') : ''}</span></span></button>`).join('');
-      if ((d.pages || []).length) html += '<h5>Pages</h5>' + d.pages.map((g) => `<a href="company.html?p=${encodeURIComponent(g.slug)}" target="_blank" rel="noopener">${FL.pageLogo(g, 'co-logo xs')}<span class="r-t"><b>${E(g.name)}</b>${FL.tick(g.verified, 13)}
+      if ((d.pages || []).length) html += '<h5>Pages</h5>' + d.pages.map((g) => `<a href="company?p=${encodeURIComponent(g.slug)}" target="_blank" rel="noopener">${FL.pageLogo(g, 'co-logo xs')}<span class="r-t"><b>${E(g.name)}</b>${FL.tick(g.verified, 13)}
           <span>${E(g.kind_label || '')}${g.city ? ' · ' + E(g.city) : ''}${g.status && g.status !== 'active' ? ' · ' + E(g.status) : ''}</span></span></a>`).join('');
-      if ((d.jobs || []).length) html += '<h5>Jobs</h5>' + d.jobs.map((j) => `<a href="jobs.html?job=${E(j.id)}" target="_blank" rel="noopener"><span class="r-ic">${I('briefcase', 16)}</span><span class="r-t"><b>${E(j.title)}</b>
+      if ((d.jobs || []).length) html += '<h5>Jobs</h5>' + d.jobs.map((j) => `<a href="jobs?job=${E(j.id)}" target="_blank" rel="noopener"><span class="r-ic">${I('briefcase', 16)}</span><span class="r-t"><b>${E(j.title)}</b>
           <span>${E(j.page || '')}${j.city ? ' · ' + E(j.city) : ''} · ${E(j.status)}</span></span></a>`).join('');
       box.innerHTML = html || `<div class="empty t-sm">Nothing found for “${E(q)}”.</div>`;
       box.hidden = false;
@@ -691,8 +691,8 @@
           ${p.headline ? `<div class="t-sm" style="margin-top:2px">${E(p.headline)}</div>` : ''}
           <div class="t-xs muted" style="margin-top:4px">@${E(p.username || '')} · <span class="mono">${E(p.unique_id || '')}</span>${p.city ? ' · ' + E(p.city) : ''}</div>
           ${tags ? `<div class="d-tags">${tags}</div>` : ''}</div></div>
-      <div class="d-acts"><a class="pill sm" href="profile.html?u=${encodeURIComponent(p.username || '')}" target="_blank" rel="noopener">${I('external', 15)}Profile</a>
-        ${!self ? `<a class="pill ghost sm" href="messaging.html?u=${encodeURIComponent(p.username || '')}">${I('messages', 15)}Message</a>` : ''}
+      <div class="d-acts"><a class="pill sm" href="profile?u=${encodeURIComponent(p.username || '')}" target="_blank" rel="noopener">${I('external', 15)}Profile</a>
+        ${!self ? `<a class="pill ghost sm" href="messaging?u=${encodeURIComponent(p.username || '')}">${I('messages', 15)}Message</a>` : ''}
         ${canEdit ? `<button class="pill ghost sm" type="button" data-d="edit">${I('edit', 15)}Edit details</button>` : ''}</div>
       <div class="d-sec"><div class="d-stats">${[[c.connections, 'Connections'], [c.posts, 'Posts'], [c.pages, 'Pages'], [c.applications, 'Job applications'],
         [c.reports_against, 'Reports against'], [c.auto_blocks_30d, 'Auto-blocks · 30d'], [c.devices, 'Pop-up devices']].map(([v, l]) => `<div><b>${n(v)}</b><span>${l}</span></div>`).join('')}</div></div>
@@ -1026,7 +1026,7 @@
   const SRCL = { auto: 'Automatic block', report: 'Member report', ai: 'AI check' };
   const sevSt = (s) => s === 'high' ? 'revoked' : s === 'medium' ? 'rejected' : 'pending';
   const whoLink = (m) => m && m.user_id && can('members') ? `<button class="lnk" type="button" data-member="${E(m.user_id)}">${E(m.full_name || 'Member')}</button>`
-    : `<a href="profile.html?u=${encodeURIComponent((m && m.username) || '')}" target="_blank" rel="noopener"><b>${E((m && m.full_name) || 'Member')}</b></a>`;
+    : `<a href="profile?u=${encodeURIComponent((m && m.username) || '')}" target="_blank" rel="noopener"><b>${E((m && m.full_name) || 'Member')}</b></a>`;
   VIEWS.moderation = async (alive, sub) => {
     let f = MODF.some(([k]) => k === sub) ? sub : 'open', cases = [];
     $('view').innerHTML = `<div class="box"><div class="box-head"><div><h2>Reports</h2><div class="sub">Member reports, automatic blocks and AI flags. Act on the content, the member, or both.</div></div></div>
@@ -1168,9 +1168,9 @@
       $('vList').innerHTML = reqs.length ? reqs.map((r) => {
         const sj = r.subject || {}, ev = r.evidence || {}, live = r.live || { score: 0, detail: [] };
         const who = r.subject_type === 'user'
-          ? `<div class="case-who">${FL.avatarHtml(sj, 'avatar sm')}<div style="min-width:0"><div class="nm">${sj.user_id && can('members') ? whoLink(sj) : `<a href="profile.html?u=${encodeURIComponent(sj.username || '')}" target="_blank" rel="noopener"><b>${E(sj.full_name || 'Member')}</b></a>`}</div>
+          ? `<div class="case-who">${FL.avatarHtml(sj, 'avatar sm')}<div style="min-width:0"><div class="nm">${sj.user_id && can('members') ? whoLink(sj) : `<a href="profile?u=${encodeURIComponent(sj.username || '')}" target="_blank" rel="noopener"><b>${E(sj.full_name || 'Member')}</b></a>`}</div>
               <div class="sub">${E(sj.profession_label || 'No profession set')}${sj.requires_licence ? ' · <b style="color:var(--warn)">licensed profession</b>' : ''} · @${E(sj.username || '')} · ${E(sj.unique_id || '')}</div></div></div>`
-          : `<div class="case-who">${FL.pageLogo(sj, 'co-logo sm')}<div style="min-width:0"><div class="nm"><a href="company.html?p=${encodeURIComponent(sj.slug || '')}" target="_blank" rel="noopener"><b>${E(sj.name || 'Page')}</b></a></div>
+          : `<div class="case-who">${FL.pageLogo(sj, 'co-logo sm')}<div style="min-width:0"><div class="nm"><a href="company?p=${encodeURIComponent(sj.slug || '')}" target="_blank" rel="noopener"><b>${E(sj.name || 'Page')}</b></a></div>
               <div class="sub">${E(sj.kind_label || '')}${sj.city ? ' · ' + E(sj.city) : ''} · ${plural(sj.followers || 0, 'follower')}</div>
               <div class="sub">${sj.website ? `<a href="${E(sj.website)}" target="_blank" rel="noopener nofollow">${E(sj.website)}</a> ${sj.website_verified ? '<b style="color:var(--lime)">· owner proven</b>' : '· not proven'}` : 'No website'}
                 ${sj.gstin ? ` · GST ${E(sj.gstin)} ${sj.gstin_valid ? '<b style="color:var(--lime)">✓ valid</b>' : '<b style="color:var(--danger-text)">✗ fails check</b>'}` : ''}</div></div></div>`;
@@ -1315,7 +1315,7 @@
       rows = data || [];
       $('pgSub').textContent = `${plural(rows.length, 'page')} · ${n(rows.filter((g) => g.verified).length)} verified`;
       $('pgList').innerHTML = rows.length ? rows.map((g) => `<div class="lrow" data-pg="${E(g.page_id)}"><div class="who">${FL.pageLogo(g, 'co-logo sm')}<div>
-          <div class="nm"><a href="company.html?p=${encodeURIComponent(g.slug)}" target="_blank" rel="noopener"><b>${E(g.name)}</b></a>${FL.tick(g.verified, 14)}<span class="st st-${E(g.status)}">${E(g.status)}</span></div>
+          <div class="nm"><a href="company?p=${encodeURIComponent(g.slug)}" target="_blank" rel="noopener"><b>${E(g.name)}</b></a>${FL.tick(g.verified, 14)}<span class="st st-${E(g.status)}">${E(g.status)}</span></div>
           <div class="sub">${E(g.kind_label || '')}${g.city ? ' · ' + E(g.city) : ''} · ${plural(g.followers || 0, 'follower')}${g.open_jobs ? ' · ' + plural(g.open_jobs, 'open job') : ''} · created ${E(fmt(g.created_at))}</div>
           <div class="sub">Owner: ${g.owner ? whoLink(g.owner) : '—'} · ${g.website_verified ? '<b style="color:var(--lime)">website proven</b>' : g.website ? 'website not proven' : 'no website'}${g.gstin ? ` · GST ${g.gstin_valid ? '<b style="color:var(--lime)">✓</b>' : '<b style="color:var(--danger-text)">✗</b>'}` : ''}${g.reports ? ` · <b style="color:var(--danger-text)">${plural(g.reports, 'open report')}</b>` : ''}</div></div></div>
         <div class="acts"><button class="pill ghost sm" type="button" data-pv="${g.verified ? 'off' : 'on'}">${g.verified ? 'Remove tick' : 'Verify'}</button>
@@ -1525,23 +1525,23 @@
           <div class="field"><label for="bBody">Message</label><textarea id="bBody" maxlength="1000" placeholder="Details…"></textarea></div>
           <div class="row2">
             <div class="field"><label for="bKind">Type</label><select id="bKind"><option value="info">Info</option><option value="launch">Course launch</option><option value="motivation">Motivation</option></select></div>
-            <div class="field"><label for="bLink">Link <span class="muted">(optional)</span></label><input id="bLink" placeholder="courses.html"><span class="help">A page on this site, like courses.html or jobs.html</span></div></div>
+            <div class="field"><label for="bLink">Link <span class="muted">(optional)</span></label><input id="bLink" placeholder="courses"><span class="help">A page on this site, like courses or jobs</span></div></div>
           <button class="pill solid lg" type="button" id="bSend">${I('send', 16)}Send to everyone</button></div></div>
       <div class="stack"><div class="kgrp" style="margin:0">Preview</div><div class="box bc-prev" id="bPrev"></div>
         <div class="kgrp" style="margin:4px 0 0">On a phone</div><div class="bc-push" id="bPush"></div></div></div>`;
-    const okLink = (l) => !l || /^[a-z0-9_-]+\.html([?#][^\s<>"'`]*)?$/i.test(l);
+    const okLink = (l) => !l || /^[a-z0-9_-]+(\.html)?([?#][^\s<>"'`]*)?$/i.test(l);
     const prev = () => {
       const t = $('bTitle').value.trim(), b = $('bBody').value.trim(), l = $('bLink').value.trim(), [kl, ki] = KIND[$('bKind').value] || KIND.info;
       $('bPrev').innerHTML = `<div class="bc-k">${I(ki, 15)}${E(kl)}</div><h3>${E(t || 'Your title appears here')}</h3>${b ? `<p>${E(b)}</p>` : ''}
         <div class="acts">${l && okLink(l) ? '<span class="pill solid sm">Open</span>' : ''}<span class="pill ghost sm">Close</span></div>
-        ${l && !okLink(l) ? '<p class="err" style="margin:10px 0 0">Links must be a page on this site, like courses.html</p>' : ''}`;
+        ${l && !okLink(l) ? '<p class="err" style="margin:10px 0 0">Links must be a page on this site, like courses</p>' : ''}`;
       $('bPush').innerHTML = `<img src="assets/icon-192.png" alt=""><div style="min-width:0"><b>${E(t || 'Your title')}</b><span>${E(b || 'The Fit Lab')}</span></div>`;
     };
     ['bTitle', 'bBody', 'bLink', 'bKind'].forEach((id) => $(id).addEventListener('input', prev)); prev();
     $('bSend').onclick = async () => {
       const title = $('bTitle').value.trim(), link = $('bLink').value.trim();
       if (!title) return FL.toast('Give the announcement a title', 'err');
-      if (!okLink(link)) return FL.toast('Links must be a page on this site, like courses.html', 'err');
+      if (!okLink(link)) return FL.toast('Links must be a page on this site, like courses', 'err');
       if (!(await FL.confirm('Send to every member?', 'It appears as a pop-up for everyone and can\'t be taken back.', 'Send now'))) return;
       const btn = $('bSend'); FL.busy(btn, true, 'Sending…');
       const ok = await act('admin_broadcast', { p_title: title, p_body: $('bBody').value.trim() || null, p_kind: $('bKind').value, p_link: link || null, p_expires: null }, 'Announcement sent to all members');

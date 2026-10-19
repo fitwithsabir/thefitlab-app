@@ -70,7 +70,7 @@
         <label class="check"><input type="checkbox" id="consent" required>
           <span>I agree that my name, photo and course results may be shown to other members, on my public verification page, and on the Hire-a-Coach portal once I'm certified. I can change this in Settings.</span></label>
         <label class="check" style="margin-top:10px"><input type="checkbox" id="guide" required>
-          <span>I've read and agree to the <a href="#" id="readGuide">community guidelines</a>, <a href="terms.html" target="_blank" rel="noopener">terms of use</a> and <a href="privacy.html" target="_blank" rel="noopener">privacy policy</a>. The Fit Lab is a professional network, not a dating space: no abuse and no flirting.</span></label>
+          <span>I've read and agree to the <a href="#" id="readGuide">community guidelines</a>, <a href="terms" target="_blank" rel="noopener">terms of use</a> and <a href="privacy" target="_blank" rel="noopener">privacy policy</a>. The Fit Lab is a professional network, not a dating space: no abuse and no flirting.</span></label>
 
         <div id="err" class="err hidden" style="margin-top:12px"></div>
         <div class="btn-row" style="margin-top:20px">
@@ -133,7 +133,7 @@
       <div class="ash small">Your Fit Lab Unique ID</div>
       <div class="uid" id="doneId" style="margin:6px 0 22px"></div>
       <p class="ash small" style="max-width:420px;margin:0 auto 22px">This ID stays with you across every Academy course. It's printed on your certificate and is how anyone can verify your completion.</p>
-      <a class="btn btn-primary" href="feed.html">Enter The Fit Lab</a> <a class="btn" href="courses.html">Start Day 1</a>
+      <a class="btn btn-primary" href="feed">Enter The Fit Lab</a> <a class="btn" href="courses">Start Day 1</a>
     </div>
   </div>
 </div>
@@ -151,7 +151,7 @@
 
   let profile;
   try { profile = await FL.getProfile(); } catch (e) { FL.toast('Could not load your profile: ' + FL.friendly(e), 'err'); return; }
-  if (profile.profile_completed) { location.replace(editing ? 'profile.html?edit=1' : 'feed.html'); return; }
+  if (profile.profile_completed) { location.replace(editing ? 'profile?edit=1' : 'feed'); return; }
   FL.renderHeader(profile);
 
   // Prefill
@@ -300,7 +300,7 @@
 
       if (editing && profile.profile_completed) {
         FL.toast('Profile saved', 'ok');
-        setTimeout(() => location.href = 'profile.html?u=' + encodeURIComponent(data.username || ''), 700);
+        setTimeout(() => location.href = 'profile?u=' + encodeURIComponent(data.username || ''), 700);
         return;
       }
 

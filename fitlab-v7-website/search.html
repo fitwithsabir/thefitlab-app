@@ -24,7 +24,7 @@
   <div class="layout l-main-side">
     <section class="stack">
       <div class="box">
-        <div class="utabs" id="kind"><button data-k="people" class="on">People</button><button data-k="pages">Pages</button><a href="jobs.html" id="jobsLnk">Jobs</a></div>
+        <div class="utabs" id="kind"><button data-k="people" class="on">People</button><button data-k="pages">Pages</button><a href="jobs" id="jobsLnk">Jobs</a></div>
         <form id="f" class="sf" style="padding-top:14px"><input id="q" type="search" placeholder="Name, @username, skill or specialty" aria-label="Search"><button class="pill solid">Search</button></form>
         <div class="sfil" id="fil">
           <select id="fp" aria-label="Profession"></select>
@@ -50,7 +50,7 @@
   const esc = FL.esc, I = FL.icon;
   const session = await FL.requireAuth(); if (!session) return;
   let me; try { me = await FL.getProfile(); } catch (e) { return FL.toast(FL.friendly(e), 'err'); }
-  if (!me.profile_completed) return location.replace('register.html');
+  if (!me.profile_completed) return location.replace('register');
   FL.renderHeader(me);
   const profs = await FL.professions();
   $('fp').innerHTML = FL.professionOptions(profs, FL.param('profession') || '', 'Any profession');
@@ -58,15 +58,15 @@
   let kind = FL.param('type') === 'pages' ? 'pages' : 'people', verified = false, open = false;
   $('fc').value = FL.param('city') || '';
   $('side').innerHTML = `<div class="box box-pad"><b style="font-size:15px">Hiring?</b><p class="t-sm muted" style="margin:8px 0 12px;line-height:1.5">Post a job from your page, or use Recruiter's candidate search to find open-to-work trainers, physios and coaches.</p>
-      <div class="ent-act" style="margin:0"><a class="pill sm" href="hiring.html">Post a job</a><a class="pill ghost sm" href="hiring.html?tab=candidates">Find candidates</a></div></div>
-    <div class="box box-pad"><b style="font-size:15px">Looking for work?</b><p class="t-sm muted" style="margin:8px 0 12px;line-height:1.5">Every job shows its pay, and you see each step of your application.</p><a class="pill sm" href="jobs.html">Browse jobs</a></div>${FL.siteFootHtml(true)}`;
+      <div class="ent-act" style="margin:0"><a class="pill sm" href="hiring">Post a job</a><a class="pill ghost sm" href="hiring?tab=candidates">Find candidates</a></div></div>
+    <div class="box box-pad"><b style="font-size:15px">Looking for work?</b><p class="t-sm muted" style="margin:8px 0 12px;line-height:1.5">Every job shows its pay, and you see each step of your application.</p><a class="pill sm" href="jobs">Browse jobs</a></div>${FL.siteFootHtml(true)}`;
   FL.wireCommon($('side'));
 
   const btn = (p) => {
     const s = (p.connection || {}).state;
-    if (s === 'connected') return `<a class="pill sm" href="messaging.html?u=${encodeURIComponent(p.username)}">Message</a>`;
+    if (s === 'connected') return `<a class="pill sm" href="messaging?u=${encodeURIComponent(p.username)}">Message</a>`;
     if (s === 'outgoing') return `<span class="chip">${I('clock', 14)}Pending</span>`;
-    if (s === 'incoming') return `<a class="pill sm" href="network.html#invitations">Respond</a>`;
+    if (s === 'incoming') return `<a class="pill sm" href="network#invitations">Respond</a>`;
     return `<button class="pill sm" data-connect="${esc(p.username)}" data-name="${esc(p.full_name)}">${I('userplus', 16)}Connect</button>`;
   };
   function setKind(k) {
@@ -79,18 +79,18 @@
     const q = $('q').value.trim();
     const url = new URL(location.href); url.search = ''; if (q) url.searchParams.set('q', q); if (kind === 'pages') url.searchParams.set('type', 'pages');
     history.replaceState(null, '', url);
-    $('jobsLnk').href = 'jobs.html' + (q ? '?q=' + encodeURIComponent(q) : '');
+    $('jobsLnk').href = 'jobs' + (q ? '?q=' + encodeURIComponent(q) : '');
     $('res').innerHTML = '<div class="skeleton" style="height:70px;margin:14px"></div>';
     if (kind === 'pages') {
       const { data, error } = await sb.rpc('search_pages', { p_q: q || null, p_kind: $('pk').value || null, p_city: $('pc').value.trim() || null, p_limit: 50 });
       if (error) { $('res').innerHTML = `<div class="empty">${esc(FL.friendly(error))}</div>`; return; }
       const list = data || [];
       $('ttl').textContent = 'Pages'; $('sub').textContent = `${list.length} result${list.length === 1 ? '' : 's'}`;
-      $('res').innerHTML = list.length ? list.map((g) => `<div class="ent"><a href="company.html?p=${encodeURIComponent(g.slug)}">${FL.pageLogo(g)}</a>
-          <div class="ent-main"><a class="ent-name" href="company.html?p=${encodeURIComponent(g.slug)}">${esc(g.name)}${FL.tick(g.verified, 15)}</a>
+      $('res').innerHTML = list.length ? list.map((g) => `<div class="ent"><a href="company?p=${encodeURIComponent(g.slug)}">${FL.pageLogo(g)}</a>
+          <div class="ent-main"><a class="ent-name" href="company?p=${encodeURIComponent(g.slug)}">${esc(g.name)}${FL.tick(g.verified, 15)}</a>
           <div class="ent-sub">${esc(g.tagline || '')}</div><div class="ent-meta">${esc([g.kind_label, g.city].filter(Boolean).join(' · '))} · ${g.followers} follower${g.followers === 1 ? '' : 's'}${g.open_jobs ? ` · ${g.open_jobs} open job${g.open_jobs === 1 ? '' : 's'}` : ''}</div></div>
           <button class="pill sm ${g.is_following ? 'ghost' : ''}" data-follow="${g.page_id}">${g.is_following ? 'Following' : I('plus', 15) + 'Follow'}</button></div>`).join('')
-        : `<div class="empty"><b>No pages found</b>Try another name — or <a href="company.html?new=1">create your organisation's page</a>.</div>`;
+        : `<div class="empty"><b>No pages found</b>Try another name — or <a href="company?new=1">create your organisation's page</a>.</div>`;
       return;
     }
     const prof = $('fp').value || null, city = $('fc').value.trim() || null;
@@ -103,8 +103,8 @@
     $('ttl').textContent = filtered ? 'People' : 'Suggested for you';
     $('sub').textContent = filtered ? `${list.length} result${list.length === 1 ? '' : 's'}` : 'People across health and fitness';
     $('res').innerHTML = list.length ? list.map((p) => `<div class="ent">
-        <a href="profile.html?u=${encodeURIComponent(p.username)}">${FL.ringAvatar(p, 'avatar')}</a>
-        <div class="ent-main"><a class="ent-name" href="profile.html?u=${encodeURIComponent(p.username)}">${esc(p.full_name)}${FL.tags(p)}</a>
+        <a href="profile?u=${encodeURIComponent(p.username)}">${FL.ringAvatar(p, 'avatar')}</a>
+        <div class="ent-main"><a class="ent-name" href="profile?u=${encodeURIComponent(p.username)}">${esc(p.full_name)}${FL.tags(p)}</a>
           <div class="ent-sub">${esc(p.headline || '')}</div>
           <div class="ent-meta">${[p.profession_label, p.city, '@' + p.username].filter(Boolean).map(esc).join(' · ')}${p.mutual ? ` · ${p.mutual} mutual` : ''} ${FL.starsIf(p.star_count || 0, p.star_tier)}</div></div>
         <div class="ent-act" style="margin:0">${btn(p)}</div></div>`).join('')

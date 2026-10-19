@@ -1,6 +1,6 @@
 // Cloudflare Workers (static assets) — hosts https://thefitlab.in
 // Cloudflare publishes this automatically on every push to main.
-// html_handling "none" keeps the .html addresses exactly as they were on Netlify;
+// Clean addresses: /jobs serves jobs.html, and old /jobs.html links are sent to /jobs;
 // _redirects and _headers in fitlab-v7-website work the same way they did there.
 {
   "name": "thefitlab",
@@ -12,6 +12,6 @@
   ],
   "assets": {
     "directory": "./fitlab-v7-website",
-    "html_handling": "none"
+    "html_handling": "auto-trailing-slash"
   }
 }

@@ -53,7 +53,7 @@
   const esc = FL.esc;
   const session = await FL.requireAuth(); if (!session) return;
   let me; try { me = await FL.getProfile(); } catch (e) { return FL.toast(FL.friendly(e), 'err'); }
-  if (!me.profile_completed) return location.replace('register.html');
+  if (!me.profile_completed) return location.replace('register');
   FL.renderHeader(me);
   const uid = me.id;
 
@@ -87,18 +87,18 @@
   }
 
   function ctaFor(c, s) {
-    if (s.issued) return `<span class="otw">${FL.icon('award', 15)}Certified</span><a class="pill solid" href="verify.html?id=${encodeURIComponent(me.unique_id)}">View certificate</a>
+    if (s.issued) return `<span class="otw">${FL.icon('award', 15)}Certified</span><a class="pill solid" href="verify?id=${encodeURIComponent(me.unique_id)}">View certificate</a>
       ${s.cert.certificate_url ? `<a class="pill" href="${esc(s.cert.certificate_url)}" target="_blank" rel="noopener">Download</a>` : ''}`;
     if (s.cert && s.cert.revoked_at) return `<span class="chip">Certificate withdrawn</span><span class="t-sm muted">${esc(s.cert.review_note || '')}</span>`;
     if (s.cert && s.cert.status === 'rejected') return `<span class="chip">Changes requested</span><span class="t-sm muted">${esc(s.cert.review_note || 'Please review your assignments.')}</span>`;
     if (s.cert || s.passed) return `<span class="otw">${FL.icon('check', 15)}Exam passed${s.passed ? ' · ' + Math.round(s.passed.percentage) + '%' : ''}</span>
-      <span class="t-sm muted">Certificate awaiting review — you'll be emailed.</span><a class="pill sm" href="verify.html?id=${encodeURIComponent(me.unique_id)}">My result page</a>`;
+      <span class="t-sm muted">Certificate awaiting review — you'll be emailed.</span><a class="pill sm" href="verify?id=${encodeURIComponent(me.unique_id)}">My result page</a>`;
     const ee = enrolled(c);
-    if (ee && ee.track === 'direct') return `<a class="pill solid lg" href="exam.html?course=${encodeURIComponent(c.slug)}">Take the certification exam</a>
+    if (ee && ee.track === 'direct') return `<a class="pill solid lg" href="exam?course=${encodeURIComponent(c.slug)}">Take the certification exam</a>
       <span class="t-sm muted">${c.exam_question_count} questions · ${c.exam_seconds_per_question || 60}s each · pass ${c.pass_percentage}% · attempts ${s.used}/${c.max_attempts}</span>`;
-    if (s.allDone) return `<a class="pill solid lg" href="exam.html?course=${encodeURIComponent(c.slug)}">Take the final exam</a>
+    if (s.allDone) return `<a class="pill solid lg" href="exam?course=${encodeURIComponent(c.slug)}">Take the final exam</a>
       <span class="t-sm muted">${c.exam_question_count} questions · ${c.exam_time_minutes} min · pass ${c.pass_percentage}% · attempts ${s.used}/${c.max_attempts}</span>`;
-    if (s.next) return `<a class="pill solid lg" href="lesson.html?course=${encodeURIComponent(c.slug)}&day=${s.next.day_number}">${s.doneCount ? 'Resume Day ' + s.next.day_number : 'Start Day 1'}</a>`;
+    if (s.next) return `<a class="pill solid lg" href="lesson?course=${encodeURIComponent(c.slug)}&day=${s.next.day_number}">${s.doneCount ? 'Resume Day ' + s.next.day_number : 'Start Day 1'}</a>`;
     return `<span class="chip">New days are being published</span>`;
   }
 
@@ -141,7 +141,7 @@
     FL.busy(btn, false);
     if (error) return FL.toast('Payments couldn\'t be opened. Please try again.', 'err');
     if (!data || !data.ok) {
-      if (data && data.code === 'enrolled') { location.href = `courses.html?c=${encodeURIComponent(c.slug)}`; return; }
+      if (data && data.code === 'enrolled') { location.href = `courses?c=${encodeURIComponent(c.slug)}`; return; }
       return FL.toast((data && data.message) || 'Payments couldn\'t be opened.', 'err');
     }
     try { await loadRazorpay(); } catch (e) { return FL.toast('Couldn\'t load the payment window. Check your connection and try again.', 'err'); }
@@ -158,7 +158,7 @@
         if (v.data && v.data.ok) {
           window.FLTrack && FLTrack.event('Purchase', { content_name: c.title, content_ids: [cid], content_type: 'product', value: data.amount / 100, currency: 'INR', num_items: 1 }, resp.razorpay_order_id);
           FL.toast(track === 'direct' ? 'Paid — your exam is ready' : 'Paid — Day 1 is open', 'ok');
-          location.href = track === 'direct' ? `exam.html?course=${encodeURIComponent(c.slug)}` : `courses.html?c=${encodeURIComponent(c.slug)}`;
+          location.href = track === 'direct' ? `exam?course=${encodeURIComponent(c.slug)}` : `courses?c=${encodeURIComponent(c.slug)}`;
         } else FL.toast((v.data && v.data.message) || 'We couldn\'t confirm the payment yet. If money was taken, access opens within a few minutes.', 'err');
       },
     });
@@ -176,7 +176,7 @@
     const s = state(c, days);
     const stt = statFor(c);
     $('main').innerHTML = `
-      <div><a class="txt-btn" href="courses.html" style="padding-left:0">${FL.icon('back', 18)}All courses</a></div>
+      <div><a class="txt-btn" href="courses" style="padding-left:0">${FL.icon('back', 18)}All courses</a></div>
       <div class="box"><div class="chead">
         <div class="eyebrow" style="font-size:10px">${esc(c.level || 'Course')}</div>
         <h1>${esc(c.title)}</h1><p class="sub">${esc(c.subtitle || '')}</p>
@@ -195,7 +195,7 @@
         <div class="syl" id="syl"></div>
         <div class="syl-day ${s.allDone ? 'next' : 'locked'}" style="border-top:1px solid var(--line)">
           <span class="syl-n">${FL.icon('award', 16)}</span><span class="meta"><b>Final exam</b><span>${c.exam_question_count} questions · ${c.exam_time_minutes} minutes · ${c.pass_percentage}% to pass</span></span>
-          ${s.allDone && !s.passed && e ? `<a class="go" href="exam.html?course=${encodeURIComponent(c.slug)}">Start →</a>` : s.passed ? `<span class="go">Passed</span>` : `<span class="t-xs muted">${FL.icon('lock', 14)}</span>`}</div>
+          ${s.allDone && !s.passed && e ? `<a class="go" href="exam?course=${encodeURIComponent(c.slug)}">Start →</a>` : s.passed ? `<span class="go">Passed</span>` : `<span class="t-xs muted">${FL.icon('lock', 14)}</span>`}</div>
       </div>`;
     const syl = $('syl');
     syl.innerHTML = Array.from({ length: c.total_days }, (_, i) => {
@@ -205,7 +205,7 @@
       const prevDone = n === 1 || days.some((x) => x.day_number === n - 1 && doneIds.has(x.id));
       const open = e && (done || prevDone || me.is_admin || me.is_owner);
       const isNext = e && !done && prevDone;
-      const href = `lesson.html?course=${encodeURIComponent(c.slug)}&day=${n}`;
+      const href = `lesson?course=${encodeURIComponent(c.slug)}&day=${n}`;
       const inner = `<span class="syl-n">${done ? FL.icon('check', 16) : n}</span>
         <span class="meta"><b>Day ${n} · ${esc(d.title)}</b><span>${d.estimated_minutes || 25} min${done ? ' · Completed' : ''}</span></span>
         ${open ? `<span class="go">${done ? 'Revise' : isNext ? 'Start' : 'Open'} →</span>` : `<span class="t-xs muted">${FL.icon('lock', 14)}</span>`}`;
@@ -224,7 +224,7 @@
     const { error } = await sb.from('enrollments').insert({ user_id: uid, course_id: c.id });
     if (error) { FL.busy(btn, false); return FL.toast('Could not enroll: ' + FL.friendly(error), 'err'); }
     FL.toast('Enrolled — Day 1 is open', 'ok');
-    location.href = `courses.html?c=${encodeURIComponent(c.slug)}`;
+    location.href = `courses?c=${encodeURIComponent(c.slug)}`;
   }
 
   // ---------- overview: my learning / explore / certificates ----------
@@ -240,29 +240,29 @@
     const body = $('tabBody');
     const setTab = async (t) => {
       document.querySelectorAll('#ctabs button').forEach((b) => b.classList.toggle('on', b.dataset.t === t));
-      history.replaceState(null, '', 'courses.html' + (t === 'learning' ? '' : '#' + t));
+      history.replaceState(null, '', 'courses' + (t === 'learning' ? '' : '#' + t));
       if (t === 'learning') {
         if (!mine.length) { body.innerHTML = `<div class="empty"><b>You haven't started a course yet</b>Pick one under Explore — learn the full course, or go straight to the certification exam.</div>`; return; }
         const rows = [];
         for (const c of mine) { const days = await daysFor(c); const s = state(c, days);
           rows.push(`<div class="course-card">${thumb(c)}<div>
-            <a class="ent-name" style="font-size:16px" href="courses.html?c=${encodeURIComponent(c.slug)}">${esc(c.title)}</a>
+            <a class="ent-name" style="font-size:16px" href="courses?c=${encodeURIComponent(c.slug)}">${esc(c.title)}</a>
             <div class="ent-sub">${esc(c.subtitle || '')}</div>
             <div class="cprog"><span class="progress"><i style="width:${s.pct}%"></i></span><span class="t-xs muted">${s.doneCount}/${c.total_days} days</span></div>
-            <div class="cta-row" style="margin-top:8px">${ctaFor(c, s)}<a class="pill ghost sm" href="courses.html?c=${encodeURIComponent(c.slug)}">All days</a></div></div></div>`); }
+            <div class="cta-row" style="margin-top:8px">${ctaFor(c, s)}<a class="pill ghost sm" href="courses?c=${encodeURIComponent(c.slug)}">All days</a></div></div></div>`); }
         body.innerHTML = rows.join('');
       } else if (t === 'explore') {
         body.innerHTML = other.length ? other.map((c) => `<div class="course-card">${thumb(c)}<div>
-            <a class="ent-name" style="font-size:16px" href="courses.html?c=${encodeURIComponent(c.slug)}">${esc(c.title)}</a>
+            <a class="ent-name" style="font-size:16px" href="courses?c=${encodeURIComponent(c.slug)}">${esc(c.title)}</a>
             <div class="ent-sub">${esc(c.subtitle || '')}</div>
             <p class="t-sm" style="margin:8px 0;line-height:1.5">${esc((c.description || '').slice(0, 220))}${(c.description || '').length > 220 ? '…' : ''}</p>
-            <div class="cta-row" style="margin-top:4px">${price(c) ? `<a class="pill solid sm" href="courses.html?c=${encodeURIComponent(c.slug)}">Buy — ${rupees(price(c))}</a>` : `<button class="pill solid sm" data-enroll="${c.id}">Enroll — free</button>`}<a class="pill ghost sm" href="courses.html?c=${encodeURIComponent(c.slug)}">See modules</a></div></div></div>`).join('')
+            <div class="cta-row" style="margin-top:4px">${price(c) ? `<a class="pill solid sm" href="courses?c=${encodeURIComponent(c.slug)}">Buy — ${rupees(price(c))}</a>` : `<button class="pill solid sm" data-enroll="${c.id}">Enroll — free</button>`}<a class="pill ghost sm" href="courses?c=${encodeURIComponent(c.slug)}">See modules</a></div></div></div>`).join('')
           : `<div class="empty"><b>You're enrolled in every course</b>New courses appear here — and in your notifications — when they launch.</div>`;
       } else {
         body.innerHTML = issued.length ? issued.map((x) => { const c = courses.find((y) => y.id === x.course_id) || {};
           return `<div class="cert-row"><span class="sq" style="width:52px;height:52px;border-radius:10px;background:var(--accent-soft);color:var(--lime);display:grid;place-items:center">${FL.icon('award', 26)}</span>
             <div class="ent-main"><b>${esc(c.title || 'Course')}</b><div class="ent-meta">Issued ${FL.fmtDate(x.issued_at)} · Certificate no. <span class="mono">${esc(x.verification_code)}</span></div></div>
-            <a class="pill sm" href="verify.html?id=${encodeURIComponent(me.unique_id)}">Verify</a>${x.certificate_url ? `<a class="pill ghost sm" href="${esc(x.certificate_url)}" target="_blank" rel="noopener">Download</a>` : ''}</div>`; }).join('')
+            <a class="pill sm" href="verify?id=${encodeURIComponent(me.unique_id)}">Verify</a>${x.certificate_url ? `<a class="pill ghost sm" href="${esc(x.certificate_url)}" target="_blank" rel="noopener">Download</a>` : ''}</div>`; }).join('')
           : `<div class="empty"><b>No certificates yet</b>Finish all days and pass the final exam — your certificate then appears here and on your profile.</div>`;
       }
     };

@@ -35,7 +35,7 @@
   const esc = FL.esc, I = FL.icon;
   const session = await FL.requireAuth(); if (!session) return;
   let me; try { me = await FL.getProfile(); } catch (e) { return FL.toast(FL.friendly(e), 'err'); }
-  if (!me.profile_completed) return location.replace('register.html');
+  if (!me.profile_completed) return location.replace('register');
   FL.renderHeader(me);
   let days = +(FL.param('days') || 90);
   if (![7, 30, 90].includes(days)) days = 90;
@@ -43,9 +43,9 @@
   $('side').innerHTML = `<div class="box box-pad"><b style="display:flex;gap:8px;align-items:center">${I('shield', 18)}Private by design</b>
       <p class="t-sm muted" style="margin:8px 0 0;line-height:1.55">You see the names of <b>verified employers and recruiters</b> who looked at your profile — the views that matter for your career. Everyone else is shown only as numbers, so members can browse freely and no one is followed around.</p></div>
     <div class="box box-pad"><b>Get more of the right views</b>
-      <ul class="checklist" style="margin-top:10px"><li>${I('check', 15)}<a href="profile.html?edit=1">Turn on “Open to work”</a></li>
-        <li>${I('check', 15)}<a href="verification.html">Get the verified tick</a></li><li>${I('check', 15)}<a href="profile.html">Add skills and certifications</a></li>
-        <li>${I('check', 15)}<a href="feed.html#compose">Share what you know</a></li></ul></div>${FL.siteFootHtml(true)}`;
+      <ul class="checklist" style="margin-top:10px"><li>${I('check', 15)}<a href="profile?edit=1">Turn on “Open to work”</a></li>
+        <li>${I('check', 15)}<a href="verification">Get the verified tick</a></li><li>${I('check', 15)}<a href="profile">Add skills and certifications</a></li>
+        <li>${I('check', 15)}<a href="feed#compose">Share what you know</a></li></ul></div>${FL.siteFootHtml(true)}`;
   FL.wireCommon($('side'));
 
   async function load() {
@@ -64,23 +64,23 @@
           <div class="kpi"><b>${d.recruiter_count}</b><span>Verified employers &amp; recruiters</span></div></div></div>
 
       <div class="box"><div class="box-head"><div><h3>Employers and recruiters</h3><div class="sub">Verified organisations and Recruiter members</div></div>${prem ? '' : `<span class="pbadge" style="width:22px;height:22px">${I('crown', 13)}</span>`}</div>
-        ${prem ? (recruiters.length ? recruiters.map((r) => `<div class="ent"><a href="profile.html?u=${encodeURIComponent(r.username)}">${FL.ringAvatar(r, 'avatar')}</a>
-            <div class="ent-main"><a class="ent-name" href="profile.html?u=${encodeURIComponent(r.username)}">${esc(r.full_name)}${FL.tags(r)}</a>
+        ${prem ? (recruiters.length ? recruiters.map((r) => `<div class="ent"><a href="profile?u=${encodeURIComponent(r.username)}">${FL.ringAvatar(r, 'avatar')}</a>
+            <div class="ent-main"><a class="ent-name" href="profile?u=${encodeURIComponent(r.username)}">${esc(r.full_name)}${FL.tags(r)}</a>
               <div class="ent-sub">${esc(r.headline || '')}</div>
-              <div class="ent-meta">${r.hiring && r.hiring.page ? `${r.hiring.role === 'recruiter' ? 'Recruiter' : 'Team'} at <a href="company.html?p=${encodeURIComponent(r.hiring.page.slug)}">${esc(r.hiring.page.name)}</a>${FL.tick(r.hiring.page.verified, 13)} · ` : 'Recruiter · '}viewed ${FL.timeAgo(r.viewed_at)} ago</div>
-              ${r.hiring && r.hiring.page && r.hiring.page.open_jobs ? `<div class="ent-act"><a class="pill sm" href="jobs.html?page=${r.hiring.page.page_id}">${I('briefcase', 14)}See their ${r.hiring.page.open_jobs} open job${r.hiring.page.open_jobs === 1 ? '' : 's'}</a></div>` : ''}</div></div>`).join('')
+              <div class="ent-meta">${r.hiring && r.hiring.page ? `${r.hiring.role === 'recruiter' ? 'Recruiter' : 'Team'} at <a href="company?p=${encodeURIComponent(r.hiring.page.slug)}">${esc(r.hiring.page.name)}</a>${FL.tick(r.hiring.page.verified, 13)} · ` : 'Recruiter · '}viewed ${FL.timeAgo(r.viewed_at)} ago</div>
+              ${r.hiring && r.hiring.page && r.hiring.page.open_jobs ? `<div class="ent-act"><a class="pill sm" href="jobs?page=${r.hiring.page.page_id}">${I('briefcase', 14)}See their ${r.hiring.page.open_jobs} open job${r.hiring.page.open_jobs === 1 ? '' : 's'}</a></div>` : ''}</div></div>`).join('')
             : `<p class="t-sm muted" style="padding:0 20px 18px;margin:0">No employers or recruiters in this period yet. Turning on “Open to work” and adding skills helps you appear in their searches.</p>`)
           : `${d.recruiter_count ? [0, 1].slice(0, Math.min(2, d.recruiter_count)).map(() => `<div class="lockrow" aria-hidden="true"><span class="ph"></span><div style="flex:1"><div class="ln" style="width:40%"></div><div class="ln" style="width:65%"></div></div></div>`).join('') : ''}
             <div class="prem-box" style="margin:10px 20px 18px"><h3>${I('crown', 16)}${d.recruiter_count ? `${d.recruiter_count} employer${d.recruiter_count === 1 ? '' : 's'} viewed your profile` : 'See which employers view you'}</h3>
               <div class="t-sm" style="line-height:1.55">With Premium, see exactly which verified gyms, clinics and recruiters looked at your profile — and message them about their jobs.</div>
-              <a class="pill gold sm" href="premium.html?plan=pro" style="margin-top:10px">Try Premium free for 14 days</a></div>`}</div>
+              <a class="pill gold sm" href="premium?plan=pro" style="margin-top:10px">Try Premium free for 14 days</a></div>`}</div>
 
       <div class="box"><div class="box-head"><h3>Viewers by profession</h3></div>${(d.by_profession || []).length ? hb(d.by_profession) : '<p class="t-sm muted" style="padding:0 20px">No views yet.</p>'}
         ${!prem && d.viewers > 1 ? '<p class="t-xs muted" style="padding:6px 20px 0;margin:0">Premium shows every profession and city.</p>' : ''}<div style="height:14px"></div></div>
       ${prem ? `<div class="box"><div class="box-head"><h3>Viewers by city</h3></div>${(d.by_city || []).length ? hb(d.by_city) : '<p class="t-sm muted" style="padding:0 20px">No views yet.</p>'}<div style="height:14px"></div></div>` : ''}
       ${d.weekly ? `<div class="box"><div class="box-head"><h3>Views by week</h3></div>${d.weekly.length ? `<div class="bars">${(() => { const mx = Math.max(1, ...d.weekly.map((w) => w.n)); return d.weekly.map((w) => `<i style="height:${Math.max(3, Math.round(w.n / mx * 100))}%" title="Week of ${FL.fmtDate(w.week)}: ${w.n}"></i>`).join(''); })()}</div>` : '<p class="t-sm muted" style="padding:0 20px 16px">No views yet.</p>'}<div style="height:10px"></div></div>` : ''}`;
   }
-  $('main').addEventListener('click', (e) => { const b = e.target.closest('[data-d]'); if (!b) return; days = +b.dataset.d; history.replaceState(null, '', 'insights.html?days=' + days); load(); });
+  $('main').addEventListener('click', (e) => { const b = e.target.closest('[data-d]'); if (!b) return; days = +b.dataset.d; history.replaceState(null, '', 'insights?days=' + days); load(); });
   load();
 })();
 </script>

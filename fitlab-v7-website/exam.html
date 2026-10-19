@@ -76,7 +76,7 @@
         <div id="iErr" class="err hidden" style="margin-top:14px"></div>
         <div class="btn-row" style="margin-top:22px">
           <button class="btn btn-primary" id="btnStart" disabled>Start the exam</button>
-          <a class="btn btn-ghost" href="courses.html">Not yet</a>
+          <a class="btn btn-ghost" href="courses">Not yet</a>
         </div>
       </div>
     </section>
@@ -88,7 +88,7 @@
         <div class="eyebrow" id="bEyebrow">Not yet</div>
         <h2 style="margin:12px 0 8px" id="bTitle">—</h2>
         <p class="ash" id="bBody" style="max-width:460px;margin:0 auto"></p>
-        <div class="btn-row" style="justify-content:center;margin-top:20px" id="bActions"><a class="btn btn-primary" href="courses.html">Back to Courses</a></div>
+        <div class="btn-row" style="justify-content:center;margin-top:20px" id="bActions"><a class="btn btn-primary" href="courses">Back to Courses</a></div>
       </div>
     </section>
 
@@ -164,7 +164,7 @@
   $('iSub').textContent = `${course.exam_question_count} questions · ${secs} seconds each · ${course.pass_percentage}% to pass`;
 
   if (!enr) return block('Not bought yet', 'Buy the course or direct certification first',
-    'The exam opens as soon as your payment is confirmed.', `<a class="btn btn-primary" href="courses.html?c=${encodeURIComponent(course.slug)}">See options</a>`);
+    'The exam opens as soon as your payment is confirmed.', `<a class="btn btn-primary" href="courses?c=${encodeURIComponent(course.slug)}">See options</a>`);
   if ((certs || []).length) {
     const c = certs[0];
     const msg = c.revoked_at ? 'This certificate has been withdrawn. Please contact the academy.'
@@ -258,8 +258,8 @@
     block(locked ? 'Exam locked for 24 hours' : 'Paper cancelled', locked ? 'Too many interrupted papers' : 'You left the exam',
       locked ? 'Three papers were interrupted in the last 24 hours, so the exam is locked for 24 hours. Your exam attempts have not been used.'
              : `This paper was cancelled (${reason}). Your exam attempts have not been used — when you're ready, start again from Question 1 with a new paper.`,
-      locked ? '<a class="btn btn-primary" href="courses.html">Back to Courses</a>'
-             : `<a class="btn btn-primary" href="exam.html?course=${encodeURIComponent(course.slug)}">Start again</a><a class="btn btn-ghost" href="courses.html">Later</a>`);
+      locked ? '<a class="btn btn-primary" href="courses">Back to Courses</a>'
+             : `<a class="btn btn-primary" href="exam?course=${encodeURIComponent(course.slug)}">Start again</a><a class="btn btn-ghost" href="courses">Later</a>`);
   }
   let blurTimer = null;
   document.addEventListener('visibilitychange', () => { if (document.hidden) voidNow('switched tab or app'); });
@@ -306,12 +306,12 @@
       : `${r.correct} of ${r.total} correct. ${direct ? 'Study the course days on the topics you found hard' : 'Revisit the days you found hardest'}, then try again when you are ready.`;
     const leftNow = course.max_attempts - (used + 1);
     $('rActions').innerHTML = r.passed
-      ? `<a class="btn btn-primary" href="courses.html">Back to Courses</a>
-         <a class="btn btn-ghost" href="verify.html?id=${encodeURIComponent(profile.unique_id || '')}">View my public page</a>`
+      ? `<a class="btn btn-primary" href="courses">Back to Courses</a>
+         <a class="btn btn-ghost" href="verify?id=${encodeURIComponent(profile.unique_id || '')}">View my public page</a>`
       : (leftNow > 0
-          ? `<a class="btn btn-primary" href="exam.html?course=${course.slug}">Try again (${leftNow} left)</a>
-             <a class="btn btn-ghost" href="courses.html?c=${course.slug}">Study the course</a>`
-          : `<a class="btn btn-ghost" href="courses.html">Back to Courses</a>`);
+          ? `<a class="btn btn-primary" href="exam?course=${course.slug}">Try again (${leftNow} left)</a>
+             <a class="btn btn-ghost" href="courses?c=${course.slug}">Study the course</a>`
+          : `<a class="btn btn-ghost" href="courses">Back to Courses</a>`);
     show('result');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }

@@ -41,7 +41,7 @@
         <select id="fWork" aria-label="Workplace"><option value="">Workplace</option></select>
         <button type="button" class="fc" id="fVer">Verified employers</button>
         <button type="button" class="fc" id="fAlert">Set alert</button>
-        <a class="fc pill sm" id="postJob" href="hiring.html?new=1" style="height:32px">Post a job</a>
+        <a class="fc pill sm" id="postJob" href="hiring?new=1" style="height:32px">Post a job</a>
       </div>
     </div>
     <div class="utabs" id="tabs">
@@ -67,7 +67,7 @@
   let me = null;
   if (session) {
     try { me = await FL.getProfile(); } catch (e) { return FL.toast(FL.friendly(e), 'err'); }
-    if (!me.profile_completed) return location.replace('register.html');
+    if (!me.profile_completed) return location.replace('register');
   }
   FL.renderHeader(me);
   $('icQ').innerHTML = I('search', 17); $('icC').innerHTML = I('pin', 17);
@@ -86,7 +86,7 @@
   if (FL.param('profession')) $('fProf').value = FL.param('profession');
   const pageFilter = FL.param('page');
 
-  const login = () => { location.href = 'index.html?next=' + encodeURIComponent(location.pathname.split('/').pop() + location.search); };
+  const login = () => { location.href = '/?next=' + encodeURIComponent(location.pathname.split('/').pop() + location.search); };
   const ago = (d) => { const t = FL.timeAgo(d); return t === 'now' ? 'just now' : t + ' ago'; };
   const STEPS = ['submitted', 'viewed', 'shortlisted', 'interview', 'offered', 'hired'];
   const STEP_LBL = { submitted: 'Applied', viewed: 'Viewed', shortlisted: 'Shortlisted', interview: 'Interview', offered: 'Offer', hired: 'Hired', not_selected: 'Not selected', withdrawn: 'Withdrawn' };
@@ -136,7 +136,7 @@
     st.list = res.data || [];
     const empty = st.tab === 'saved' ? '<b>No saved jobs</b>Tap the bookmark on any job to keep it here.'
       : st.tab === 'applied' ? '<b>No applications yet</b>When you apply, you\'ll see each step here — Viewed, Shortlisted, Interview, Offer.'
-      : st.tab === 'foryou' ? '<b>No matches right now</b>Add your profession and city to <a href="profile.html">your profile</a> — we match new jobs to you every day.'
+      : st.tab === 'foryou' ? '<b>No matches right now</b>Add your profession and city to <a href="profile">your profile</a> — we match new jobs to you every day.'
       : `<b>No jobs match yet</b>Try a wider search, or <a href="#" id="mkAlert">set a job alert</a> and we'll tell you when one is posted.`;
     $('list').innerHTML = st.list.length ? st.list.map(card).join('') : `<div class="empty">${empty}</div>`;
     const mk = $('mkAlert'); if (mk) mk.onclick = (e) => { e.preventDefault(); newAlert(); };
@@ -159,7 +159,7 @@
     const md = j.match_detail;
     $('det').innerHTML = `
       ${window.innerWidth < 900 ? `<button class="txt-btn" id="back" style="margin:-8px 0 6px -8px">${I('back', 18)}Jobs</button>` : ''}
-      <div class="co-row">${FL.pageLogo(j.page, 'co-logo sm')}<a href="company.html?p=${encodeURIComponent(j.page.slug)}">${esc(j.page.name)}</a>${FL.tick(j.page.verified)}</div>
+      <div class="co-row">${FL.pageLogo(j.page, 'co-logo sm')}<a href="company?p=${encodeURIComponent(j.page.slug)}">${esc(j.page.name)}</a>${FL.tick(j.page.verified)}</div>
       <h1>${esc(j.title)}</h1>
       <div class="t-sm muted">${esc([j.city, j.state].filter(Boolean).join(', ') || j.workplace_label)} · ${ago(j.created_at)} · ${j.applicants} applicant${j.applicants === 1 ? '' : 's'}</div>
       <div style="margin-top:8px">${r != null ? `<span class="resp">${I('check', 14)} Responds to ${r}% of applicants</span>` : `<span class="t-xs muted">New employer on The Fit Lab</span>`}</div>
@@ -175,14 +175,14 @@
       ${app && app.trial ? trialBox(app.trial, j) : ''}
       <div class="jacts">
         ${open_ ? `<button class="pill solid lg" id="apply">${I('send', 16)}${j.questions && j.questions.length ? 'Apply' : 'Easy apply'}</button>` : ''}
-        ${j.my_role ? `<a class="pill solid lg" href="hiring.html?job=${j.id}">Manage applicants</a>` : ''}
+        ${j.my_role ? `<a class="pill solid lg" href="hiring?job=${j.id}">Manage applicants</a>` : ''}
         ${me ? `<button class="pill lg" id="save">${I('bookmark', 16)}${j.saved ? 'Saved' : 'Save'}</button>` : ''}
         <button class="pill ghost lg" id="share">${I('link', 16)}Copy link</button>
         ${me && !j.my_role ? `<button class="icon-btn" id="rep" title="Report this job" aria-label="Report this job">${I('flag', 18)}</button>` : ''}
       </div>
       ${md && md.total ? `<div class="match"><h3>How you match</h3><div class="t-sm muted">${md.met} of ${md.total} requirements on your profile</div>
         <ul>${md.items.map((x) => `<li><span class="${x.ok ? 'y' : 'n'}">${I(x.ok ? 'check' : 'close', 16)}</span>${esc(x.label)}</li>`).join('')}</ul>
-        ${md.met < md.total ? `<a class="t-sm" href="profile.html" style="display:inline-block;margin-top:10px">Add missing skills or certificates to your profile →</a>` : ''}</div>` : ''}
+        ${md.met < md.total ? `<a class="t-sm" href="profile" style="display:inline-block;margin-top:10px">Add missing skills or certificates to your profile →</a>` : ''}</div>` : ''}
       ${me && !j.my_role ? (j.is_premium && j.insights ? `<div class="prem-box"><h3>${I('crown', 16)}Premium insights</h3>
           <div class="t-sm" style="line-height:1.7">
           ${j.insights.better_match_than_pct != null ? `You match better than <b>${j.insights.better_match_than_pct}%</b> of applicants.<br>` : 'You\'d be one of the first applicants.<br>'}
@@ -190,18 +190,18 @@
           ${j.insights.salary && j.insights.salary.enough ? `Typical pay for this role: <b>${FL.inr(j.insights.salary.low)}–${FL.inr(j.insights.salary.high).slice(1)}</b> / month (median ${FL.inr(j.insights.salary.median)}).`
             : 'Salary insights appear once there are enough similar jobs.'}</div></div>`
         : `<div class="prem-box"><h3>${I('crown', 16)}See how you compare</h3><div class="t-sm" style="line-height:1.55">With Premium, see how you rank against other applicants and the typical pay for this role — and your application is featured at the top.</div>
-          <a class="pill gold sm" href="premium.html?plan=pro" style="margin-top:10px">Try Premium free</a></div>`) : ''}
+          <a class="pill gold sm" href="premium?plan=pro" style="margin-top:10px">Try Premium free</a></div>`) : ''}
       <h3 style="font:700 18px var(--body);margin:22px 0 8px;letter-spacing:0;text-transform:none">About the job</h3>
       <div class="jdesc">${FL.linkify(j.description)}</div>
       ${j.skills && j.skills.length ? `<div style="margin-top:14px"><b class="t-sm">Skills</b><div class="ph-badges">${j.skills.map((s) => `<span class="chip">${esc(s)}</span>`).join('')}</div></div>` : ''}
       ${j.certifications && j.certifications.length ? `<div style="margin-top:12px"><b class="t-sm">Certifications</b><div class="ph-badges">${j.certifications.map((s) => `<span class="chip acc">${esc(s)}</span>`).join('')}</div></div>` : ''}
       ${j.poster ? `<h3 style="font:700 18px var(--body);margin:24px 0 8px;letter-spacing:0;text-transform:none">Meet the hiring team</h3>
-        <div class="ent" style="padding:0"><a href="profile.html?u=${encodeURIComponent(j.poster.username)}">${FL.ringAvatar(j.poster)}</a>
-          <div class="ent-main"><a class="ent-name" href="profile.html?u=${encodeURIComponent(j.poster.username)}">${esc(j.poster.full_name)}${FL.tags(j.poster)}</a>
+        <div class="ent" style="padding:0"><a href="profile?u=${encodeURIComponent(j.poster.username)}">${FL.ringAvatar(j.poster)}</a>
+          <div class="ent-main"><a class="ent-name" href="profile?u=${encodeURIComponent(j.poster.username)}">${esc(j.poster.full_name)}${FL.tags(j.poster)}</a>
           <div class="ent-sub">${esc(j.poster.headline || '')}</div>
           ${me && me.id !== j.poster.user_id ? `<div class="ent-act"><button class="pill sm" id="msgHM">${I('mail', 15)}Message</button></div>` : ''}</div></div>` : ''}
       <div class="box" style="margin-top:22px"><div class="ent">${FL.pageLogo(j.page)}<div class="ent-main">
-        <a class="ent-name" href="company.html?p=${encodeURIComponent(j.page.slug)}">${esc(j.page.name)}${FL.tick(j.page.verified, 14)}</a>
+        <a class="ent-name" href="company?p=${encodeURIComponent(j.page.slug)}">${esc(j.page.name)}${FL.tick(j.page.verified, 14)}</a>
         <div class="ent-sub">${esc(j.page.kind_label)}${j.page.city ? ' · ' + esc(j.page.city) : ''} · ${j.page.followers} follower${j.page.followers === 1 ? '' : 's'}</div>
         ${j.page.tagline ? `<div class="ent-meta">${esc(j.page.tagline)}</div>` : ''}</div></div></div>`;
     const b = $('back'); if (b) b.onclick = () => { $('shell').classList.remove('open'); st.cur = null; };
@@ -213,8 +213,8 @@
     const rp = $('rep'); if (rp) rp.onclick = () => FL.report('job', j.id);
     const hm = $('msgHM'); if (hm) hm.onclick = async () => {
       const { data: ok } = await sb.rpc('inmail_allowed', { p_from: me.id, p_to: j.poster.user_id });
-      if (ok && ok.connected) return location.href = 'messaging.html?u=' + encodeURIComponent(j.poster.username);
-      if (ok && ok.existing) return location.href = 'messaging.html?u=' + encodeURIComponent(j.poster.username);
+      if (ok && ok.connected) return location.href = 'messaging?u=' + encodeURIComponent(j.poster.username);
+      if (ok && ok.existing) return location.href = 'messaging?u=' + encodeURIComponent(j.poster.username);
       if (ok && ok.ok) return FL.inmail(j.poster, ok);
       FL.upsell('Message the hiring team', (ok && ok.reason) || 'Apply first to message the hiring team for free, or use Premium InMail.', 'pro');
     };

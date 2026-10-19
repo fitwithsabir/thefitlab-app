@@ -5,7 +5,7 @@
   "description": "The professional network for the health and fitness industry — jobs, pages, courses and people.",
   "lang": "en-IN",
   "dir": "ltr",
-  "start_url": "feed.html?source=app",
+  "start_url": "feed?source=app",
   "scope": "./",
   "display": "standalone",
   "display_override": [
@@ -51,7 +51,7 @@
   "shortcuts": [
     {
       "name": "Messages",
-      "url": "messaging.html",
+      "url": "messaging",
       "icons": [
         {
           "src": "assets/icon-192.png",
@@ -61,7 +61,7 @@
     },
     {
       "name": "Jobs",
-      "url": "jobs.html",
+      "url": "jobs",
       "icons": [
         {
           "src": "assets/icon-192.png",
@@ -71,7 +71,7 @@
     },
     {
       "name": "Notifications",
-      "url": "notifications.html",
+      "url": "notifications",
       "icons": [
         {
           "src": "assets/icon-192.png",

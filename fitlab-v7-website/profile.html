@@ -48,7 +48,7 @@
   const esc = FL.esc, I = FL.icon;
   const session = await FL.requireAuth(); if (!session) return;
   let me; try { me = await FL.getProfile(); } catch (e) { return FL.toast(FL.friendly(e), 'err'); }
-  if (!me.profile_completed) return location.replace('register.html');
+  if (!me.profile_completed) return location.replace('register');
   FL.renderHeader(me);
   const target = (FL.param('u') || me.username || '').replace(/^@/, '').trim();
   let p = null, posts = [], orgPages = [];
@@ -126,7 +126,7 @@
           date_of_birth: v.date_of_birth || null, phone: v.phone || null, open_to_work: v.open_to_work, hiring: v.hiring,
           profession: v.profession || null, specialties: [...new Set(v.specialties.split(',').map((x) => x.trim()).filter(Boolean).map((x) => x.slice(0, 40)))].slice(0, 10) }).eq('id', me.id));
         me = await FL.getProfile(true);
-        if (un && un !== target) history.replaceState(null, '', 'profile.html?u=' + encodeURIComponent(me.username));
+        if (un && un !== target) history.replaceState(null, '', 'profile?u=' + encodeURIComponent(me.username));
       } });
     },
     about() {
@@ -326,16 +326,16 @@
     if (self) {
       acts = `<div class="add-sec"><button class="pill solid" id="btnAddSec">Add profile section ${I('down', 14)}</button></div>
         <button class="pill" data-ed="intro">${p.open_to_work ? '#OpenToWork · edit' : 'Open to work'}</button>
-        ${p.verified ? '' : `<a class="pill" href="verification.html">${I('tick', 16)}Get verified</a>`}
+        ${p.verified ? '' : `<a class="pill" href="verification">${I('tick', 16)}Get verified</a>`}
         <button class="pill ghost" id="btnShare">${I('link', 16)}Share profile</button>`;
     } else {
       const im = p.can_inmail || {};
-      if (c.state === 'connected') acts = `<a class="pill solid" href="messaging.html?u=${encodeURIComponent(p.username)}">${I('send', 16)}Message</a>`;
+      if (c.state === 'connected') acts = `<a class="pill solid" href="messaging?u=${encodeURIComponent(p.username)}">${I('send', 16)}Message</a>`;
       else if (c.state === 'incoming') acts = `<button class="pill solid" data-conn="accept">Accept invitation</button><button class="pill ghost" data-conn="ignore">Ignore</button>`;
       else if (c.state === 'outgoing') acts = `<button class="pill ghost" data-conn="withdraw">${I('clock', 16)}Pending · withdraw</button>`;
       else if (!p.blocked_by_me) acts = `<button class="pill solid" data-conn="connect">${I('userplus', 17)}Connect</button>`;
       if (c.state !== 'connected' && !p.blocked_by_me) {
-        if (im.existing || (im.ok && im.context === 'open')) acts += `<a class="pill" href="messaging.html?u=${encodeURIComponent(p.username)}">${I('send', 16)}Message${im.context === 'open' && !im.existing ? ' · free' : ''}</a>`;
+        if (im.existing || (im.ok && im.context === 'open')) acts += `<a class="pill" href="messaging?u=${encodeURIComponent(p.username)}">${I('send', 16)}Message${im.context === 'open' && !im.existing ? ' · free' : ''}</a>`;
         else if (im.ok) acts += `<button class="pill gold-o" id="btnInmail">${I('mail', 16)}${im.cost ? 'InMail' : 'Message about the job'}</button>`;
         else if (im.premium_needed && (p.hiring || p.open_to_work)) acts += `<button class="pill ghost" id="btnInmail">${I('lock', 15)}Message</button>`;
       }
@@ -356,7 +356,7 @@
           : self ? `<p class="ph-prof"><button class="txt-btn" data-ed="intro" style="color:var(--lime);padding:0">${I('plus', 15)}Add your profession</button></p>` : ''}
         ${(p.specialties || []).length ? `<div class="spec">${p.specialties.map((x) => `<span class="chip">${esc(x)}</span>`).join('')}</div>` : ''}
         <p class="ph-loc">${loc ? esc(loc) + ' · ' : ''}<span class="mono" style="font-size:12px">${esc(p.unique_id || '')}</span></p>
-        <p class="ph-loc"><a href="${self ? 'network.html#connections' : '#'}" ${self ? '' : 'onclick="return false"'}>${p.connections} connection${p.connections === 1 ? '' : 's'}</a>${!self && p.mutual ? ` · ${p.mutual} mutual` : ''}
+        <p class="ph-loc"><a href="${self ? 'network#connections' : '#'}" ${self ? '' : 'onclick="return false"'}>${p.connections} connection${p.connections === 1 ? '' : 's'}</a>${!self && p.mutual ? ` · ${p.mutual} mutual` : ''}
           ${!self && c.state === 'connected' ? ` · <button class="txt-btn tagbtn" data-tag="1">${I('tag', 13)}${p.my_tag ? esc((FL.CONN_TAGS.find((x) => x[0] === p.my_tag) || [])[1] || p.my_tag) : 'Add how you know them'}</button>` : ''}
           ${!self && p.open_profile ? ` · <span class="chip acc" style="font-size:11px">${I('send', 12)}Open Profile</span>` : ''}</p>
         ${p.rating && p.rating.count ? `<p class="ph-loc"><a href="#reviews" class="ph-rating">${FLBook.ratingLine(p.rating)}</a></p>` : ''}
@@ -368,7 +368,7 @@
           ${p.open_to_work ? `<span class="ring-lbl">${I('briefcase', 13)}#OpenToWork</span>` : ''}
           ${p.hiring ? `<span class="ring-lbl hiring">${I('userplus', 13)}#Hiring</span>` : ''}
           ${p.community_status && p.community_status !== 'active' ? `<span class="chip" style="color:var(--warn);border-color:var(--warn)">Community access ${p.community_status === 'banned' ? 'removed' : 'paused'}</span>` : ''}</div>
-        ${self && p.views_90d != null ? `<a class="ph-views" href="insights.html">${I('eye', 16)}${p.views_90d} profile view${p.views_90d === 1 ? '' : 's'} in the last 90 days →</a>` : ''}
+        ${self && p.views_90d != null ? `<a class="ph-views" href="insights">${I('eye', 16)}${p.views_90d} profile view${p.views_90d === 1 ? '' : 's'} in the last 90 days →</a>` : ''}
         <div class="ph-acts">${acts}</div>
       </div></div>`;
   }
@@ -400,13 +400,13 @@
   function activity() {
     const n = p.post_count || 0;
     return `<div class="box sec-box"><div class="box-head"><div><h2>Activity</h2><div class="sub">${n} post${n === 1 ? '' : 's'}</div></div>
-        ${isSelf() ? `<a class="pill sm" href="feed.html#compose">Create a post</a>` : ''}</div>
+        ${isSelf() ? `<a class="pill sm" href="feed#compose">Create a post</a>` : ''}</div>
       <div class="act-posts" id="actPosts">${posts.length ? posts.map((x) => FLPosts.render(x)).join('') : `<p class="t-sm muted" style="padding:0 20px 18px;margin:0">${isSelf() ? 'You haven\'t posted yet. Posts you share appear here.' : esc(p.full_name.split(' ')[0]) + ' hasn\'t posted yet.'}</p>`}</div>
       ${n > posts.length ? `<div class="box-foot"><button id="moreAct">Show all ${n} posts →</button></div>` : ''}</div>`;
   }
 
-  const orgIcon = (r) => r.page ? `<a href="company.html?p=${encodeURIComponent(r.page.slug)}">${FL.pageLogo(r.page)}</a>` : `<span class="sq">${I('briefcase', 22)}</span>`;
-  const orgName = (r) => r.page ? `<a href="company.html?p=${encodeURIComponent(r.page.slug)}" style="color:inherit">${esc(r.organization)}</a>${FL.tick(r.page.verified, 13)}` : esc(r.organization);
+  const orgIcon = (r) => r.page ? `<a href="company?p=${encodeURIComponent(r.page.slug)}">${FL.pageLogo(r.page)}</a>` : `<span class="sq">${I('briefcase', 22)}</span>`;
+  const orgName = (r) => r.page ? `<a href="company?p=${encodeURIComponent(r.page.slug)}" style="color:inherit">${esc(r.organization)}</a>${FL.tick(r.page.verified, 13)}` : esc(r.organization);
 
   const BADGE_IC = { verified: 'tick', licence: 'shield', premium: 'crown', certified: 'award', open_to_work: 'briefcase', hiring: 'userplus', founding: 'sparkles', voice: 'comment' };
   function badges() {
@@ -426,7 +426,7 @@
     const priceLine = (x) => x.bookable && x.book_price != null
       ? ` · <span class="price">${x.sessions > 1 ? `${x.sessions} × ${x.session_min} min · ` : `${x.session_min} min · `}${x.book_price ? FL.inr(x.book_price) : 'Free'}</span>`
       : x.price_from != null ? ` · <span class="price">from ${FL.inr(x.price_from)}${x.price_unit ? ' / ' + UNITS[x.price_unit] : ''}</span>` : '';
-    return `<div class="box sec-box" id="svcBox"><div class="box-head"><div><h2>Services</h2>${isSelf() ? `<div class="sub">${bookOn ? 'You\'re taking bookings.' : 'Mark a package as bookable and open bookings so clients can book and pay.'} <a href="bookings.html#settings">Booking settings</a></div>` : bookOn ? '<div class="sub">Book a free time and pay on The Fit Lab</div>' : ''}</div><span class="sec-tools">${addBtn('svc', 'Add a service')}</span></div>
+    return `<div class="box sec-box" id="svcBox"><div class="box-head"><div><h2>Services</h2>${isSelf() ? `<div class="sub">${bookOn ? 'You\'re taking bookings.' : 'Mark a package as bookable and open bookings so clients can book and pay.'} <a href="bookings#settings">Booking settings</a></div>` : bookOn ? '<div class="sub">Book a free time and pay on The Fit Lab</div>' : ''}</div><span class="sec-tools">${addBtn('svc', 'Add a service')}</span></div>
       <div class="svc-list">${sv.map((x) => `<div class="svc" ${x.active ? '' : 'style="opacity:.6"'}><div style="display:flex;gap:8px;align-items:flex-start"><div style="flex:1;min-width:0">
           <b>${esc(x.title)}</b>${x.active ? '' : ' <span class="chip">Hidden</span>'}${isSelf() && x.bookable ? ' <span class="chip acc">Bookable</span>' : ''}
           <div class="meta">${esc([MODES[x.mode], x.city].filter(Boolean).join(' · '))}${priceLine(x)}</div></div>
@@ -472,8 +472,8 @@
   function orgs() {
     const pg = p.pages || [];
     if (!pg.length) return '';
-    return `<div class="box sec-box"><div class="box-head"><h2>Organisations</h2>${isSelf() ? '<a class="txt-btn" href="company.html?new=1">' + I('plus', 15) + 'New page</a>' : ''}</div>
-      ${pg.map((g) => `<a class="org-row" href="company.html?p=${encodeURIComponent(g.slug)}" style="color:inherit">${FL.pageLogo(g, 'co-logo sm')}<div style="flex:1;min-width:0">
+    return `<div class="box sec-box"><div class="box-head"><h2>Organisations</h2>${isSelf() ? '<a class="txt-btn" href="company?new=1">' + I('plus', 15) + 'New page</a>' : ''}</div>
+      ${pg.map((g) => `<a class="org-row" href="company?p=${encodeURIComponent(g.slug)}" style="color:inherit">${FL.pageLogo(g, 'co-logo sm')}<div style="flex:1;min-width:0">
         <b>${esc(g.name)}</b>${FL.tick(g.verified, 14)}<div class="t-xs muted">${esc(g.kind_label)} · ${g.role === 'owner' ? 'Owner' : g.role === 'admin' ? 'Admin' : 'Recruiter'}${g.open_jobs ? ` · ${g.open_jobs} open job${g.open_jobs === 1 ? '' : 's'}` : ''}</div></div></a>`).join('')}</div>`;
   }
 
@@ -519,7 +519,7 @@
     const flRows = fl.map((c) => `<div class="ent"><span class="sq fl-cert-sq">${I('award', 24)}</span><div class="ent-main"><b class="ent-name">${esc(c.course)}</b>
       <div class="t-sm">The Fit Lab Academy</div><div class="ent-meta">Issued ${FL.fmtMonth(c.issued_at)}</div>
       <div class="ent-meta">Credential ID <span class="mono">${esc(c.verification_code || '')}</span></div>
-      <div class="ent-act"><a class="pill ghost sm" href="verify.html?id=${encodeURIComponent(p.unique_id)}">Show credential ${I('link', 14)}</a><span class="chip acc">${I('shield', 13)}Verified</span></div></div></div>`).join('');
+      <div class="ent-act"><a class="pill ghost sm" href="verify?id=${encodeURIComponent(p.unique_id)}">Show credential ${I('link', 14)}</a><span class="chip acc">${I('shield', 13)}Verified</span></div></div></div>`).join('');
     const extRows = ext.map((c) => `<div class="ent"><span class="sq">${I('award', 22)}</span><div class="ent-main"><b class="ent-name">${esc(c.name)}</b>
       <div class="t-sm">${esc(c.issuer)}</div>${c.issue_date ? `<div class="ent-meta">Issued ${FL.fmtMonth(c.issue_date)}${c.expiry_date ? ' · Expires ' + FL.fmtMonth(c.expiry_date) : ''}</div>` : ''}
       ${c.credential_id ? `<div class="ent-meta">Credential ID ${esc(c.credential_id)}</div>` : ''}${c.ce_hours ? `<div class="ent-meta">${c.ce_hours} CE hours</div>` : ''}
@@ -549,7 +549,7 @@
       ${cs.map((c) => `<div class="ent"><span class="sq">${I('courses', 22)}</span><div class="ent-main"><b class="ent-name">${esc(c.title)}</b>
         <div class="ent-meta">${c.status === 'certified' ? 'Certified' : c.status === 'completed' ? 'Exam passed' : `${c.done} of ${c.total} days`}</div>
         ${c.status === 'active' ? `<div class="cprog" style="max-width:280px"><span class="progress"><i style="width:${Math.round(c.done / c.total * 100)}%"></i></span></div>` : ''}</div>
-        ${isSelf() ? `<a class="pill ghost sm" href="courses.html?c=${encodeURIComponent(c.slug)}">Open</a>` : ''}</div>`).join('')}</div>`;
+        ${isSelf() ? `<a class="pill ghost sm" href="courses?c=${encodeURIComponent(c.slug)}">Open</a>` : ''}</div>`).join('')}</div>`;
   }
 
   function languages() {
@@ -564,17 +564,17 @@
     $('side').innerHTML = `
       ${isSelf() ? `<div class="box box-pad"><b style="display:flex;gap:8px;align-items:center">${I('chart', 18)}Profile insights</b>
         <p class="t-sm muted" style="margin:6px 0 10px;line-height:1.5">${p.views_90d || 0} view${p.views_90d === 1 ? '' : 's'} in 90 days. See which employers and recruiters looked.</p>
-        <a class="pill sm" href="insights.html">Open insights</a></div>
+        <a class="pill sm" href="insights">Open insights</a></div>
       <div class="box box-pad"><div class="vis-note">${I('eye', 18)}<div><b style="color:var(--bone)">Who sees your profile</b><br>
         Fit Lab members see your full profile. Gyms on the hire portal see it once you're certified. Your phone, email and date of birth are never shown.
-        <a href="settings.html#privacy">Privacy settings</a></div></div></div>` : ''}
+        <a href="settings#privacy">Privacy settings</a></div></div></div>` : ''}
       <div class="box"><div class="box-head" style="padding-bottom:4px"><h3 style="font-size:16px">People you may know</h3></div>
-        ${(sugg || []).map((s) => `<div class="ent" style="padding:10px 16px"><a href="profile.html?u=${encodeURIComponent(s.username)}">${FL.avatarHtml(s, 'avatar sm')}</a>
-          <div class="ent-main"><a class="ent-name" style="font-size:14px" href="profile.html?u=${encodeURIComponent(s.username)}">${esc(s.full_name)}${FL.tags(s)}</a>
+        ${(sugg || []).map((s) => `<div class="ent" style="padding:10px 16px"><a href="profile?u=${encodeURIComponent(s.username)}">${FL.avatarHtml(s, 'avatar sm')}</a>
+          <div class="ent-main"><a class="ent-name" style="font-size:14px" href="profile?u=${encodeURIComponent(s.username)}">${esc(s.full_name)}${FL.tags(s)}</a>
           <div class="ent-sub" style="font-size:12px">${esc(s.headline || '')}</div>
-          <div class="ent-act" style="margin-top:6px"><a class="pill ghost sm" href="profile.html?u=${encodeURIComponent(s.username)}">View profile</a></div></div></div>`).join('')
+          <div class="ent-act" style="margin-top:6px"><a class="pill ghost sm" href="profile?u=${encodeURIComponent(s.username)}">View profile</a></div></div></div>`).join('')
         || '<p class="t-sm muted" style="padding:0 16px 14px">No suggestions right now.</p>'}
-        <div class="box-foot"><a href="network.html">Show all →</a></div></div>
+        <div class="box-foot"><a href="network">Show all →</a></div></div>
       ${FL.siteFootHtml(true)}`;
     FL.wireCommon($('side'));
   }
@@ -601,7 +601,7 @@
     if (p.visibility === 'unavailable') {
       $('main').innerHTML = `<div class="box pv-unavail"><div class="ic-circle" style="margin:0 auto 12px;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:var(--panel-2)">${I('lock', 26)}</div>
         <h2 style="margin:0 0 6px;font:700 20px var(--body)">This profile isn't available</h2><p class="muted t-sm">@${esc(p.username)}</p>
-        ${p.blocked_by_me ? `<button class="pill" id="btnUnblock">Unblock</button>` : `<a class="pill" href="feed.html">Back to home</a>`}</div>`;
+        ${p.blocked_by_me ? `<button class="pill" id="btnUnblock">Unblock</button>` : `<a class="pill" href="feed">Back to home</a>`}</div>`;
       const ub = $('btnUnblock'); if (ub) ub.onclick = async () => { await FL.call('unblock_member', { p_user_id: p.user_id }); reload(); };
       return;
     }
@@ -615,7 +615,7 @@
     const uname = (FL.param('u') || me.username).replace(/^@/, '');
     let { data, error } = await sb.rpc('get_profile_v10', { p_username: uname });
     if ((error && /get_profile_v10|function/i.test(error.message || '')) || (!error && !data)) ({ data, error } = await sb.rpc('get_profile_v9', { p_username: uname }));
-    if (error) { $('main').innerHTML = `<div class="box empty"><b>Member not found</b>${esc(FL.friendly(error))}<br><br><a class="pill sm" href="search.html">Search members</a></div>`; return; }
+    if (error) { $('main').innerHTML = `<div class="box empty"><b>Member not found</b>${esc(FL.friendly(error))}<br><br><a class="pill sm" href="search">Search members</a></div>`; return; }
     const first = !p;
     p = data;
     if (first && !p.is_self && p.visibility === 'full') sb.rpc('log_profile_view', { p_user: p.user_id }).then(() => {}, () => {});
@@ -650,7 +650,7 @@
     if (t.id === 'rvAll') { const { data } = await sb.rpc('coach_reviews_list', { p_coach: p.user_id, p_before: null, p_limit: 30 }); if (data) { allReviews = data.items; render(); const rv = $('reviews'); if (rv) rv.scrollIntoView({ block: 'start' }); } return; }
     if (t.id === 'btnPhoto') return uploadPic('photo');
     if (t.id === 'btnCover') return uploadPic('cover');
-    if (t.id === 'btnShare') { const url = new URL('profile.html?u=' + encodeURIComponent(p.username), location.href).href;
+    if (t.id === 'btnShare') { const url = new URL('profile?u=' + encodeURIComponent(p.username), location.href).href;
       try { await navigator.clipboard.writeText(url); FL.toast('Profile link copied', 'ok'); } catch (_) { FL.toast(url); } return; }
     if (t.id === 'btnAddSec') {
       const old = main.querySelector('.add-sec .menu-pop'); if (old) return old.remove();
@@ -672,7 +672,7 @@
     if (t.dataset.more) {
       t.closest('.menu-pop').remove();
       const k = t.dataset.more;
-      if (k === 'link') { const url = new URL('profile.html?u=' + encodeURIComponent(p.username), location.href).href; try { await navigator.clipboard.writeText(url); FL.toast('Link copied', 'ok'); } catch (_) { FL.toast(url); } }
+      if (k === 'link') { const url = new URL('profile?u=' + encodeURIComponent(p.username), location.href).href; try { await navigator.clipboard.writeText(url); FL.toast('Link copied', 'ok'); } catch (_) { FL.toast(url); } }
       if (k === 'report') FL.report('profile', p.user_id, { userId: p.user_id, name: p.full_name, onDone: reload });
       if (k === 'block' && await FL.confirm(`Block ${p.full_name}?`, 'They won\'t be able to see your profile or posts, message you or connect. They aren\'t told.', 'Block', true)) { await FL.call('block_member', { p_user_id: p.user_id }); FL.toast('Blocked', 'ok'); reload(); }
       if (k === 'unblock') { await FL.call('unblock_member', { p_user_id: p.user_id }); reload(); }

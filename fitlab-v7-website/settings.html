@@ -76,18 +76,18 @@
 
     <div class="box" id="account"><div class="box-head"><h2>Account</h2></div>
       <div class="set-row"><div><b>Email</b><div class="t-sm">${esc(me.email || session.user.email || '')} · used to sign in. Only the Academy can see it.</div></div></div>
-      <div class="set-row"><div><b>Username</b><div class="t-sm">@${esc(me.username || '')} — you can sign in with this too.</div></div><a class="pill sm" href="profile.html?edit=1">Change</a></div>
+      <div class="set-row"><div><b>Username</b><div class="t-sm">@${esc(me.username || '')} — you can sign in with this too.</div></div><a class="pill sm" href="profile?edit=1">Change</a></div>
       <div class="set-row"><div><b>Password</b><div class="t-sm">At least 8 characters.</div></div><button class="pill sm" id="btnPw">Change password</button></div>
       <div class="set-row"><div><b>Member ID</b><div class="t-sm mono">${esc(me.unique_id || '')}</div></div></div>
       <div class="set-row"><div><b>Sign out</b><div class="t-sm">Sign out of The Fit Lab on this device.</div></div><button class="pill ghost sm" id="btnOut">Sign out</button></div></div>
 
     <div class="box" id="premium"><div class="box-head"><h2>Premium &amp; verification</h2></div>
       <div class="set-row"><div><b>Premium</b><div class="t-sm">${prem && prem.active ? `${esc(prem.name)}${prem.source === 'trial' ? ' trial' : ''} · until ${FL.fmtDate(prem.expires_at)} · no automatic renewal` : 'Not active. Try any plan free for 14 days.'}</div></div>
-        <a class="pill sm ${prem && prem.active ? '' : 'gold'}" href="premium.html">${prem && prem.active ? 'Manage' : 'See plans'}</a></div>
+        <a class="pill sm ${prem && prem.active ? '' : 'gold'}" href="premium">${prem && prem.active ? 'Manage' : 'See plans'}</a></div>
       ${prem && prem.active ? `<div class="set-row"><div><b>Show my Premium badge</b><div class="t-sm">The gold badge next to your name.</div></div>
         <label class="switch"><input type="checkbox" id="swPrem" ${me.show_premium_badge ? 'checked' : ''} aria-label="Show my Premium badge"><span></span></label></div>` : ''}
       <div class="set-row"><div><b>Verified tick</b><div class="t-sm">${me.verified || me.is_owner ? 'You\'re verified.' : 'Free to apply — no ID documents needed.'}</div></div>
-        <a class="pill sm" href="verification.html">${me.verified || me.is_owner ? 'View' : 'Apply'}</a></div></div>
+        <a class="pill sm" href="verification">${me.verified || me.is_owner ? 'View' : 'Apply'}</a></div></div>
 
     <div class="box" id="privacy"><div class="box-head"><h2>Visibility</h2></div>
       <div class="set-row"><div><b>Show my profile in search and suggestions</b><div class="t-sm">When on, members can find you, and gyms can see you on the Hire-a-Coach portal once you're certified. Your phone, email and date of birth are never shown to anyone.</div></div>
@@ -100,7 +100,7 @@
       <div class="set-row"><div><b>Open Profile ${FL.prem('pro')}</b><div class="t-sm">Let anyone on The Fit Lab message you for free — great for getting new clients. ${prem && prem.active ? '' : 'Part of Premium.'}</div></div>
         <label class="switch"><input type="checkbox" id="swOpen" ${me.open_profile ? 'checked' : ''} aria-label="Open Profile"><span></span></label></div>
       <div class="set-row"><div><b>Contact &amp; social links</b><div class="t-sm">Instagram, YouTube, WhatsApp, website and more on your profile. ${me.social_visibility === 'connections' ? 'Visible to your connections.' : 'Visible to everyone.'}</div></div>
-        <a class="pill sm" href="profile.html?edit=social">Edit</a></div></div>
+        <a class="pill sm" href="profile?edit=social">Edit</a></div></div>
 
     <div class="box" id="community"><div class="box-head"><h2>Community</h2></div>
       ${FL.communityNotice(me) ? `<div style="padding:0 20px">${FL.communityNotice(me)}</div>` : ''}
@@ -113,7 +113,7 @@
       <div id="blist"><div class="skeleton" style="height:56px;margin:14px"></div></div></div>
 
     <div class="box" id="data"><div class="box-head"><div><h2>Your data</h2><div class="sub">How The Fit Lab uses your data, and how to get a copy or close your account.</div></div></div>
-      <div class="set-row"><div><b>Privacy policy and terms</b><div class="t-sm">What we collect, who can see it, and the rules for using The Fit Lab.</div></div><span style="display:flex;gap:6px;flex-wrap:wrap"><a class="pill sm" href="privacy.html">Privacy</a><a class="pill sm" href="terms.html">Terms</a></span></div>
+      <div class="set-row"><div><b>Privacy policy and terms</b><div class="t-sm">What we collect, who can see it, and the rules for using The Fit Lab.</div></div><span style="display:flex;gap:6px;flex-wrap:wrap"><a class="pill sm" href="privacy">Privacy</a><a class="pill sm" href="terms">Terms</a></span></div>
       <div class="set-row"><div><b>Copy of your data or account deletion</b><div class="t-sm">Email <span class="mono">hello@thefitlab.in</span> from ${esc(me.email || session.user.email || 'your sign-in address')}. We reply within 7 days.</div></div><a class="pill ghost sm" href="mailto:hello@thefitlab.in?subject=My%20Fit%20Lab%20data">Email us</a></div></div>`;
   FL.wireCommon($('main'));
 

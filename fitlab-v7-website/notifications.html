@@ -34,14 +34,14 @@
   const esc = FL.esc, I = FL.icon;
   const session = await FL.requireAuth(); if (!session) return;
   let me; try { me = await FL.getProfile(); } catch (e) { return FL.toast(FL.friendly(e), 'err'); }
-  if (!me.profile_completed) return location.replace('register.html');
+  if (!me.profile_completed) return location.replace('register');
   FL.renderHeader(me);
 
   const { data: cnt } = await sb.rpc('connection_count', { p_user: me.id });
   $('left').innerHTML = FL.miniProfile(me, { connections: cnt ?? 0, courses: '—' });
   $('right').innerHTML = `<div class="box box-pad"><b style="font-size:15px">Stay in the loop</b>
     <p class="t-sm muted" style="margin:8px 0 0;line-height:1.5">Reactions, comments and @mentions, invitations, job updates, InMails and Academy announcements all arrive here.</p>
-    <a class="pill ghost sm" href="settings.html#notifications" style="margin-top:12px">${I('bell', 15)}Pop-up settings</a></div>${FL.siteFootHtml(true)}`;
+    <a class="pill ghost sm" href="settings#notifications" style="margin-top:12px">${I('bell', 15)}Pop-up settings</a></div>${FL.siteFootHtml(true)}`;
   FL.wireCommon($('right'));
 
   const { data, error } = await sb.rpc('list_notifications', { p_limit: 100 });
@@ -54,7 +54,7 @@
 
   function draw() {
     const list = all.filter((n) => filter === 'all' || group(n) === filter);
-    $('list').innerHTML = list.length ? list.map((n) => `<a class="notif ${n.is_read ? '' : 'unread'}" href="${esc(n.link_url || '#')}" data-id="${n.id}">
+    $('list').innerHTML = list.length ? list.map((n) => `<a class="notif ${n.is_read ? '' : 'unread'}" href="${esc(FL.href(n.link_url) || '#')}" data-id="${n.id}">
         ${n.actor ? FL.avatarHtml(n.actor, 'avatar') : `<span class="ic-circle">${I(icFor(n), 22)}</span>`}
         <div style="flex:1;min-width:0"><p>${n.actor && /^@\S+\s/.test(n.title) ? `<b>${esc(n.actor.full_name)}</b> ` + esc(n.title.replace(/^@\S+\s/, '')) : `<b>${esc(n.title)}</b>`}</p>
           ${n.body ? `<span class="q">${esc(n.body)}</span>` : ''}</div>

@@ -42,8 +42,8 @@
         <a href="#sent" data-v="sent">Sent <b id="nSent">0</b></a>
         <a href="#requests" data-v="requests">Service requests <b id="nReq">0</b></a>
         <a href="#grow" data-v="grow">Grow your network</a>
-        <a href="company.html">Pages</a>
-        <a href="settings.html#blocked">Blocked members</a>
+        <a href="company">Pages</a>
+        <a href="settings#blocked">Blocked members</a>
       </div>
       <div id="footL"></div>
     </div></aside>
@@ -51,7 +51,7 @@
     <section class="stack">
       <div class="box mn-mobile"><div class="utabs" id="mtabs">
         <a href="#grow" data-v="grow">Grow</a><a href="#invitations" data-v="invitations">Invitations</a>
-        <a href="#connections" data-v="connections">Connections</a><a href="#requests" data-v="requests">Requests</a><a href="#sent" data-v="sent">Sent</a><a href="company.html">Pages</a></div></div>
+        <a href="#connections" data-v="connections">Connections</a><a href="#requests" data-v="requests">Requests</a><a href="#sent" data-v="sent">Sent</a><a href="company">Pages</a></div></div>
       <div id="notice"></div>
       <div id="view"><div class="box skeleton" style="height:320px"></div></div>
     </section>
@@ -67,14 +67,14 @@
   const esc = FL.esc;
   const session = await FL.requireAuth(); if (!session) return;
   let me; try { me = await FL.getProfile(); } catch (e) { return FL.toast(FL.friendly(e), 'err'); }
-  if (!me.profile_completed) return location.replace('register.html');
+  if (!me.profile_completed) return location.replace('register');
   FL.renderHeader(me);
   $('notice').innerHTML = FL.communityNotice(me);
   $('footL').innerHTML = FL.siteFootHtml(true); FL.wireCommon($('footL'));
 
   let pending = [], accepted = [], reqs = { incoming: [], outgoing: [] };
   const view = $('view');
-  const plink = (u) => `profile.html?u=${encodeURIComponent(u)}`;
+  const plink = (u) => `profile?u=${encodeURIComponent(u)}`;
 
   async function loadLists() {
     const [p, a, r] = await Promise.all([sb.rpc('list_connections', { p_status: 'pending' }), sb.rpc('list_connections', { p_status: 'accepted' }), sb.rpc('my_service_requests')]);
@@ -109,9 +109,9 @@
             <div class="ent-meta">${esc(x.service)} · ${FL.timeAgo(x.created_at)} ago · ${ST[x.status]}</div>
             <div class="inv-note">“${esc(x.goal)}”${x.preferred ? `<br><span class="t-xs muted">Preferred: ${esc(x.preferred)}</span>` : ''}</div>
             ${!mine && x.status === 'new' ? `<div class="ent-act"><button class="pill sm" data-racc="${x.id}">Accept</button><button class="txt-btn" data-rdec="${x.id}">Decline</button></div>`
-              : x.status === 'accepted' ? `<div class="ent-act"><a class="pill sm" href="messaging.html?u=${encodeURIComponent(x.member.username)}">Message</a></div>` : ''}</div></div>`;
+              : x.status === 'accepted' ? `<div class="ent-act"><a class="pill sm" href="messaging?u=${encodeURIComponent(x.member.username)}">Message</a></div>` : ''}</div></div>`;
       view.innerHTML = `<div class="box"><div class="box-head"><div><h2>Service requests</h2><div class="sub">Clients asking about the services on your profile. Accepting opens a conversation.</div></div></div>
-          ${inc.length ? inc.map((x) => card(x, false)).join('') : `<div class="empty"><b>No requests yet</b>Add services to your profile — training packages, consultations, diet plans — and clients can request them here. <a href="profile.html">Add a service</a></div>`}</div>
+          ${inc.length ? inc.map((x) => card(x, false)).join('') : `<div class="empty"><b>No requests yet</b>Add services to your profile — training packages, consultations, diet plans — and clients can request them here. <a href="profile">Add a service</a></div>`}</div>
         ${out.length ? `<div class="box"><div class="box-head"><h2>Requests you sent</h2></div>${out.map((x) => card(x, true)).join('')}</div>` : ''}`;
     } else if (v === 'sent') {
       const out = pending.filter((c) => c.direction === 'outgoing');
@@ -141,7 +141,7 @@
               <div class="ent-sub">${esc(c.headline || '')}</div>
               <div class="ent-meta">${c.city ? esc(c.city) + ' · ' : ''}connected ${FL.timeAgo(c.since)} ago</div>
               <button class="txt-btn tagbtn" data-settag="${c.user_id}" data-name="${esc(c.full_name)}" data-cur="${esc(c.tag || '')}">${FL.icon('tag', 13)}${c.tag_label ? esc(c.tag_label) : 'Add category'}</button></div>
-            <div class="ent-act" style="margin:0"><a class="pill sm" href="messaging.html?u=${encodeURIComponent(c.username)}">Message</a>
+            <div class="ent-act" style="margin:0"><a class="pill sm" href="messaging?u=${encodeURIComponent(c.username)}">Message</a>
               <button class="icon-btn" data-cm="${c.connection_id}" data-name="${esc(c.full_name)}" aria-label="Remove connection">${FL.icon('more', 20)}</button></div></div>`).join('')
           : `<div class="empty">${tag || $('cq').value.trim() ? 'No connections match.' : '<b>No connections yet</b>Start with the suggestions under “Grow your network”.'}</div>`;
       };
@@ -152,7 +152,7 @@
       drawCats(); draw();
     } else {
       view.innerHTML = `<div id="sugs"><div class="box"><div class="box-head"><h2>Grow your network</h2></div><div class="pgrid">${'<div class="pcard skeleton" style="height:250px"></div>'.repeat(4)}</div></div></div>
-        <div class="box" id="pagesBox" hidden><div class="box-head"><div><h2>Pages to follow</h2><div class="sub">Gyms, clinics and brands picked for you</div></div><a class="txt-btn" href="company.html">See all</a></div><div id="sugPages"></div></div>`;
+        <div class="box" id="pagesBox" hidden><div class="box-head"><div><h2>Pages to follow</h2><div class="sub">Gyms, clinics and brands picked for you</div></div><a class="txt-btn" href="company">See all</a></div><div id="sugPages"></div></div>`;
       const [{ data }, { data: pg }] = await Promise.all([sb.rpc('suggest_people', { p_limit: 40, p_offset: 0 }), sb.rpc('suggested_pages', { p_limit: 5 })]);
       const list = data || [];
       const GROUPS = [['candidates', 'Candidates for your open roles', 'Open to work and a fit for the jobs you\'re hiring for'],
@@ -175,8 +175,8 @@
       $('sugs').innerHTML = html || '<div class="box"><div class="empty"><b>No new suggestions</b>Use the search bar at the top to find people by name, profession, city or skill.</div></div>';
       if ((pg || []).length) {
         $('pagesBox').hidden = false;
-        $('sugPages').innerHTML = pg.map((g) => `<div class="ent"><a href="company.html?p=${encodeURIComponent(g.slug)}">${FL.pageLogo(g)}</a>
-          <div class="ent-main"><a class="ent-name" href="company.html?p=${encodeURIComponent(g.slug)}">${esc(g.name)}${FL.tick(g.verified, 14)}</a>
+        $('sugPages').innerHTML = pg.map((g) => `<div class="ent"><a href="company?p=${encodeURIComponent(g.slug)}">${FL.pageLogo(g)}</a>
+          <div class="ent-main"><a class="ent-name" href="company?p=${encodeURIComponent(g.slug)}">${esc(g.name)}${FL.tick(g.verified, 14)}</a>
             <div class="ent-sub">${esc(g.reason || '')}</div><div class="ent-meta">${esc([g.kind_label, g.city].filter(Boolean).join(' · '))} · ${g.followers} follower${g.followers === 1 ? '' : 's'}</div></div>
           <div class="ent-act" style="margin:0"><button class="pill sm" data-follow="${g.page_id}">${FL.icon('plus', 15)}Follow</button>
             <button class="icon-btn" data-dismiss="${g.page_id}" data-kind="page" aria-label="Not now">${FL.icon('close', 16)}</button></div></div>`).join('');

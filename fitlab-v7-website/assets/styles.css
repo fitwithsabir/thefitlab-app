@@ -1118,3 +1118,9 @@ a.bkrow:hover{background:var(--hover);text-decoration:none}
 .switch input:checked + span::after{transform:translateX(20px)}
 .switch input:focus-visible + span{outline:2px solid var(--lime);outline-offset:2px}
 @media (max-width:560px){.hrow{grid-template-columns:1fr;gap:6px}.hrow .dname{padding-top:0}.hrow .rg select{max-width:118px}}
+
+/* day / night button (logged-out header and landing pages) */
+.theme-tgl{display:inline-grid;place-items:center;width:36px;height:36px;flex:0 0 36px;border-radius:999px;border:1px solid var(--line-2);background:transparent;color:var(--ash);cursor:pointer;padding:0;transition:color .15s,border-color .15s,background .15s}
+.theme-tgl:hover{color:var(--bone);border-color:var(--ash)}
+.theme-tgl:focus-visible{outline:2px solid var(--lime);outline-offset:2px}
+.theme-tgl svg{display:block}

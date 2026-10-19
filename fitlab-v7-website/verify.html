@@ -46,13 +46,13 @@
 
   async function lookup(id) {
     if (!id) return;
-    history.replaceState(null, '', 'verify.html?id=' + encodeURIComponent(id));
+    history.replaceState(null, '', 'verify?id=' + encodeURIComponent(id));
     const { data, error } = await sb.rpc('get_public_profile', { p_unique_id: id });
     if (error) return FL.toast(FL.friendly(error), 'err');
     if (!data) {
       out.innerHTML = `<div class="card"><h2 class="display">No verified record for <span class="mono lime">${FL.esc(id)}</span></h2>
         <p class="ash">Either this ID is not certified yet, the ID was typed incorrectly, or the member has not consented to public display.</p>
-        <a class="btn" href="verify.html">Try another ID</a></div>`;
+        <a class="btn" href="verify">Try another ID</a></div>`;
       return;
     }
     const certs = (data.certificates || []).map((c) => c.status === 'pending' ? `
@@ -88,7 +88,7 @@
         </div>
       </div>
       ${certs}
-      <p class="help" style="margin-top:18px"><a href="verify.html">Verify another ID</a></p>`;
+      <p class="help" style="margin-top:18px"><a href="verify">Verify another ID</a></p>`;
   }
 
   document.getElementById('f').onsubmit = (e) => { e.preventDefault(); lookup(document.getElementById('q').value.trim()); };

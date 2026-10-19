@@ -69,7 +69,8 @@
     sparkles: '<path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>',
     help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.6 2.6 0 0 1 5 1c0 1.8-2.5 2.2-2.5 3.8M12 17.3v.2"/>',
     eye: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
-    tick: '<path d="M12 2.5l2.4 1.7 2.9-.2 1 2.8 2.4 1.7-.9 2.8.9 2.8-2.4 1.7-1 2.8-2.9-.2L12 21.5l-2.4-1.7-2.9.2-1-2.8L3.3 15.5l.9-2.8-.9-2.8 2.4-1.7 1-2.8 2.9.2z" fill="currentColor" stroke="none"/><path d="m8.4 12.2 2.4 2.4 4.8-4.8" stroke="var(--on-tick,#fff)" stroke-width="2.2"/>',
+    // verified seal: 12 equal scallops on a true circle around (12,12), tick centred
+    tick: '<path d="M9.44 2.45 A2.6 2.6 0 0 1 14.56 2.45 A2.6 2.6 0 0 1 18.99 5.01 A2.6 2.6 0 0 1 21.55 9.44 A2.6 2.6 0 0 1 21.55 14.56 A2.6 2.6 0 0 1 18.99 18.99 A2.6 2.6 0 0 1 14.56 21.55 A2.6 2.6 0 0 1 9.44 21.55 A2.6 2.6 0 0 1 5.01 18.99 A2.6 2.6 0 0 1 2.45 14.56 A2.6 2.6 0 0 1 2.45 9.44 A2.6 2.6 0 0 1 5.01 5.01 A2.6 2.6 0 0 1 9.44 2.45Z" fill="currentColor" stroke="none"/><path d="m8 12.4 2.75 2.75L16 9.9" stroke="var(--on-tick,#fff)" stroke-width="2.2"/>',
     crown: '<path d="M3 8l4.5 4L12 5l4.5 7L21 8l-1.8 10H4.8z" fill="currentColor" stroke="none"/>',
     building: '<rect x="4" y="3" width="11" height="18" rx="1"/><path d="M15 9h4a1 1 0 0 1 1 1v11H15M8 7h3M8 11h3M8 15h3M9.5 21v-3"/>',
     pin: '<path d="M12 21s-6.5-6.2-6.5-11.2a6.5 6.5 0 0 1 13 0C18.5 14.8 12 21 12 21z"/><circle cx="12" cy="9.8" r="2.3"/>',
@@ -119,10 +120,10 @@
       return s;
     },
 
-    // Redirects to index.html when not signed in. Returns the session otherwise.
+    // Redirects to / when not signed in. Returns the session otherwise.
     async requireAuth() {
       const s = await this.session();
-      if (!s) { location.replace('index.html'); return null; }
+      if (!s) { location.replace('/'); return null; }
       return s;
     },
 
@@ -140,7 +141,7 @@
 
     async signOut() {
       await sb.auth.signOut();
-      location.replace('index.html');
+      location.replace('/');
     },
 
     toast(msg, type = '') {
@@ -209,7 +210,7 @@
     levelLabel(l) { return ({ coach: 'Coach', trainer: 'Trainer', trainee: 'Trainee' })[l] || ''; },
 
     logoHtml() {
-      return `<a class="logo" href="feed.html" aria-label="The Fit Lab Academy">
+      return `<a class="logo" href="feed" aria-label="The Fit Lab Academy">
         <img class="logomark logo-d" src="assets/logo-600.png" alt="The Fit Lab"><img class="logomark logo-l" src="assets/logo-600-light.png" alt="" aria-hidden="true">
         <span class="sub"><b>The Fit Lab</b>Academy</span></a>`;
     },
@@ -217,11 +218,18 @@
     // ---- theme ----
     theme: {
       get() { try { return localStorage.getItem('fl:theme') || 'system'; } catch (_) { return 'system'; } },
+      // the look actually on screen: a chosen theme, or the device setting
+      isDark() {
+        const t = document.documentElement.getAttribute('data-theme');
+        if (t) return t === 'dark';
+        return !(window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches);
+      },
       apply(t, remember = true) {
         if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
         else document.documentElement.removeAttribute('data-theme');
         if (remember) { try { if (t === 'system') localStorage.removeItem('fl:theme'); else localStorage.setItem('fl:theme', t); } catch (_) {} }
         document.querySelectorAll('[data-theme-set]').forEach((b) => b.classList.toggle('on', b.dataset.themeSet === t));
+        FL.syncThemeToggles();
       },
       async set(t) {
         this.apply(t, true);
@@ -231,6 +239,16 @@
           if (FL._me) FL._me.theme = t;
         } catch (_) {}
       },
+    },
+    // small day/night button for pages people see before signing in
+    themeToggleHtml() {
+      const dark = this.theme.isDark();
+      const label = dark ? 'Switch to day mode' : 'Switch to night mode';
+      return `<button type="button" class="theme-tgl" data-theme-toggle aria-label="${label}" title="${label}">${icon(dark ? 'sun' : 'moon', 18)}</button>`;
+    },
+    syncThemeToggles() {
+      const dark = this.theme.isDark(), label = dark ? 'Switch to day mode' : 'Switch to night mode';
+      document.querySelectorAll('[data-theme-toggle]').forEach((b) => { b.innerHTML = icon(dark ? 'sun' : 'moon', 18); b.setAttribute('aria-label', label); b.title = label; });
     },
     themeSwitchHtml() {
       const t = this.theme.get();
@@ -321,7 +339,7 @@
       const m = this.modal({ title: title || 'Premium feature', body: `<div class="upsell">${icon('crown', 28)}
           <p style="margin:10px 0 0;line-height:1.55">${esc(text || 'This is part of Fit Lab Premium.')}</p>
           <p class="t-sm muted" style="margin:10px 0 0">Try it free for 14 days — no card needed for the trial.</p></div>`,
-        foot: `<button class="pill ghost" data-no>Not now</button><a class="pill solid gold" href="premium.html?plan=${plan}">See Premium plans</a>` });
+        foot: `<button class="pill ghost" data-no>Not now</button><a class="pill solid gold" href="premium?plan=${plan}">See Premium plans</a>` });
       m.q('[data-no]').onclick = m.close;
     },
     // job-related InMail (employers ↔ applicants / open-to-work members; Pro → hiring managers)
@@ -709,20 +727,20 @@
       if (!p) return '';
       return `<div class="box mini">
         <div class="cov" ${p.cover_url ? `style="background-image:url('${esc(p.cover_url)}')"` : ''}></div>
-        <a href="profile.html?u=${encodeURIComponent(p.username || '')}">${this.ringAvatar(p, 'avatar')}</a>
-        <h3><a href="profile.html?u=${encodeURIComponent(p.username || '')}" style="color:var(--bone)">${esc(p.full_name || 'Member')}</a>${this.tick(p.verified || p.is_owner, 15)}</h3>
+        <a href="profile?u=${encodeURIComponent(p.username || '')}">${this.ringAvatar(p, 'avatar')}</a>
+        <h3><a href="profile?u=${encodeURIComponent(p.username || '')}" style="color:var(--bone)">${esc(p.full_name || 'Member')}</a>${this.tick(p.verified || p.is_owner, 15)}</h3>
         <p>${esc(p.headline || p.occupation || 'Add a headline to your profile')}</p>
         <div class="divider"></div>
-        <a class="stat" href="network.html#connections"><span>Connections</span><b>${counts.connections ?? '—'}</b></a>
-        <a class="stat" href="courses.html"><span>Courses</span><b>${counts.courses ?? '—'}</b></a>
-        <a class="stat" href="insights.html"><span>Profile insights</span><b>→</b></a>
+        <a class="stat" href="network#connections"><span>Connections</span><b>${counts.connections ?? '—'}</b></a>
+        <a class="stat" href="courses"><span>Courses</span><b>${counts.courses ?? '—'}</b></a>
+        <a class="stat" href="insights"><span>Profile insights</span><b>→</b></a>
         <div class="divider" style="margin-top:6px"></div>
-        <a class="stat" href="profile.html?u=${encodeURIComponent(p.username || '')}"><span class="mono" style="font-size:11px">${esc(p.unique_id || '')}</span>${this.starsIf(p.star_count || 0, p.star_tier)}</a>
+        <a class="stat" href="profile?u=${encodeURIComponent(p.username || '')}"><span class="mono" style="font-size:11px">${esc(p.unique_id || '')}</span>${this.starsIf(p.star_count || 0, p.star_tier)}</a>
       </div>`;
     },
 
     siteFootHtml(compact = false) {
-      const links = `<a href="jobs.html">Jobs</a><a href="company.html">Pages</a><a href="premium.html">Premium</a><a href="hire.html">Hire a coach</a><a href="verify.html">Verify a certificate</a><a href="#" data-guidelines>Community guidelines</a><a href="settings.html">Settings</a><a href="mailto:${esc(cfg.SUPPORT_EMAIL || '')}">Help</a>`;
+      const links = `<a href="jobs">Jobs</a><a href="company">Pages</a><a href="premium">Premium</a><a href="hire">Hire a coach</a><a href="verify">Verify a certificate</a><a href="#" data-guidelines>Community guidelines</a><a href="settings">Settings</a><a href="mailto:${esc(cfg.SUPPORT_EMAIL || '')}">Help</a>`;
       return `<div class="${compact ? 'right-foot' : 'site-foot'}">${links}<span>The Fit Lab © ${new Date().getFullYear()}</span></div>`;
     },
 
@@ -751,7 +769,7 @@
               <h2 style="margin:10px 0 8px;font-size:24px">${this.esc(n.title)}</h2>
               ${n.body ? `<p style="color:var(--ash);line-height:1.6">${this.esc(n.body)}</p>` : ''}
               <div class="btn-row" style="margin-top:20px">
-                ${n.link_url ? `<a class="btn btn-primary" href="${this.esc(n.link_url)}">Take a look</a>` : ''}
+                ${n.link_url ? `<a class="btn btn-primary" href="${this.esc(this.href(n.link_url))}">Take a look</a>` : ''}
                 <button class="btn btn-ghost" data-close>Got it</button>
               </div>
             </div>`, () => sb.from('notification_reads').insert({ user_id: myUid, notification_id: n.id }));
@@ -780,7 +798,7 @@
     // ---------------------------------------------------------------- shell
     pageKey() {
       if (document.body.dataset.page) return document.body.dataset.page;
-      const f = (location.pathname.split('/').pop() || 'index.html').replace('.html', '');
+      const f = (location.pathname.split('/').pop() || 'index').replace('.html', '');
       return ({ feed: 'home', network: 'network', connections: 'network', members: 'network', courses: 'courses', dashboard: 'courses',
                 lesson: 'courses', exam: 'courses', messaging: 'messages', chat: 'messages', notifications: 'notifications',
                 profile: 'profile', settings: 'me', search: 'search', admin: 'admin', jobs: 'jobs', hiring: 'jobs',
@@ -794,47 +812,48 @@
       const legacy = document.getElementById('nav'); if (legacy) legacy.innerHTML = '';
 
       const tabs = [
-        ['home', 'feed.html', 'Home', 'home', null],
-        ['network', 'network.html', 'My Network', 'network', 'invitations'],
-        ['jobs', 'jobs.html', 'Jobs', 'briefcase', null],
-        ['courses', 'courses.html', 'Courses', 'courses', null],
-        ['messages', 'messaging.html', 'Messaging', 'messages', 'messages'],
-        ['notifications', 'notifications.html', 'Notifications', 'bell', 'notifications'],
+        ['home', 'feed', 'Home', 'home', null],
+        ['network', 'network', 'My Network', 'network', 'invitations'],
+        ['jobs', 'jobs', 'Jobs', 'briefcase', null],
+        ['courses', 'courses', 'Courses', 'courses', null],
+        ['messages', 'messaging', 'Messaging', 'messages', 'messages'],
+        ['notifications', 'notifications', 'Notifications', 'bell', 'notifications'],
       ];
       const q = this.param('q') || '';
       const bar = document.createElement('header');
       bar.className = 'topbar';
       if (profile) {
         bar.innerHTML = `<div class="topbar-in">
-          <a class="tb-logo" href="feed.html" aria-label="The Fit Lab — home"><img class="logo-d" src="assets/logo-600.png" alt="The Fit Lab"><img class="logo-l" src="assets/logo-600-light.png" alt="" aria-hidden="true"></a>
-          <form class="tb-search" action="search.html" role="search">${icon('search', 17)}
+          <a class="tb-logo" href="feed" aria-label="The Fit Lab — home"><img class="logo-d" src="assets/logo-600.png" alt="The Fit Lab"><img class="logo-l" src="assets/logo-600-light.png" alt="" aria-hidden="true"></a>
+          <form class="tb-search" action="search" role="search">${icon('search', 17)}
             <input name="q" type="search" placeholder="Search people, jobs, pages" value="${esc(q)}" aria-label="Search"></form>
           <nav class="tb-tabs">
             ${tabs.map(([k, href, label, ic, cnt]) => `<a class="tb-tab ${k === 'messages' ? 'tb-msg' : ''} ${page === k ? 'on' : ''}" href="${href}">
               <span class="ic">${icon(ic, 24)}${cnt ? `<span class="cnt" data-cnt="${cnt}"></span>` : ''}</span><span class="lbl">${label}</span></a>`).join('')}
             <button class="tb-tab tb-me ${page === 'me' || (page === 'profile' && this.param('u') === profile.username) ? 'on' : ''}" type="button" aria-haspopup="true" aria-expanded="false">
               <span class="ic">${this.avatarHtml(profile, 'ava avatar')}</span><span class="lbl">Me ${icon('down', 12)}</span></button>
-            ${(profile.is_admin || profile.is_owner) ? `<span class="tb-sep"></span><a class="tb-tab ${location.pathname.endsWith('admin.html') ? 'on' : ''}" href="admin.html"><span class="ic">${icon('shield', 24)}</span><span class="lbl">Admin</span></a>` : ''}
-            <a class="tb-prem" href="premium.html">${icon('crown', 15)}<span id="tbPremLbl">Try Premium</span></a>
+            ${(profile.is_admin || profile.is_owner) ? `<span class="tb-sep"></span><a class="tb-tab ${/\/admin(\.html)?$/.test(location.pathname) ? 'on' : ''}" href="admin"><span class="ic">${icon('shield', 24)}</span><span class="lbl">Admin</span></a>` : ''}
+            <a class="tb-prem" href="premium">${icon('crown', 15)}<span id="tbPremLbl">Try Premium</span></a>
           </nav></div>`;
       } else {
         bar.innerHTML = `<div class="topbar-in">
-          <a class="tb-logo" href="index.html" aria-label="The Fit Lab"><img class="logo-d" src="assets/logo-600.png" alt="The Fit Lab"><img class="logo-l" src="assets/logo-600-light.png" alt="" aria-hidden="true"></a>
+          <a class="tb-logo" href="/" aria-label="The Fit Lab"><img class="logo-d" src="assets/logo-600.png" alt="The Fit Lab"><img class="logo-l" src="assets/logo-600-light.png" alt="" aria-hidden="true"></a>
           <nav class="tb-tabs" style="gap:8px;align-items:center">
-            <a class="txt-btn" href="hire.html">${icon('hire', 18)}<span class="lbl">Hire a coach</span></a>
-            <a class="txt-btn" href="verify.html">${icon('award', 18)}<span class="lbl">Verify</span></a>
-            ${/index\.html$|\/$/.test(location.pathname) ? '' : '<a class="pill solid sm" href="index.html">Sign in</a>'}
+            <a class="txt-btn" href="hire">${icon('hire', 18)}<span class="lbl">Hire a coach</span></a>
+            <a class="txt-btn" href="verify">${icon('award', 18)}<span class="lbl">Verify</span></a>
+            ${this.themeToggleHtml()}
+            ${/\/(index(\.html)?)?$/.test(location.pathname) ? '' : '<a class="pill solid sm" href="/">Sign in</a>'}
           </nav></div>`;
       }
       document.body.prepend(bar);
 
       if (!profile) return;
       const mobileTabs = [
-        ['home', 'feed.html', 'Home', 'home', null],
-        ['network', 'network.html', 'Network', 'network', 'invitations'],
-        ['jobs', 'jobs.html', 'Jobs', 'briefcase', null],
-        ['courses', 'courses.html', 'Courses', 'courses', null],
-        ['notifications', 'notifications.html', 'Alerts', 'bell', 'notifications'],
+        ['home', 'feed', 'Home', 'home', null],
+        ['network', 'network', 'Network', 'network', 'invitations'],
+        ['jobs', 'jobs', 'Jobs', 'briefcase', null],
+        ['courses', 'courses', 'Courses', 'courses', null],
+        ['notifications', 'notifications', 'Alerts', 'bell', 'notifications'],
       ];
       const bb = document.createElement('nav');
       bb.className = 'bottombar';
@@ -846,30 +865,30 @@
       menu.className = 'me-menu';
       menu.innerHTML = `
         <div class="me-head">${this.avatarHtml(profile, 'avatar')}<div><b>${esc(profile.full_name || 'Member')} ${this.tick(profile.verified || profile.is_owner, 15)}</b><span>${esc(profile.headline || profile.occupation || profile.unique_id || '')}</span></div></div>
-        <a class="pill btn-view" href="profile.html?u=${encodeURIComponent(profile.username || '')}">View profile</a>
+        <a class="pill btn-view" href="profile?u=${encodeURIComponent(profile.username || '')}">View profile</a>
         <div class="me-sec"><h6>Premium &amp; trust</h6>
-          <a href="premium.html" class="gold-lnk">${icon('crown', 18)}<span id="mePremLbl">Try Premium free for 14 days</span></a>
-          ${(profile.verified || profile.is_owner) ? `<a href="verification.html">${icon('tick', 18)}You're verified</a>` : `<a href="verification.html">${icon('tick', 18)}Get the verified tick</a>`}
-          <a href="insights.html">${icon('chart', 18)}Profile insights</a></div>
+          <a href="premium" class="gold-lnk">${icon('crown', 18)}<span id="mePremLbl">Try Premium free for 14 days</span></a>
+          ${(profile.verified || profile.is_owner) ? `<a href="verification">${icon('tick', 18)}You're verified</a>` : `<a href="verification">${icon('tick', 18)}Get the verified tick</a>`}
+          <a href="insights">${icon('chart', 18)}Profile insights</a></div>
         <div class="me-sec"><h6>Clients &amp; bookings</h6>
-          <a href="bookings.html">${icon('calendar', 18)}Bookings</a>
-          <a href="requests.html">${icon('target', 18)}Client requests</a>
-          <a href="bookings.html#settings">${icon('clock', 18)}Booking settings</a></div>
+          <a href="bookings">${icon('calendar', 18)}Bookings</a>
+          <a href="requests">${icon('target', 18)}Client requests</a>
+          <a href="bookings#settings">${icon('clock', 18)}Booking settings</a></div>
         <div class="me-sec"><h6>Jobs &amp; pages</h6>
-          <a href="jobs.html?tab=applied">${icon('briefcase', 18)}My jobs</a>
-          <a href="hiring.html">${icon('userplus', 18)}Hiring &amp; job posts</a>
+          <a href="jobs?tab=applied">${icon('briefcase', 18)}My jobs</a>
+          <a href="hiring">${icon('userplus', 18)}Hiring &amp; job posts</a>
           <div id="meMyPages"></div>
-          <a href="company.html?new=1">${icon('building', 18)}Create a page</a></div>
+          <a href="company?new=1">${icon('building', 18)}Create a page</a></div>
         <div class="me-sec"><h6>Appearance</h6>${this.themeSwitchHtml()}</div>
         <div class="me-sec"><h6>Account</h6>
-          <a href="settings.html">${icon('settings', 18)}Settings &amp; privacy</a>
-          <a href="settings.html#notifications">${icon('bell', 18)}Pop-up notifications</a>
+          <a href="settings">${icon('settings', 18)}Settings &amp; privacy</a>
+          <a href="settings#notifications">${icon('bell', 18)}Pop-up notifications</a>
           <button class="lnk" type="button" id="meInstall" hidden>${icon('phone', 18)}Install the app</button>
-          <a href="courses.html">${icon('award', 18)}Courses &amp; certificates</a>
+          <a href="courses">${icon('award', 18)}Courses &amp; certificates</a>
           <button class="lnk" type="button" data-guidelines>${icon('shield', 18)}Community guidelines</button>
           <a href="mailto:${esc(cfg.SUPPORT_EMAIL || '')}">${icon('help', 18)}Help</a></div>
-        <div class="me-sec"><h6>For gyms &amp; studios</h6><a href="hire.html">${icon('hire', 18)}Hire a coach</a>
-          ${(profile.is_admin || profile.is_owner) ? `<a href="admin.html">${icon('shield', 18)}Admin control room</a>` : ''}</div>
+        <div class="me-sec"><h6>For gyms &amp; studios</h6><a href="hire">${icon('hire', 18)}Hire a coach</a>
+          ${(profile.is_admin || profile.is_owner) ? `<a href="admin">${icon('shield', 18)}Admin control room</a>` : ''}</div>
         <div class="me-sec"><button class="lnk" type="button" id="btnSignOut">${icon('logout', 18)}Sign out</button></div>`;
       document.body.appendChild(menu);
 
@@ -891,7 +910,7 @@
       }).catch(() => {});
       sb.rpc('my_pages').then(({ data }) => {
         const el = document.getElementById('meMyPages');
-        if (el && data && data.length) el.innerHTML = data.slice(0, 3).map((p) => `<a href="company.html?p=${encodeURIComponent(p.slug)}">${icon('building', 18)}${esc(p.name)}</a>`).join('');
+        if (el && data && data.length) el.innerHTML = data.slice(0, 3).map((p) => `<a href="company?p=${encodeURIComponent(p.slug)}">${icon('building', 18)}${esc(p.name)}</a>`).join('');
       }).catch(() => {});
       this.wireCommon(document);
       this.refreshCounts();
@@ -1037,7 +1056,7 @@
       let host = document.querySelector('.live-toasts');
       if (!host) { host = document.createElement('div'); host.className = 'live-toasts'; host.setAttribute('aria-live', 'polite'); document.body.appendChild(host); }
       const el = document.createElement('a');
-      el.className = 'live-toast'; el.href = n.url || 'notifications.html';
+      el.className = 'live-toast'; el.href = this.href(n.url) || 'notifications';
       el.innerHTML = `${n.actor ? this.avatarHtml(n.actor, 'avatar') : `<span class="lt-ic">${icon(n.icon || 'bell', 20)}</span>`}
         <span class="lt-tx"><b>${esc(n.title || '')}</b>${n.body ? `<span>${esc(n.body)}</span>` : ''}</span>
         <button type="button" class="lt-x" aria-label="Dismiss">${icon('close', 16)}</button>`;
@@ -1053,14 +1072,14 @@
           const { data } = await sb.rpc('list_notifications', { p_limit: 5 });
           let seen = []; try { seen = JSON.parse(sessionStorage.getItem('fl:lt') || '[]'); } catch (_) {}
           (data || []).filter((n) => !n.is_read && !seen.includes(n.id)).slice(0, 2).reverse().forEach((n) => {
-            seen.push(n.id); this.liveToast({ title: n.title, body: n.body, url: n.link_url || 'notifications.html', actor: n.actor });
+            seen.push(n.id); this.liveToast({ title: n.title, body: n.body, url: n.link_url || 'notifications', actor: n.actor });
           });
           try { sessionStorage.setItem('fl:lt', JSON.stringify(seen.slice(-50))); } catch (_) {}
         }
-        if ((now.messages || 0) > (prev.messages || 0) && !location.pathname.endsWith('messaging.html')) {
+        if ((now.messages || 0) > (prev.messages || 0) && !/\/messaging(\.html)?$/.test(location.pathname)) {
           const { data } = await sb.rpc('list_conversations');
           const c = (data || []).filter((x) => x.unread > 0 && !x.last_mine).sort((a, b) => new Date(b.last_at) - new Date(a.last_at))[0];
-          if (c) this.liveToast({ title: c.full_name, body: c.last_body, url: 'messaging.html?u=' + encodeURIComponent(c.username), actor: c, icon: 'messages' });
+          if (c) this.liveToast({ title: c.full_name, body: c.last_body, url: 'messaging?u=' + encodeURIComponent(c.username), actor: c, icon: 'messages' });
         }
       } catch (_) {}
     },
@@ -1073,6 +1092,8 @@
     },
 
     param(name) { return new URLSearchParams(location.search).get(name); },
+    // links saved before clean addresses ("jobs.html?x") → "jobs?x"; other links unchanged
+    href(u) { return typeof u === 'string' ? u.replace(/^([a-z0-9_-]+)\.html(?=[?#]|$)/i, '$1') : u; },
 
     busy(btn, on, label) {
       if (!btn) return;
@@ -1082,6 +1103,16 @@
   };
 
   window.FL = FL;
+  document.addEventListener('click', (e) => {
+    const b = e.target && e.target.closest && e.target.closest('[data-theme-toggle]');
+    if (b) FL.theme.set(FL.theme.isDark() ? 'light' : 'dark');
+  });
+  const addLandingToggle = () => {
+    const nav = document.querySelector('.lp-top nav');
+    if (nav && !nav.querySelector('[data-theme-toggle]')) nav.insertAdjacentHTML('afterbegin', FL.themeToggleHtml());
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', addLandingToggle); else addLandingToggle();
+  try { matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => FL.syncThemeToggles()); } catch (_) {}
   // start loading the photo check as soon as someone opens a file picker, so it's ready when they choose a photo
   document.addEventListener('click', (e) => {
     const t = e.target && e.target.closest && e.target.closest('input[type=file], label');

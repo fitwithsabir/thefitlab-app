@@ -46,17 +46,17 @@
   const $ = (id) => document.getElementById(id);
   const session = await FL.requireAuth(); if (!session) return;
   let me; try { me = await FL.getProfile(); } catch (e) { return FL.toast(FL.friendly(e), 'err'); }
-  if (!me.profile_completed) return location.replace('register.html');
+  if (!me.profile_completed) return location.replace('register');
   FL.renderHeader(me);
   $('icImg').innerHTML = FL.icon('image', 20); $('icIdea').innerHTML = FL.icon('insightful', 20); $('icWin').innerHTML = FL.icon('celebrate', 20);
-  $('cmpRow').innerHTML = `<a href="profile.html?u=${encodeURIComponent(me.username)}">${FL.avatarHtml(me, 'avatar md')}</a><button class="fake" id="btnCompose">Start a post</button>`;
+  $('cmpRow').innerHTML = `<a href="profile?u=${encodeURIComponent(me.username)}">${FL.avatarHtml(me, 'avatar md')}</a><button class="fake" id="btnCompose">Start a post</button>`;
   $('notice').innerHTML = FL.communityNotice(me);
 
   const feed = $('feed');
   let oldest = null, loading = false, done = false, scope = 'all';
   const tag = (FL.param('tag') || '').replace(/^#/, '').toLowerCase().replace(/[^a-z0-9_]/g, '') || null;
   if (tag) { $('scopeBox').hidden = true; $('tagBox').hidden = false;
-    $('tagBox').innerHTML = `<div class="box-head"><div><h2>${FL.icon('hash', 20)} ${FL.esc(tag)}</h2><div class="sub">Posts with #${FL.esc(tag)}</div></div><a class="pill ghost sm" href="feed.html">Back to Home</a></div>`; }
+    $('tagBox').innerHTML = `<div class="box-head"><div><h2>${FL.icon('hash', 20)} ${FL.esc(tag)}</h2><div class="sub">Posts with #${FL.esc(tag)}</div></div><a class="pill ghost sm" href="feed">Back to Home</a></div>`; }
   $('fab').innerHTML = FL.icon('edit', 24);
   $('fab').onclick = () => openComposer();
   $('scope').onclick = (e) => { const b = e.target.closest('[data-sc]'); if (!b || b.dataset.sc === scope) return; scope = b.dataset.sc;
@@ -70,10 +70,10 @@
   };
   const openComposer = () => FLPosts.composer(me, { onDone: onPosted });
   document.addEventListener('click', (e) => { if (e.target.closest('#btnCompose,[data-compose]')) openComposer(); });
-  if (location.hash === '#compose') { history.replaceState(null, '', 'feed.html'); setTimeout(openComposer, 300); }
+  if (location.hash === '#compose') { history.replaceState(null, '', 'feed'); setTimeout(openComposer, 300); }
   // "Share to Fit Lab" from another app (see sw.js)
   if (FL.param('shared') && 'caches' in window) {
-    history.replaceState(null, '', 'feed.html');
+    history.replaceState(null, '', 'feed');
     (async () => {
       try {
         const c = await caches.open('fl-share');
@@ -97,8 +97,8 @@
   if (single) {
     const { data: p } = await sb.rpc('get_post', { p_id: single });
     $('single').hidden = false;
-    $('single').innerHTML = p ? FLPosts.render(p, { expanded: true }) + `<p style="text-align:center;margin:14px 0 4px"><a class="pill ghost sm" href="feed.html">Back to the full feed</a></p>`
-                              : `<div class="box empty"><b>This post isn't available</b>It may have been deleted or hidden.<br><br><a class="pill sm" href="feed.html">Go to your feed</a></div>`;
+    $('single').innerHTML = p ? FLPosts.render(p, { expanded: true }) + `<p style="text-align:center;margin:14px 0 4px"><a class="pill ghost sm" href="feed">Back to the full feed</a></p>`
+                              : `<div class="box empty"><b>This post isn't available</b>It may have been deleted or hidden.<br><br><a class="pill sm" href="feed">Go to your feed</a></div>`;
     feed.hidden = true; $('compose').hidden = true; $('scopeBox').hidden = true;
     if (p) setTimeout(() => $('single').querySelector('[data-act=comments]')?.click(), 50);
   } else {
@@ -121,11 +121,11 @@
       feed.innerHTML = tag ? `<div class="box empty"><b>No posts with #${FL.esc(tag)} yet</b>Be the first — add #${FL.esc(tag)} to your next post.</div>`
         : `<div class="box empty"><b>Nothing saved yet</b>Tap ⋯ on any post and choose “Save post” to keep it here.</div>`;
     } else if (!posts.length && !oldest && scope !== 'all') {
-      feed.innerHTML = scope === 'pages' ? `<div class="box empty"><b>No page posts yet</b>Follow gyms, clinics and brands to see their updates and jobs here.<div style="margin-top:14px"><a class="pill sm" href="company.html">Find pages to follow</a></div></div>`
-        : `<div class="box empty"><b>Nothing from your network yet</b>Connect with people you work with to see their posts here.<div style="margin-top:14px"><a class="pill sm" href="network.html">Grow your network</a></div></div>`;
+      feed.innerHTML = scope === 'pages' ? `<div class="box empty"><b>No page posts yet</b>Follow gyms, clinics and brands to see their updates and jobs here.<div style="margin-top:14px"><a class="pill sm" href="company">Find pages to follow</a></div></div>`
+        : `<div class="box empty"><b>Nothing from your network yet</b>Connect with people you work with to see their posts here.<div style="margin-top:14px"><a class="pill sm" href="network">Grow your network</a></div></div>`;
     } else if (!posts.length && !oldest) {
       feed.innerHTML = `<div class="box empty"><b>Your feed is ready</b>Share a coaching insight, or connect with other coaches to see their posts here.
-        <div style="margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="pill solid sm" id="btnFirst">Write the first post</button><a class="pill sm" href="network.html">Find coaches</a></div></div>`;
+        <div style="margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="pill solid sm" id="btnFirst">Write the first post</button><a class="pill sm" href="network">Find coaches</a></div></div>`;
       $('btnFirst').onclick = openComposer;
     }
     feed.insertAdjacentHTML('beforeend', posts.map((p) => FLPosts.render(p)).join(''));
@@ -145,7 +145,7 @@
     const { data: prog } = await sb.from('lesson_progress').select('course_id').eq('user_id', me.id);
     learn = `<div class="box"><div class="box-head" style="padding-bottom:8px"><h3 style="font-size:15px">Your learning</h3></div>
       ${courses.map((c) => { const done = (prog || []).filter((p) => p.course_id === c.course_id).length, tot = c.courses.total_days, pct = Math.round(done / tot * 100);
-        return `<a class="ent" href="courses.html?c=${encodeURIComponent(c.courses.slug)}" style="padding:10px 16px;color:var(--bone)"><span class="sq">${FL.icon('courses', 20)}</span>
+        return `<a class="ent" href="courses?c=${encodeURIComponent(c.courses.slug)}" style="padding:10px 16px;color:var(--bone)"><span class="sq">${FL.icon('courses', 20)}</span>
           <span class="ent-main"><b class="t-sm" style="display:block;line-height:1.3">${FL.esc(c.courses.title)}</b>
           <span class="cprog" style="margin:6px 0 0"><span class="progress"><i style="width:${pct}%"></i></span><span class="t-xs muted">${done}/${tot}</span></span></span></a>`; }).join('')}</div>`;
   }
@@ -160,29 +160,29 @@
   $('right').innerHTML = `
     <div class="box"><div class="box-head" style="padding-bottom:4px"><h3 style="font-size:16px">Grow your network</h3></div>
       ${(sugg || []).length ? sugg.map((p) => `<div class="ent" data-u="${FL.esc(p.username)}" style="padding:10px 16px">
-          <a href="profile.html?u=${encodeURIComponent(p.username)}">${FL.ringAvatar(p, 'avatar sm')}</a>
-          <div class="ent-main"><a class="ent-name" style="font-size:14px" href="profile.html?u=${encodeURIComponent(p.username)}">${FL.esc(p.full_name)}${FL.tags(p)}</a>
+          <a href="profile?u=${encodeURIComponent(p.username)}">${FL.ringAvatar(p, 'avatar sm')}</a>
+          <div class="ent-main"><a class="ent-name" style="font-size:14px" href="profile?u=${encodeURIComponent(p.username)}">${FL.esc(p.full_name)}${FL.tags(p)}</a>
           <div class="ent-sub" style="font-size:12px">${FL.esc(p.headline || '')}</div>
           ${(p.reasons || [])[0] ? `<div class="t-xs muted" style="margin-top:2px">${FL.esc(p.reasons[0])}</div>` : ''}
           <div class="ent-act" style="margin-top:6px"><button class="pill ghost sm" data-connect="${FL.esc(p.username)}" data-name="${FL.esc(p.full_name)}">${FL.icon('plus', 16)}Connect</button></div></div></div>`).join('')
         : '<p class="t-sm muted" style="padding:0 16px 14px">You\'re connected with everyone we\'d suggest right now.</p>'}
-      <div class="box-foot"><a href="network.html">View all suggestions →</a></div></div>
+      <div class="box-foot"><a href="network">View all suggestions →</a></div></div>
     ${(jobs || []).length ? `<div class="box"><div class="box-head" style="padding-bottom:4px"><h3 style="font-size:16px">Jobs for you</h3></div>
-      ${jobs.map((j) => `<a class="ent" href="jobs.html?job=${j.id}" style="padding:10px 16px;color:inherit">${FL.pageLogo(j.page, 'co-logo sm')}<div class="ent-main">
+      ${jobs.map((j) => `<a class="ent" href="jobs?job=${j.id}" style="padding:10px 16px;color:inherit">${FL.pageLogo(j.page, 'co-logo sm')}<div class="ent-main">
         <b style="font-size:14px;color:var(--lime);display:block;line-height:1.3">${FL.esc(j.title)}</b><div class="ent-sub" style="font-size:12px">${FL.esc(j.page.name)}${j.city ? ' · ' + FL.esc(j.city) : ''}</div>
         <div class="t-xs" style="font-weight:700;margin-top:2px">${FL.pay(j)}</div>${j.why ? `<div class="t-xs muted">${FL.esc(j.why)}</div>` : ''}</div></a>`).join('')}
-      <div class="box-foot"><a href="jobs.html?tab=foryou">See all jobs for you →</a></div></div>` : ''}
+      <div class="box-foot"><a href="jobs?tab=foryou">See all jobs for you →</a></div></div>` : ''}
     ${(pgs || []).length ? `<div class="box"><div class="box-head" style="padding-bottom:4px"><h3 style="font-size:16px">Pages to follow</h3></div>
-      ${pgs.map((g) => `<div class="ent" style="padding:10px 16px"><a href="company.html?p=${encodeURIComponent(g.slug)}">${FL.pageLogo(g, 'co-logo sm')}</a><div class="ent-main">
-        <a class="ent-name" style="font-size:14px" href="company.html?p=${encodeURIComponent(g.slug)}">${FL.esc(g.name)}${FL.tick(g.verified, 14)}</a>
+      ${pgs.map((g) => `<div class="ent" style="padding:10px 16px"><a href="company?p=${encodeURIComponent(g.slug)}">${FL.pageLogo(g, 'co-logo sm')}</a><div class="ent-main">
+        <a class="ent-name" style="font-size:14px" href="company?p=${encodeURIComponent(g.slug)}">${FL.esc(g.name)}${FL.tick(g.verified, 14)}</a>
         <div class="ent-sub" style="font-size:12px">${FL.esc(g.reason || (g.kind_label + ' · ' + g.followers + ' follower' + (g.followers === 1 ? '' : 's')))}</div>
         <div class="ent-act" style="margin-top:6px"><button class="pill ghost sm" data-follow="${g.page_id}">${FL.icon('plus', 16)}Follow</button></div></div></div>`).join('')}
-      <div class="box-foot"><a href="company.html">Browse pages →</a></div></div>` : ''}
+      <div class="box-foot"><a href="company">Browse pages →</a></div></div>` : ''}
     ${(trend || []).length ? `<div class="box"><div class="box-head" style="padding-bottom:4px"><h3 style="font-size:16px">Trending topics</h3></div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;padding:4px 16px 16px">${trend.map((t) => `<a class="chip" href="feed.html?tag=${encodeURIComponent(t.tag)}">#${FL.esc(t.tag)} <span class="muted">${t.posts}</span></a>`).join('')}</div></div>` : ''}
+      <div style="display:flex;flex-wrap:wrap;gap:8px;padding:4px 16px 16px">${trend.map((t) => `<a class="chip" href="feed?tag=${encodeURIComponent(t.tag)}">#${FL.esc(t.tag)} <span class="muted">${t.posts}</span></a>`).join('')}</div></div>` : ''}
     <div class="box box-pad"><div class="eyebrow" style="font-size:10px">The Fit Lab Academy</div>
       <p class="t-sm" style="margin:8px 0 12px;line-height:1.5">Earn verified certificates, climb the star ratings and get found by gyms on the Hire-a-Coach portal.</p>
-      <a class="pill sm" href="courses.html">Browse courses</a></div>
+      <a class="pill sm" href="courses">Browse courses</a></div>
     ${FL.siteFootHtml(true)}`;
   FL.wireCommon($('right'));
   $('right').addEventListener('click', async (e) => {
