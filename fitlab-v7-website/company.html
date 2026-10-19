@@ -395,13 +395,13 @@
         const f = inp.files[0]; if (!f) return;
         FL.toast(kind === 'logo' ? 'Uploading logo…' : 'Uploading cover…');
         try {
-          const url = await FL.uploadImage(f, kind === 'logo' ? { bucket: 'page-media', path: `${pg.page_id}/logo.jpg`, square: true, max: 600 }
+          const url = await FL.uploadImage(f, kind === 'logo' ? { bucket: 'page-media', path: `${pg.page_id}/logo.jpg`, square: true, max: 600, format: 'jpeg' }
                                                              : { bucket: 'page-media', path: `${pg.page_id}/cover.jpg`, aspect: 4, max: 1600 });
           const r = await FL.call('update_page', { p_page: pg.page_id, p: kind === 'logo' ? { logo_url: url } : { cover_url: url } });
           if (r) { FL.toast('Updated', 'ok'); await load(); render(); }
         } catch (e) { FL.toast(FL.friendly(e), 'err'); }
       };
-      inp.click();
+      FL.photoCheck.warm(); inp.click();
     }
 
     function moreMenu(btn) {

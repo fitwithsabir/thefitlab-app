@@ -1,0 +1,8 @@
+User-agent: *
+Disallow: /admin.html
+Disallow: /settings.html
+Disallow: /messaging.html
+Disallow: /chat.html
+Disallow: /notifications.html
+
+Sitemap: https://thefitlab.in/sitemap.xml

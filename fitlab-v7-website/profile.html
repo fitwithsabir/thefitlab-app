@@ -310,12 +310,12 @@
       try {
         const url = await FL.uploadImage(f, kind === 'cover'
           ? { bucket: 'avatars', path: `${me.id}/cover.jpg`, aspect: 4, max: 1600 }
-          : { bucket: 'avatars', path: `${me.id}/avatar.jpg`, square: true, max: 800 });
+          : { bucket: 'avatars', path: `${me.id}/avatar.jpg`, square: true, max: 800, format: 'jpeg' });
         must(await sb.from('profiles').update(kind === 'cover' ? { cover_url: url } : { photo_url: url }).eq('id', me.id));
         me = await FL.getProfile(true); FL.renderHeader(me); FL.toast('Updated', 'ok'); await reload();
       } catch (e) { FL.toast(FL.friendly(e), 'err'); }
     };
-    inp.click();
+    FL.photoCheck.warm(); inp.click();
   }
 
   // ------------------------------------------------------------ render

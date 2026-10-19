@@ -348,13 +348,22 @@
         };
       });
     },
-    // generic upload (PDF or image) to a bucket path — returns the storage path
-    async uploadFile(bucket, path, file, maxMB = 8) {
+    // generic upload (PDF or image) to a bucket path — photos are checked and shrunk first; returns the storage path
+    async uploadFile(bucket, path, file, maxMB = 5) {
       if (!file) return null;
-      if (file.size > maxMB * 1024 * 1024) throw new Error(`Files can be up to ${maxMB} MB`);
       if (!/^(image\/(jpeg|png|webp)|application\/pdf)$/.test(file.type)) throw new Error('Upload a PDF, JPG or PNG');
-      const { error } = await sb.storage.from(bucket).upload(path, file, { upsert: true, contentType: file.type });
+      if (file.type === 'application/pdf') {
+        if (file.size > maxMB * 1024 * 1024) throw new Error(`PDFs can be up to ${maxMB} MB`);
+        const { error } = await sb.storage.from(bucket).upload(path, file, { upsert: true, contentType: file.type });
+        if (error) throw error;
+        return path;
+      }
+      const { blob, canvas } = await this.compressImage(file, { max: 2000, quality: 0.85 });   // documents stay readable
+      const res = await this.photoCheck.check(canvas);
+      if (res.verdict === 'blocked') { this._logPhoto(bucket, null, res); throw new Error(this.BLOCKED_PHOTO); }
+      const { error } = await sb.storage.from(bucket).upload(path, blob, { upsert: true, contentType: blob.type });
       if (error) throw error;
+      this._logPhoto(bucket, path, res);
       return path;
     },
 
@@ -606,29 +615,83 @@
         .map(([k, l, ic]) => `<a class="soc" href="${esc(links[k])}" target="_blank" rel="noopener nofollow ugc">${icon(ic, 15)}${esc(l)}</a>`).join('');
     },
 
-    // resize + upload an image to Storage, returns its public URL
-    async uploadImage(file, { bucket = 'avatars', path, max = 1600, square = false, aspect = null, quality = 0.86 } = {}) {
-      if (!file) return null;
+    // ---------------------------------------------------------------- safe, light photos
+    // Every photo is shrunk on the member's own device before upload (smaller files, location
+    // data removed) and checked for nudity there too — the photo never leaves the phone for the check.
+    photoCheck: {
+      _ready: null,
+      CDN: 'https://cdn.jsdelivr.net/npm/nsfwjs@4.4.0/dist/',
+      load() {
+        if (!this._ready) {
+          this._ready = (async () => {
+            const add = (src) => new Promise((res, rej) => {
+              const el = document.createElement('script'); el.src = src; el.async = false; el.crossOrigin = 'anonymous';
+              el.onload = res; el.onerror = () => rej(new Error('photo check unavailable')); document.head.appendChild(el);
+            });
+            if (!window.nsfwjs) for (const f of ['models/mobilenet_v2/model.min.js', 'models/mobilenet_v2/group1-shard1of1.min.js', 'browser/nsfwjs.min.js']) await add(this.CDN + f);
+            return window.nsfwjs.load('MobileNetV2');
+          })();
+          this._ready.catch(() => { this._ready = null; });
+        }
+        return this._ready;
+      },
+      warm() { this.load().catch(() => {}); },
+      // {verdict: 'passed' | 'review' | 'blocked' | 'unchecked', scores}
+      async check(source) {
+        let model;
+        try { model = await Promise.race([this.load(), new Promise((_, rej) => setTimeout(() => rej(new Error('slow')), 25000))]); }
+        catch (e) { return { verdict: 'unchecked', scores: null }; }
+        try {
+          const s = Object.fromEntries((await model.classify(source)).map((x) => [x.className, Math.round(x.probability * 1000) / 1000]));
+          const porn = s.Porn || 0, hentai = s.Hentai || 0;
+          // "Sexy" never blocks: gym, physique and swimwear photos are normal here.
+          if (porn >= 0.85 || hentai >= 0.85 || porn + hentai >= 0.9) return { verdict: 'blocked', scores: s };
+          return { verdict: porn + hentai >= 0.5 ? 'review' : 'passed', scores: s };
+        } catch (e) { return { verdict: 'unchecked', scores: null }; }
+      },
+    },
+    BLOCKED_PHOTO: 'This photo can\'t be used on The Fit Lab — it looks like it may show nudity. Gym, physique and sports photos are fine; please choose a different photo.',
+    async _logPhoto(bucket, path, res) {
+      if (!res || res.verdict === 'passed') return;
+      try { await sb.rpc('log_media_check', { p_bucket: bucket, p_path: path, p_verdict: res.verdict, p_scores: res.scores }); } catch (e) { /* never block the member */ }
+    },
+    // shrink a photo on the device: crop (square / aspect), resize, re-encode (WebP where the browser can, else JPEG)
+    async compressImage(file, { max = 1600, square = false, aspect = null, quality = 0.82, format = 'webp' } = {}) {
+      if (!file) throw new Error('Choose a photo');
       if (!/^image\/(jpeg|png|webp)$/.test(file.type)) throw new Error('Use a JPG, PNG or WebP image');
-      const blob = await new Promise((resolve, reject) => {
-        const img = new Image(); const url = URL.createObjectURL(file);
-        img.onload = () => {
-          let sx = 0, sy = 0, sw = img.width, sh = img.height;
-          if (square || aspect) {
-            const want = square ? 1 : aspect;
-            if (sw / sh > want) { const nw = sh * want; sx = (sw - nw) / 2; sw = nw; } else { const nh = sw / want; sy = (sh - nh) / 2; sh = nh; }
-          }
-          const scale = Math.min(1, max / Math.max(sw, sh));
-          const c = document.createElement('canvas');
-          c.width = Math.round(sw * scale); c.height = Math.round(sh * scale);
-          c.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
-          c.toBlob((b) => { URL.revokeObjectURL(url); b ? resolve(b) : reject(new Error('Could not process the image')); }, 'image/jpeg', quality);
-        };
-        img.onerror = () => reject(new Error('That file is not a readable image'));
-        img.src = url;
+      const img = await new Promise((resolve, reject) => {
+        const el = new Image(); const url = URL.createObjectURL(file);
+        el.onload = () => { URL.revokeObjectURL(url); resolve(el); };
+        el.onerror = () => { URL.revokeObjectURL(url); reject(new Error('That file is not a readable image')); };
+        el.src = url;
       });
-      const { error } = await sb.storage.from(bucket).upload(path, blob, { upsert: true, contentType: 'image/jpeg', cacheControl: '3600' });
+      let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight;
+      if (square || aspect) {
+        const want = square ? 1 : aspect;
+        if (sw / sh > want) { const nw = sh * want; sx = (sw - nw) / 2; sw = nw; } else { const nh = sw / want; sy = (sh - nh) / 2; sh = nh; }
+      }
+      const scale = Math.min(1, max / Math.max(sw, sh));
+      const c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(sw * scale)); c.height = Math.max(1, Math.round(sh * scale));
+      const g = c.getContext('2d');
+      g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);   // transparent PNGs get a white background
+      g.imageSmoothingQuality = 'high';
+      g.drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
+      const enc = (type, q) => new Promise((res) => c.toBlob(res, type, q));
+      let blob = format === 'webp' ? await enc('image/webp', quality) : null;
+      if (!blob || blob.type !== 'image/webp') blob = await enc('image/jpeg', quality);
+      if (!blob) throw new Error('Could not process the image');
+      return { blob, canvas: c };
+    },
+    // check, shrink and upload a photo to Storage — returns its public URL
+    async uploadImage(file, { bucket = 'avatars', path, max = 1600, square = false, aspect = null, quality = 0.82, format = 'webp' } = {}) {
+      if (!file) return null;
+      const { blob, canvas } = await this.compressImage(file, { max, square, aspect, quality, format });
+      const res = await this.photoCheck.check(canvas);
+      if (res.verdict === 'blocked') { this._logPhoto(bucket, null, res); throw new Error(this.BLOCKED_PHOTO); }
+      const { error } = await sb.storage.from(bucket).upload(path, blob, { upsert: true, contentType: blob.type, cacheControl: '3600' });
       if (error) throw error;
+      this._logPhoto(bucket, path, res);
       return sb.storage.from(bucket).getPublicUrl(path).data.publicUrl + '?v=' + Date.now();
     },
 
@@ -1019,4 +1082,9 @@
   };
 
   window.FL = FL;
+  // start loading the photo check as soon as someone opens a file picker, so it's ready when they choose a photo
+  document.addEventListener('click', (e) => {
+    const t = e.target && e.target.closest && e.target.closest('input[type=file], label');
+    if (t && (t.matches('input[type=file]') || t.querySelector('input[type=file]'))) FL.photoCheck.warm();
+  }, true);
 })();
