@@ -5,6 +5,11 @@
 {
   "name": "thefitlab",
   "compatibility_date": "2026-10-01",
+  // thefitlab.in and www.thefitlab.in point at this Worker (Cloudflare creates the DNS records)
+  "routes": [
+    { "pattern": "thefitlab.in", "custom_domain": true },
+    { "pattern": "www.thefitlab.in", "custom_domain": true }
+  ],
   "assets": {
     "directory": "./fitlab-v7-website",
     "html_handling": "none"
