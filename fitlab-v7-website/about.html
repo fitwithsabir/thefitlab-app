@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>About us — The Fit Lab</title>
+<meta name="description" content="The Fit Lab is a professional network, job board and academy for people who work in health and fitness in India, run from Kakinada, Andhra Pradesh.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="icon" href="assets/favicon.png">
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
+<script src="assets/theme.js"></script>
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+  .legal{max-width:760px;margin:36px auto 0}
+  .legal h1{font-size:clamp(40px,7vw,64px);margin:6px 0 8px}
+  .legal h2{font-family:var(--display);font-weight:400;letter-spacing:.03em;text-transform:uppercase;font-size:28px;margin:34px 0 8px}
+  .legal p,.legal li{line-height:1.7}
+  .legal ul{padding-left:20px}
+  .legal .lead{font-size:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="nav"></div>
+  <article class="legal">
+    <div class="eyebrow">About us</div>
+    <h1 class="display">The Fit Lab</h1>
+    <p class="lead">The Fit Lab is a professional network, job board and academy for people who work in health and fitness in India — coaches, trainers, nutritionists, physiotherapists, gyms, studios and clinics.</p>
+    <p>It was started by Sabir Rasool, a head coach in Kakinada, Andhra Pradesh, to give fitness professionals one place to learn, get certified, show their work, find jobs and find clients.</p>
+
+    <h2>What we offer</h2>
+    <ul>
+      <li><b>The Fit Lab Academy.</b> Online courses for fitness coaches with a timed exam and a certificate anyone can check by QR code. The 30-Day Fitness Coaching Mastery course costs ₹99, or you can take the certification exam directly for ₹99.</li>
+      <li><b>The network.</b> A free profile, posts, connections and messages with other people in the industry.</li>
+      <li><b>Jobs.</b> Gyms, studios and clinics post jobs with the pay shown, and members apply for free.</li>
+      <li><b>Premium.</b> Paid plans — Pro, Business and Recruiter — for members who want to get hired faster, grow their practice or hire people. Paid one month or one year at a time; nothing renews automatically.</li>
+      <li><b>Coaching bookings.</b> Members can book sessions with coaches and pay online.</li>
+    </ul>
+    <p>All prices are on our <a href="pricing">pricing page</a>. Payments are taken securely by Razorpay.</p>
+
+    <h2>Where we are</h2>
+    <p>The Fit Lab is run from Kakinada, Andhra Pradesh, India. You can reach us at <a href="mailto:hello@thefitlab.in">hello@thefitlab.in</a> or on +91 95023 18090 — see <a href="contact">Contact us</a>.</p>
+  </article>
+  <div class="footer">© <span id="yr"></span> The Fit Lab · <a href="contact">Contact</a> · <a href="pricing">Pricing</a> · <a href="refunds">Refunds</a> · <a href="terms">Terms</a> · <a href="privacy">Privacy</a></div>
+</div>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="assets/app.js"></script>
+<script>document.getElementById('yr').textContent = new Date().getFullYear(); FL.renderHeader(null);</script>
+</body>
+</html>

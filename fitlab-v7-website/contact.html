@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Contact us — The Fit Lab</title>
+<meta name="description" content="Contact The Fit Lab: hello@thefitlab.in, +91 95023 18090, Kakinada, Andhra Pradesh, India.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="icon" href="assets/favicon.png">
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
+<script src="assets/theme.js"></script>
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+  .legal{max-width:760px;margin:36px auto 0}
+  .legal h1{font-size:clamp(40px,7vw,64px);margin:6px 0 8px}
+  .legal h2{font-family:var(--display);font-weight:400;letter-spacing:.03em;text-transform:uppercase;font-size:28px;margin:34px 0 8px}
+  .legal p,.legal li{line-height:1.7}
+  .legal ul{padding-left:20px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:22px}
+  .ccard{border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+  .ccard .k{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ash)}
+  .ccard .v{font-size:18px;font-weight:600;margin-top:6px;word-break:break-word}
+  .ccard .v a{color:inherit}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="nav"></div>
+  <article class="legal">
+    <div class="eyebrow">Contact us</div>
+    <h1 class="display">Talk to us</h1>
+    <p>Questions about your account, a payment, a course, a certificate or a booking — write or call and a person will help.</p>
+
+    <div class="cards">
+      <div class="ccard"><div class="k">Email</div><div class="v"><a href="mailto:hello@thefitlab.in">hello@thefitlab.in</a></div></div>
+      <div class="ccard"><div class="k">Phone</div><div class="v"><a href="tel:+919502318090">+91 95023 18090</a></div></div>
+      <div class="ccard"><div class="k">Address</div><div class="v">The Fit Lab<br>Kakinada, Andhra Pradesh<br>India</div></div>
+    </div>
+
+    <h2>About a payment</h2>
+    <p>Please include the order ID from your receipt email (it starts with <span class="mono">order_</span>) and the email address you signed up with, so we can find your payment quickly. Refunds are explained in our <a href="refunds">cancellation and refund policy</a>.</p>
+
+    <h2>About your data</h2>
+    <p>For a copy of your data or to delete your account, email us from the address you signed up with. See our <a href="privacy">privacy policy</a>.</p>
+  </article>
+  <div class="footer">© <span id="yr"></span> The Fit Lab · <a href="about">About</a> · <a href="pricing">Pricing</a> · <a href="refunds">Refunds</a> · <a href="terms">Terms</a> · <a href="privacy">Privacy</a></div>
+</div>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="assets/app.js"></script>
+<script>document.getElementById('yr').textContent = new Date().getFullYear(); FL.renderHeader(null);</script>
+</body>
+</html>

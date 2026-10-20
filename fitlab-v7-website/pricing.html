@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Pricing — The Fit Lab</title>
+<meta name="description" content="What The Fit Lab costs: free network and jobs, ₹99 Academy certification, and Premium from ₹299 a month. One-time payments in rupees through Razorpay — nothing renews automatically.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="icon" href="assets/favicon.png">
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
+<script src="assets/theme.js"></script>
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+  .legal{max-width:860px;margin:36px auto 0}
+  .legal h1{font-size:clamp(40px,7vw,64px);margin:6px 0 8px}
+  .legal h2{font-family:var(--display);font-weight:400;letter-spacing:.03em;text-transform:uppercase;font-size:28px;margin:38px 0 8px}
+  .legal p,.legal li{line-height:1.7}
+  .legal ul{padding-left:20px}
+  .prc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:14px}
+  .prc{border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:6px}
+  .prc h3{margin:0;font-size:20px}
+  .prc .tag{color:var(--ash);font-size:14px}
+  .prc .amt{font-family:var(--display);font-size:40px;line-height:1;margin-top:6px}
+  .prc .amt small{font-family:var(--body);font-size:14px;color:var(--ash);margin-left:4px}
+  .prc .alt{font-size:14px;color:var(--ash)}
+  .prc ul{margin:8px 0 0;padding-left:18px;font-size:14px}
+  .prc li{line-height:1.55;margin:3px 0}
+  .prc-note{color:var(--ash);font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="nav"></div>
+  <article class="legal">
+    <div class="eyebrow">Pricing</div>
+    <h1 class="display">What it costs</h1>
+    <p>All prices are in Indian rupees (₹) and are the full amount you pay. Every payment is a one-time payment through Razorpay — UPI, cards, net banking or wallets. Nothing renews automatically.</p>
+
+    <h2>Free</h2>
+    <p>Creating an account is free. Your profile, posts, connections, messages, the job board and job applications cost nothing.</p>
+
+    <h2>The Fit Lab Academy</h2>
+    <div class="prc-grid" id="courses">
+      <div class="prc"><h3>Full course</h3><div class="tag" data-course-title>30-Day Fitness Coaching Mastery</div><div class="amt" data-course-price>₹99<small>one-time</small></div>
+        <ul><li>30 daily chapters in 6 modules, yours for life</li><li>Certification exam with 3 attempts</li><li>Certificate with a public QR verification page</li></ul></div>
+      <div class="prc"><h3>Direct certification</h3><div class="tag">For coaches who already train clients</div><div class="amt" data-course-price>₹99<small>one-time</small></div>
+        <ul><li>Skip the lessons and take the exam</li><li>3 attempts</li><li>The same certificate and verification page</li></ul></div>
+    </div>
+
+    <h2>Premium</h2>
+    <p>Paid one month or one year at a time. When the period ends, your plan simply stops — you're never charged again unless you choose to buy another period. One free trial per member.</p>
+    <div class="prc-grid" id="plans">
+      <div class="prc"><h3>Pro</h3><div class="tag">Get hired faster</div><div class="amt">₹299<small>/ month</small></div><div class="alt">or ₹2,990 for 12 months</div></div>
+      <div class="prc"><h3>Business</h3><div class="tag">Grow your practice</div><div class="amt">₹699<small>/ month</small></div><div class="alt">or ₹6,990 for 12 months</div></div>
+      <div class="prc"><h3>Recruiter</h3><div class="tag">Hire the right people</div><div class="amt">₹1,499<small>/ month</small></div><div class="alt">or ₹14,990 for 12 months</div></div>
+    </div>
+    <p class="prc-note">Team plans for gyms and studios: buy 2 to 50 seats in one payment; 3 seats or more get 20% off every seat. The full feature list for each plan is on the <a href="premium">Premium page</a>.</p>
+
+    <h2>Coaching bookings</h2>
+    <p>Coaches on The Fit Lab set their own prices for sessions and packages. The price is shown before you book, and that is the amount you pay. Cancellations and refunds for bookings are explained in our <a href="refunds">cancellation and refund policy</a>.</p>
+
+    <h2>Receipts</h2>
+    <p>After every payment you get a receipt by email from hello@thefitlab.in with your order ID and payment ID. Questions: <a href="contact">contact us</a>.</p>
+  </article>
+  <div class="footer">© <span id="yr"></span> The Fit Lab · <a href="about">About</a> · <a href="contact">Contact</a> · <a href="refunds">Refunds</a> · <a href="terms">Terms</a> · <a href="privacy">Privacy</a></div>
+</div>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="assets/app.js"></script>
+<script>
+document.getElementById('yr').textContent = new Date().getFullYear();
+FL.renderHeader(null);
+// keep the prices in step with the ones checkout uses (the cards above are the fallback)
+(async () => {
+  const esc = FL.esc;
+  const inr = (paise) => '₹' + (Math.round(paise) / 100).toLocaleString('en-IN');
+  try {
+    const { data: plans } = await sb.rpc('premium_plans_list');
+    if (Array.isArray(plans) && plans.length) {
+      document.getElementById('plans').innerHTML = plans.map((p) => `<div class="prc"><h3>${esc(p.name)}</h3>${p.tagline ? `<div class="tag">${esc(p.tagline)}</div>` : ''}
+        <div class="amt">${inr(p.price_month)}<small>/ month</small></div><div class="alt">or ${inr(p.price_year)} for 12 months</div>
+        ${(p.features || []).length ? `<ul>${p.features.map((f) => `<li>${esc(f)}</li>`).join('')}</ul>` : ''}</div>`).join('');
+    }
+  } catch (e) { /* keep the fallback */ }
+  try {
+    const { data: cs } = await sb.from('courses').select('title, price_paise').eq('is_published', true).gte('price_paise', 100).order('created_at').limit(1);
+    if (cs && cs[0]) {
+      document.querySelector('[data-course-title]').textContent = cs[0].title;
+      document.querySelectorAll('[data-course-price]').forEach((el) => { el.innerHTML = `${inr(cs[0].price_paise)}<small>one-time</small>`; });
+    }
+  } catch (e) { /* keep the fallback */ }
+})();
+</script>
+</body>
+</html>
