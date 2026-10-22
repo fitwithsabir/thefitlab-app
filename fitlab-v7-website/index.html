@@ -123,7 +123,10 @@
   async function goInside() {
     try {
       const p = await FL.getProfile();
-      location.replace(p && p.profile_completed ? (new URLSearchParams(location.search).get('next') || 'feed') : 'register');
+      // only a page on this site, never another address
+      const nx = new URLSearchParams(location.search).get('next') || '';
+      const safe = /^[a-z0-9-]+(\?[A-Za-z0-9=&_%.-]*)?$/.test(nx) ? nx : 'feed';
+      location.replace(p && p.profile_completed ? safe : 'register');
     } catch (e) { location.replace('register'); }
   }
 
