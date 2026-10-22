@@ -127,15 +127,26 @@
     } catch (e) { location.replace('register'); }
   }
 
-  // Password-recovery links land here with a token; Supabase fires this event
-  let recovering = false;
+  // Password-recovery links land here with a token; Supabase fires this event.
+  // Read the address first — Supabase tidies it away once it has the token.
+  const linkInfo = new URLSearchParams((location.hash || '').replace(/^#/, '') + '&' + location.search.replace(/^\?/, ''));
+  let recovering = linkInfo.get('type') === 'recovery';
   sb.auth.onAuthStateChange((event) => {
     if (event === 'PASSWORD_RECOVERY') { recovering = true; show('recover'); }
   });
+  // an old or already-used link comes back with an error instead of a token
+  if (linkInfo.get('error_code') || linkInfo.get('error')) {
+    const expired = /expired|invalid|otp/i.test((linkInfo.get('error_code') || '') + ' ' + (linkInfo.get('error_description') || ''));
+    show('forgot');
+    say(expired ? 'That link has expired or was already used. Enter your email and we\'ll send a new one.'
+                : 'That link didn\'t work. Enter your email and we\'ll send a new one.');
+    history.replaceState(null, '', location.pathname);
+  }
 
   // Already signed in? Skip the landing (unless we're mid-recovery)
   const session = await FL.session();
-  if (session && !recovering && !location.hash.includes('type=recovery')) { await goInside(); return; }
+  if (recovering) show('recover');
+  if (session && !recovering) { await goInside(); return; }
 
   // Published courses strip (public)
   try {
@@ -196,18 +207,31 @@
   forms.forgot.onsubmit = async (e) => {
     e.preventDefault(); clear();
     const btn = e.submitter; FL.busy(btn, true, 'Sending…');
-    const { error } = await sb.auth.resetPasswordForEmail($('fgEmail').value.trim(), { redirectTo: location.href.split('#')[0] });
+    const email = $('fgEmail').value.trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { FL.busy(btn, false); return say('Enter the email you signed up with.'); }
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/' });
     FL.busy(btn, false);
-    if (error) return say(FL.friendly(error));
-    say('Reset link sent. Check your inbox (and spam) and follow the link.', true);
+    if (error) {
+      if (/rate limit|security purposes|only request this/i.test(error.message || '')) return say('A link was sent a moment ago. Wait a minute, then try again — and check your spam folder.');
+      if (/sending|smtp|mail|unexpected/i.test(error.message || '') || error.status >= 500)
+        return say('We couldn\'t send the email just now. Please try again in a few minutes, or write to <a href="mailto:hello@thefitlab.in">hello@thefitlab.in</a> and we\'ll help you get back in.');
+      return say(FL.friendly(error));
+    }
+    say('If that email has an account, a reset link is on its way. Check your inbox and spam folder, and open the link on this device.', true);
   };
 
   forms.recover.onsubmit = async (e) => {
     e.preventDefault(); clear();
     const btn = e.submitter; FL.busy(btn, true, 'Saving…');
-    const { error } = await sb.auth.updateUser({ password: $('rcPass').value });
+    const pass = $('rcPass').value;
+    if (pass.length < 8) { FL.busy(btn, false); return say('Password must be at least 8 characters.'); }
+    const { error } = await sb.auth.updateUser({ password: pass });
     FL.busy(btn, false);
-    if (error) return say(FL.friendly(error));
+    if (error) {
+      if (/different from the old/i.test(error.message || '')) return say('That\'s your current password — choose a new one.');
+      if (/session|jwt|expired/i.test(error.message || '')) { show('forgot'); return say('This reset link has expired. Enter your email and we\'ll send a new one.'); }
+      return say(FL.friendly(error));
+    }
     FL.toast('Password updated', 'ok');
     await goInside();
   };

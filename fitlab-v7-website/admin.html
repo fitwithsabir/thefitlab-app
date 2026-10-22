@@ -61,6 +61,15 @@
   .tg.gold{color:var(--gold);border-color:color-mix(in srgb,var(--gold) 55%,transparent)}
   .st{display:inline-block;font:700 10px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;padding:5px 8px;border-radius:6px;white-space:nowrap;background:var(--panel-2);color:var(--ash)}
   .st-pending,.st-open,.st-logged{background:color-mix(in srgb,var(--warn) 14%,transparent);color:var(--warn)}
+  .paper{margin:12px 0 4px;padding-left:22px;display:flex;flex-direction:column;gap:12px}
+  .paper > li{line-height:1.45}
+  .paper > li.bad > .q{color:var(--danger-text,#f87171)}
+  .paper .q{font-weight:600;margin-bottom:4px}
+  .paper ul{margin:0;padding-left:18px;font-size:13.5px;color:var(--ash)}
+  .paper ul li.right{color:var(--lime)}
+  .paper ul li.wrong{color:var(--danger-text,#f87171)}
+  .paper .tag{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;border:1px solid currentColor;border-radius:999px;padding:0 6px;margin-left:4px;opacity:.85}
+  .cert-check,.cert-check .who{align-items:flex-start}
   .st-approved,.st-auto_approved,.st-active,.st-paid,.st-resolved{background:var(--accent-soft);color:var(--lime)}
   .st-rejected,.st-needs_info,.st-suspended,.st-created{background:color-mix(in srgb,#f97316 14%,transparent);color:#ea7a26}
   .st-revoked,.st-removed,.st-banned,.st-failed{background:color-mix(in srgb,var(--danger) 12%,transparent);color:var(--danger-text)}
@@ -341,7 +350,7 @@
     ['members', 'Members', 'See member details, edit accounts, reset course progress and delete accounts', 'users'],
     ['moderation', 'Reports & conduct', 'Review reports, pause or restore members, conduct rules and the contact-sharing switch', 'flag'],
     ['verification', 'Verification & pages', 'Approve verified ticks and manage organisation pages', 'tick'],
-    ['certificates', 'Certificates', 'Approve, send back or revoke course certificates', 'award'],
+    ['certificates', 'Certificates', 'Check exam answers, revoke or restore course certificates', 'award'],
     ['content', 'Courses & lessons', 'Edit course and lesson content', 'courses'],
     ['announcements', 'Announcements', 'Send a pop-up notice to every member', 'bell'],
     ['premium', 'Premium & payments', 'Change prices, give or end Premium, see payments, bookings and refunds', 'crown'],
@@ -531,7 +540,7 @@
       can('members') ? `<button class="pill sm ghost" type="button" data-focus-search>${I('search', 15)}Find a member</button>` : '',
     ].join('');
     const ATT = [['reports', 'Reports to review', 'flag', '#moderation'], ['verification', 'Verification requests', 'tick', '#verify'],
-      ['certificates', 'Certificates to approve', 'award', '#certs'], ['paused', 'Members paused', 'block', '#moderation/restricted'],
+      ['certificates', 'Exam papers to check', 'award', '#certs'], ['paused', 'Members paused', 'block', '#moderation/restricted'],
       ['pages_new', 'New pages, not verified', 'building', '#pages']].filter(([k]) => at[k] != null);
     const waiting = ['reports', 'verification', 'certificates'].reduce((s, k) => s + (at[k] || 0), 0);
     const groups = [
@@ -647,7 +656,7 @@
 
   // ------------------------------------------------------------------ MEMBER DRAWER
   let DRAWER = null;
-  function closeDrawer() { if (!DRAWER) return; DRAWER.el.remove(); DRAWER = null; document.body.style.overflow = ''; }
+  function closeDrawer() { if (!DRAWER) return; DRAWER.el.remove(); DRAWER = null; FL.lockScroll(); }
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && DRAWER && !document.querySelector('.mdl')) closeDrawer(); });
   function openMember(uid) {
     if (!uid) return;
@@ -660,7 +669,7 @@
       <div class="drawer-body">${spinner}</div></aside>`;
     el.addEventListener('mousedown', (e) => { if (e.target === el) closeDrawer(); });
     el.querySelector('[data-x]').onclick = closeDrawer;
-    document.body.appendChild(el); document.body.style.overflow = 'hidden';
+    el.setAttribute('data-scroll-lock', ''); document.body.appendChild(el); FL.lockScroll();
     DRAWER = { el, uid };
     renderMember(uid);
   }
@@ -1463,13 +1472,41 @@
 
   // ------------------------------------------------------------------ CERTIFICATES
   const CST = { pending: 'Awaiting review', approved: 'Issued', auto_approved: 'Issued', rejected: 'Changes requested', revoked: 'Revoked' };
-  const CF = [['pending', 'Awaiting review'], ['approved', 'Issued'], ['rejected', 'Changes requested'], ['revoked', 'Revoked'], ['all', 'All']];
+  const CF = [['check', 'Check answers'], ['checked', 'Answers checked'], ['approved', 'Issued'], ['pending', 'Awaiting review'], ['rejected', 'Changes requested'], ['revoked', 'Revoked'], ['all', 'All']];
+  const mmss = (sec) => sec == null ? '—' : `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
   VIEWS.certs = async (alive, sub) => {
-    let f = CF.some(([k]) => k === sub) ? sub : 'pending', rows = [];
-    $('view').innerHTML = `<div class="box"><div class="box-head"><div><h2>Certificates</h2><div class="sub">Approving generates and emails the certificate automatically. Only members who passed the final exam can be approved.</div></div></div>
+    let f = CF.some(([k]) => k === sub) ? sub : 'check', rows = [];
+    $('view').innerHTML = `<div class="box"><div class="box-head"><div><h2>Certificates</h2><div class="sub">Passing the final exam issues the certificate straight away and emails it. Open each paper under <b>Check answers</b>: mark it fine, or revoke the certificate if something looks wrong.</div></div></div>
       <div class="catbar" id="cF">${CF.map(([k, l]) => `<button type="button" data-f="${k}" class="${k === f ? 'on' : ''}">${E(l)}</button>`).join('')}</div><div id="cList">${spinner}</div></div>`;
+    // ---- papers of certificates issued on passing ----
+    const paperHtml = (p) => !p || !p.ok ? `<div class="sub">${E((p && p.message) || 'No paper found.')}</div>` : `<ol class="paper">${p.items.map((it) => {
+        const opts = Array.isArray(it.options) ? it.options : [];
+        return `<li class="${it.is_correct ? 'ok' : 'bad'}"><div class="q">${E(it.question || 'Question removed')}<span class="sub"> · Day ${E(it.day ?? '—')}${it.difficulty ? ' · ' + E(it.difficulty) : ''}</span></div>
+          <ul>${opts.map((o, i) => `<li class="${i === it.correct ? 'right' : ''} ${i === it.chosen && i !== it.correct ? 'wrong' : ''}">${i === it.chosen ? '<b>' + E(o) + '</b>' : E(o)}${i === it.correct ? ' <span class="tag">right answer</span>' : ''}${i === it.chosen ? ' <span class="tag">their answer</span>' : ''}</li>`).join('')}</ul>
+          ${it.chosen == null ? '<div class="sub">No answer (time ran out or late)</div>' : ''}</li>`; }).join('')}</ol>`;
+    const loadChecks = async () => {
+      const { data, error } = await sb.rpc('admin_answer_checks', { p_filter: f === 'check' ? 'todo' : 'done' });
+      if (!alive()) return;
+      if (error) { $('cList').innerHTML = `<div class="empty">${E(FL.friendly(error))}</div>`; return; }
+      rows = data || [];
+      if (f === 'check') setCount('certificates', rows.length);
+      $('cList').innerHTML = rows.length ? rows.map((c) => {
+        const st = c.revoked_at ? ['revoked', 'Revoked'] : c.answers_checked_at ? ['approved', 'Checked'] : ['pending', 'Not checked yet'];
+        const acts = [`<button class="pill ghost sm" type="button" data-paper="${E(c.id)}">Answers</button>`];
+        if (!c.answers_checked_at && !c.revoked_at) acts.push(`<button class="pill solid sm" type="button" data-fine="${E(c.id)}">Looks fine</button>`);
+        if (!c.revoked_at) acts.push(`<button class="pill red-o sm" type="button" data-revoke="${E(c.id)}">Revoke</button>`);
+        const flags = [c.late_count ? `${c.late_count} late answer${c.late_count === 1 ? '' : 's'}` : '', c.voided ? `${c.voided} paper${c.voided === 1 ? '' : 's'} stopped (left the page)` : ''].filter(Boolean);
+        return `<div class="lrow cert-check" data-row="${E(c.id)}"><div class="who">${FL.avatarHtml(c, 'avatar sm')}<div style="min-width:0">
+            <div class="nm">${can('members') ? `<button class="lnk" type="button" data-member="${E(c.user_id)}">${E(c.full_name)}</button>` : `<b>${E(c.full_name)}</b>`}<span class="st st-${st[0]}">${st[1]}</span></div>
+            <div class="sub">${E(c.course_title)} · ${c.track === 'direct' ? 'direct exam' : 'full course'} · <b>${c.percentage != null ? Math.round(c.percentage) + '%' : '—'}</b> (${E(c.correct ?? '—')}/${E(c.total ?? '—')}) in ${mmss(c.seconds)} · attempt ${E(c.attempts)} · issued ${E(fmt(c.issued_at))}</div>
+            ${flags.length ? `<div class="sub" style="color:var(--warn)">${E(flags.join(' · '))}</div>` : ''}
+            ${c.answers_checked_at ? `<div class="sub">Checked by ${E(c.checked_by || 'the team')} on ${E(fmt(c.answers_checked_at))}${c.answers_note ? ` — “${E(c.answers_note)}”` : ''}</div>` : ''}
+            <div class="paper-host" hidden></div></div></div><div class="acts">${acts.join('')}</div></div>`;
+      }).join('') : `<div class="empty">${f === 'check' ? '<b>All papers checked</b>New certificates appear here as soon as someone passes.' : 'Nothing here yet.'}</div>`;
+    };
     const load = async () => {
       $('cList').innerHTML = spinner;
+      if (f === 'check' || f === 'checked') return loadChecks();
       const { data, error } = await sb.rpc('admin_list_certificates', { p_filter: f });
       if (!alive()) return;
       if (error) { $('cList').innerHTML = `<div class="empty">${E(FL.friendly(error))}</div>`; return; }
@@ -1493,6 +1530,32 @@
     $('cF').onclick = (e) => { const b = e.target.closest('[data-f]'); if (!b) return; f = b.dataset.f; $('cF').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); load(); };
     $('cList').onclick = async (e) => {
       const mb = e.target.closest('[data-member]'); if (mb) return openMember(mb.dataset.member);
+      const pb = e.target.closest('[data-paper]');
+      if (pb) {
+        const host = pb.closest('.lrow').querySelector('.paper-host');
+        if (!host.hidden) { host.hidden = true; pb.textContent = 'Answers'; return; }
+        host.hidden = false; host.innerHTML = spinner; pb.textContent = 'Hide answers';
+        const { data, error } = await sb.rpc('admin_answer_paper', { p_cert: pb.dataset.paper });
+        host.innerHTML = error ? `<div class="sub">${E(FL.friendly(error))}</div>` : paperHtml(data);
+        return;
+      }
+      const fb = e.target.closest('[data-fine]');
+      if (fb) {
+        const r = await askNote({ title: 'Mark this paper as checked', help: 'Optional note for the team (only admins see it).', okLabel: 'Looks fine', ph: 'e.g. Consistent timing, answers look genuine.' });
+        if (!r) return;
+        FL.busy(fb, true, '…');
+        if (await act('admin_answers_checked', { p_cert: fb.dataset.fine, p_note: r.note || null }, 'Marked as checked')) load(); else if (fb.isConnected) FL.busy(fb, false);
+        return;
+      }
+      const rb = e.target.closest('[data-revoke]');
+      if (rb) {
+        const row = rows.find((c) => c.id === rb.dataset.revoke); if (!row) return;
+        const r = await askNote({ title: `Revoke certificate · ${row.full_name}`, help: 'The certificate disappears from the public verification page and the hire portal. You can restore it later from Revoked.', okLabel: 'Revoke', danger: true });
+        if (!r) return;
+        FL.busy(rb, true, '…');
+        if (await act('revoke_certificate', { p_user_id: row.user_id, p_course_id: row.course_id, p_note: r.note }, 'Certificate revoked')) load(); else if (rb.isConnected) FL.busy(rb, false);
+        return;
+      }
       const b = e.target.closest('[data-act]'); if (!b) return;
       const row = rows.find((c) => c.user_id === b.dataset.u && c.course_id === b.dataset.c); if (!row) return;
       const ids = { p_user_id: row.user_id, p_course_id: row.course_id };

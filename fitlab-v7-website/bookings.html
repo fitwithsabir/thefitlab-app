@@ -329,7 +329,7 @@
       const m = FL.modal({ title, body: `<div class="field"><label for="askIn">${esc(label)}</label><textarea id="askIn" maxlength="${max}" style="min-height:80px" placeholder="${esc(ph)}">${esc(value)}</textarea></div>`,
         foot: `<button class="pill ghost" data-no>Back</button><button class="pill solid" data-ok>${esc(okLabel)}</button>`, onClose: () => res(null) });
       m.q('[data-no]').onclick = () => m.close();
-      m.q('[data-ok]').onclick = () => { const v = m.q('#askIn').value.trim(); if (required && !v) return FL.toast(label + ' is required', 'err'); res(v); m.el.remove(); document.body.style.overflow = ''; };
+      m.q('[data-ok]').onclick = () => { const v = m.q('#askIn').value.trim(); if (required && !v) return FL.toast(label + ' is required', 'err'); res(v); m.el.remove(); FL.lockScroll(); };
     });
   }
   function pickTime(b, title, run) {

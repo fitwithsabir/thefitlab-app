@@ -493,8 +493,10 @@ body.app{padding-bottom:0}
   .tb-tab.on::after{display:none}
 }
 /* "Me" dropdown */
-.me-menu{position:absolute;right:16px;top:calc(var(--topbar) - 4px);width:300px;max-width:calc(100vw - 24px);background:var(--panel);
-  border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-lg);padding:8px 0;z-index:70;display:none}
+.me-menu{position:fixed;right:max(12px,calc((100vw - 1180px) / 2 + 16px));top:calc(var(--topbar) - 4px);width:300px;max-width:calc(100vw - 24px);background:var(--panel);
+  border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-lg);padding:8px 0;z-index:70;display:none;
+  max-height:calc(100dvh - var(--topbar) - 12px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+@media (max-width:767px){.me-menu{max-height:calc(100dvh - var(--topbar) - var(--bottombar) - env(safe-area-inset-bottom) - 12px)}}
 .me-menu.on{display:block;animation:flRise .16s ease-out}
 .me-head{display:flex;gap:12px;align-items:center;padding:10px 16px 12px}
 .me-head .avatar{width:56px;height:56px;font-size:20px}
@@ -1124,3 +1126,12 @@ a.bkrow:hover{background:var(--hover);text-decoration:none}
 .theme-tgl:hover{color:var(--bone);border-color:var(--ash)}
 .theme-tgl:focus-visible{outline:2px solid var(--lime);outline-offset:2px}
 .theme-tgl svg{display:block}
+
+/* ask to turn on pop-up notifications (fix-28) */
+.push-nudge{display:flex;gap:14px;align-items:center;padding:14px 16px;border-color:color-mix(in srgb,var(--lime) 40%,var(--line))}
+.push-nudge .pn-ic{flex:none;width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--lime) 14%,transparent);color:var(--lime)}
+.push-nudge .pn-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.push-nudge .pn-tx b{font-size:15px}
+.push-nudge .pn-tx span{font-size:13px;color:var(--ash);line-height:1.45}
+.push-nudge .pn-act{display:flex;gap:8px;flex:none}
+@media (max-width:600px){.push-nudge{flex-wrap:wrap}.push-nudge .pn-act{width:100%;justify-content:flex-end}}

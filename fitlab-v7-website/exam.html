@@ -302,7 +302,7 @@
     $('rEyebrow').style.color = col;
     $('rTitle').textContent = r.passed ? 'You passed the certification exam.' : `${pct}% — the pass mark is ${r.pass_percentage}%.`;
     $('rBody').textContent = r.passed
-      ? `${r.correct} of ${r.total} correct. Your certificate has been queued for approval — you will be emailed the moment it is issued, and your public verification page is already live.`
+      ? `${r.correct} of ${r.total} correct. Your certificate is issued — it appears in the Courses tab within a minute and is emailed to you, and your public verification page is already live.`
       : `${r.correct} of ${r.total} correct. ${direct ? 'Study the course days on the topics you found hard' : 'Revisit the days you found hardest'}, then try again when you are ready.`;
     const leftNow = course.max_attempts - (used + 1);
     $('rActions').innerHTML = r.passed

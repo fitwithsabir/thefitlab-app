@@ -8,8 +8,7 @@ window.FITLAB_CONFIG = {
   SITE_NAME: "The Fit Lab Academy",
   SUPPORT_EMAIL: "hello@thefitlab.in",
   INSTAGRAM: "https://instagram.com/thefitlab.in",
-  // public half of the pop-up notification key (the private half is an Edge Function secret)
   // Meta Pixel ID (Events Manager → Data sources). Public — safe here. Empty = no Meta tracking.
-  META_PIXEL_ID: "633616436052228",
-  VAPID_PUBLIC_KEY: "BBYIcyrGpWjMpg8B3m_IGktu_99hqC0-7L-N8Lkxr-jHdy3sNuiiXiqLWSI6nO1Ocd5FuIOgMjmIMrsw9GDAcuw"
+  META_PIXEL_ID: "633616436052228"
+  // pop-up notification keys now live in the database (fix-28) — nothing to set here
 };

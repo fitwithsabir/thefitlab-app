@@ -51,6 +51,7 @@
   $('icImg').innerHTML = FL.icon('image', 20); $('icIdea').innerHTML = FL.icon('insightful', 20); $('icWin').innerHTML = FL.icon('celebrate', 20);
   $('cmpRow').innerHTML = `<a href="profile?u=${encodeURIComponent(me.username)}">${FL.avatarHtml(me, 'avatar md')}</a><button class="fake" id="btnCompose">Start a post</button>`;
   $('notice').innerHTML = FL.communityNotice(me);
+  FL.push.nudge($('center')).catch(() => {});
 
   const feed = $('feed');
   let oldest = null, loading = false, done = false, scope = 'all';

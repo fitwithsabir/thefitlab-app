@@ -393,17 +393,21 @@
       el.innerHTML = `<div class="mdl-card${wide ? ' wide' : ''}">
         <div class="mdl-head"><h3>${esc(title)}</h3><button class="icon-btn" data-x aria-label="Close">${icon('close', 20)}</button></div>
         <div class="mdl-body">${body}</div>${foot ? `<div class="mdl-foot">${foot}</div>` : ''}</div>`;
-      const close = () => { el.remove(); document.removeEventListener('keydown', onKey); document.body.style.overflow = ''; if (onClose) onClose(); };
+      // the page stays locked while any dialog is still open (a confirm inside a form, say)
+      const close = () => { el.remove(); document.removeEventListener('keydown', onKey); FL.lockScroll(); if (onClose) onClose(); };
       const onKey = (e) => { if (e.key === 'Escape') close(); };
       el.addEventListener('mousedown', (e) => { if (e.target === el) close(); });
       el.querySelector('[data-x]').onclick = close;
       document.addEventListener('keydown', onKey);
       document.body.appendChild(el);
-      document.body.style.overflow = 'hidden';
+      this.lockScroll();
       const first = el.querySelector('input:not([type=hidden]),textarea,select');
       if (first && window.matchMedia('(min-width:768px)').matches) setTimeout(() => first.focus(), 60);
       return { el, close, q: (s) => el.querySelector(s), qa: (s) => el.querySelectorAll(s) };
     },
+
+    // page scrolling is off only while a dialog or drawer is on screen
+    lockScroll() { document.body.style.overflow = document.querySelector('.mdl, .cr-drawer, [data-scroll-lock]') ? 'hidden' : ''; },
 
     // generic form in a modal. fields: {k, label, type, req, max, ph, help, half, options:[[v,l]], html}
     // onSave(values, modal) may throw an Error (shown in the form) or return false to keep it open.
@@ -893,7 +897,11 @@
       document.body.appendChild(menu);
 
       const meBtn = bar.querySelector('.tb-me');
-      const toggle = (on) => { menu.classList.toggle('on', on); meBtn.setAttribute('aria-expanded', on ? 'true' : 'false'); };
+      const toggle = (on) => {
+        // open right under the Me button, wherever the page is scrolled to
+        if (on) menu.style.right = Math.max(12, Math.round(innerWidth - meBtn.getBoundingClientRect().right)) + 'px';
+        menu.classList.toggle('on', on); meBtn.setAttribute('aria-expanded', on ? 'true' : 'false');
+      };
       meBtn.onclick = (e) => { e.stopPropagation(); toggle(!menu.classList.contains('on')); };
       document.addEventListener('click', (e) => { if (!menu.contains(e.target) && !meBtn.contains(e.target)) toggle(false); });
       document.addEventListener('keydown', (e) => { if (e.key === 'Escape') toggle(false); });
@@ -980,7 +988,9 @@
     isStandalone() { return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; },
 
     push: {
-      supported() { return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && !!cfg.VAPID_PUBLIC_KEY; },
+      // fix-28: the key pair lives in the database; the public half comes from push_public_key()
+      _key: null,
+      supported() { return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window; },
       async reg() {
         if (!('serviceWorker' in navigator)) return null;
         try { return await navigator.serviceWorker.register('sw.js', { scope: './' }); } catch (_) { return null; }
@@ -997,10 +1007,25 @@
         const sub = await this.current();
         return { supported: true, permission: Notification.permission, on: !!sub && Notification.permission === 'granted', needsInstall };
       },
-      key() {
-        const b = cfg.VAPID_PUBLIC_KEY.replace(/-/g, '+').replace(/_/g, '/');
+      async keyText() {
+        if (this._key) return this._key;
+        try { const { data } = await sb.rpc('push_public_key'); if (data) this._key = String(data); } catch (_) {}
+        if (!this._key) throw new Error('Pop-up notifications are being set up. Please try again in a minute.');
+        return this._key;
+      },
+      async key() {
+        const b = (await this.keyText()).replace(/-/g, '+').replace(/_/g, '/');
         const raw = atob(b + '==='.slice((b.length + 3) % 4));
         return Uint8Array.from(raw, (c) => c.charCodeAt(0));
+      },
+      // was this device subscribed with the current key? (older subscriptions used a key that never worked)
+      async sameKey(sub) {
+        try {
+          const k = sub && sub.options && sub.options.applicationServerKey;
+          if (!k) return true;                       // browser doesn't tell us — assume it's fine
+          const a = new Uint8Array(k), b = await this.key();
+          return a.length === b.length && a.every((v, i) => v === b[i]);
+        } catch (_) { return true; }
       },
       async save(sub) {
         const j = sub.toJSON();
@@ -1010,35 +1035,73 @@
         try { localStorage.setItem('fl:pushsync', String(Date.now())); } catch (_) {}
         return data;
       },
+      async subscribe(r) {
+        let sub = await r.pushManager.getSubscription();
+        if (sub && !(await this.sameKey(sub))) { try { await sub.unsubscribe(); } catch (_) {} sub = null; }
+        if (!sub) sub = await r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: await this.key() });
+        await this.save(sub);
+        return sub;
+      },
       // must be called from a click
       async enable() {
         if (!this.supported()) throw new Error(FL.isIOS() && !FL.isStandalone()
           ? 'On iPhone and iPad, first add The Fit Lab to your Home Screen (Share → Add to Home Screen), then open it from there and turn notifications on.'
           : 'This browser doesn\'t support pop-up notifications. Try Chrome, Edge, Firefox or Safari.');
-        const perm = await Notification.requestPermission();
+        const perm = await Notification.requestPermission();      // first, while the tap still counts
         if (perm !== 'granted') throw new Error(perm === 'denied'
           ? 'Notifications are blocked for this site. Allow them in your browser\'s site settings, then try again.'
           : 'Notifications weren\'t allowed.');
+        try { localStorage.removeItem('fl:pushoff'); } catch (_) {}
         const r = await this.reg(); if (!r) throw new Error('Couldn\'t start notifications on this device.');
         await navigator.serviceWorker.ready;
-        let sub = await r.pushManager.getSubscription();
-        if (!sub) sub = await r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: this.key() });
-        await this.save(sub);
+        await this.subscribe(r);
         FL._pushOn = true;
         return true;
       },
       async disable() {
         const sub = await this.current();
         if (sub) { try { await sb.rpc('remove_push_subscription', { p_endpoint: sub.endpoint }); } catch (_) {} try { await sub.unsubscribe(); } catch (_) {} }
+        try { localStorage.setItem('fl:pushoff', '1'); } catch (_) {}
         FL._pushOn = false;
       },
-      // keep this device's address fresh (once a day)
+      // on every visit: keep this device subscribed with the current key (no prompt needed once allowed)
       async sync() {
         if (!this.supported() || Notification.permission !== 'granted') { FL._pushOn = false; return; }
-        const sub = await this.current(); FL._pushOn = !!sub;
-        if (!sub) return;
+        let off = false; try { off = localStorage.getItem('fl:pushoff') === '1'; } catch (_) {}
+        const r = await this.reg(); if (!r) return;
+        let sub = await this.current();
+        if (off && !sub) { FL._pushOn = false; return; }        // the member turned pop-ups off here
+        const stale = sub && !(await this.sameKey(sub));
         let last = 0; try { last = +localStorage.getItem('fl:pushsync') || 0; } catch (_) {}
-        if (Date.now() - last > 86400000) { try { await this.save(sub); } catch (_) {} }
+        if (!sub || stale || Date.now() - last > 86400000) {
+          try { await navigator.serviceWorker.ready; sub = await this.subscribe(r); } catch (_) {}
+        }
+        FL._pushOn = !!sub;
+      },
+      // a small card asking to turn pop-ups on (feed + notifications), until turned on or dismissed for 2 weeks
+      async nudge(host) {
+        if (!host) return;
+        let snooze = 0, off = false;
+        try { snooze = +localStorage.getItem('fl:pushnudge') || 0; off = localStorage.getItem('fl:pushoff') === '1'; } catch (_) {}
+        if (off || Date.now() < snooze) return;
+        const st = await this.status();
+        const ios = st.needsInstall;
+        if (!ios && (!st.supported || st.permission !== 'default')) return;
+        try { await this.keyText(); } catch (_) { if (!ios) return; }
+        const el = document.createElement('div');
+        el.className = 'box push-nudge';
+        el.innerHTML = `<span class="pn-ic">${icon('bell', 22)}</span>
+          <div class="pn-tx"><b>Get a pop-up when someone messages you</b>
+            <span>${ios ? 'On iPhone, add The Fit Lab to your Home Screen first, then turn notifications on in Settings.' : 'Messages, invitations, job replies and bookings — even when The Fit Lab is closed. You choose which in Settings.'}</span></div>
+          <div class="pn-act"><button type="button" class="pill solid sm" data-pn-on>${ios ? 'Show me how' : 'Turn on'}</button><button type="button" class="pill ghost sm" data-pn-later>Not now</button></div>`;
+        host.prepend(el);
+        el.querySelector('[data-pn-later]').onclick = () => { try { localStorage.setItem('fl:pushnudge', String(Date.now() + 14 * 86400000)); } catch (_) {} el.remove(); };
+        el.querySelector('[data-pn-on]').onclick = async (e) => {
+          if (ios) return FL.installApp();
+          FL.busy(e.target, true, 'Turning on…');
+          try { await this.enable(); el.remove(); FL.toast('Pop-ups are on for this device', 'ok'); }
+          catch (err) { FL.busy(e.target, false); FL.notice('Notifications', err.message); if (Notification.permission === 'denied') el.remove(); }
+        };
       },
     },
 
