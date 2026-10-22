@@ -484,7 +484,7 @@ body.app{padding-bottom:0}
 .tb-mobile-only{display:none}
 @media (max-width:991px){ .tb-tab{min-width:60px} .tb-tab .lbl{font-size:11px} .tb-search{flex-basis:220px} }
 @media (max-width:767px){
-  .tb-tabs .tb-tab:not(.tb-me):not(.tb-msg){display:none}
+  .tb-tabs .tb-tab:not(.tb-me):not(.tb-msg):not(.tb-tools){display:none}
   .tb-sep{display:none}
   .tb-tab .lbl{display:none}
   .tb-tab{min-width:44px}
@@ -1135,3 +1135,6 @@ a.bkrow:hover{background:var(--hover);text-decoration:none}
 .push-nudge .pn-tx span{font-size:13px;color:var(--ash);line-height:1.45}
 .push-nudge .pn-act{display:flex;gap:8px;flex:none}
 @media (max-width:600px){.push-nudge{flex-wrap:wrap}.push-nudge .pn-act{width:100%;justify-content:flex-end}}
+
+/* signed-out header on small phones: icons only (fix-28) */
+@media (max-width:480px){ .topbar .tb-tabs .txt-btn .lbl{display:none} .topbar .tb-tabs .txt-btn{padding:0 6px} }

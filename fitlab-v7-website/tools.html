@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Coach tools — BMI, BMR, TDEE, calories and macros — The Fit Lab</title>
+<meta name="description" content="Free fitness calculators for coaches and clients: BMI with Indian cut-offs, BMR, TDEE, calories, protein, carbs and fat, body fat, ideal weight, waist ratios, 1-rep max and heart-rate zones — with the formula and research behind each one.">
+<script src="assets/theme.js"></script>
+<link rel="icon" href="assets/favicon.png">
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<link rel="stylesheet" href="assets/tools.css">
+</head>
+<body data-page="tools">
+<div id="nav"></div>
+<main class="page tools">
+  <header class="tl-hero">
+    <div class="eyebrow">Coach tools</div>
+    <h1>Numbers you can trust</h1>
+    <p class="muted">Enter your client once — every calculator updates as you type. Each result shows the formula and the research it comes from.</p>
+    <nav class="tl-tabs" id="tlTabs" aria-label="Tools">
+      <a href="tools" class="on" data-tab="calc">Calculators</a>
+      <a href="tools-diet" data-tab="diet">Diet plans <span class="soon">soon</span></a>
+      <a href="tools-workout" data-tab="workout">Workout plans <span class="soon">soon</span></a>
+      <a href="tools-ai" data-tab="ai">Coach AI <span class="soon">soon</span></a>
+    </nav>
+  </header>
+
+  <div class="tl-grid">
+    <!-- the person -->
+    <section class="box tl-person" aria-label="Client details">
+      <div class="box-head"><h2>Client</h2><button class="txt-btn" type="button" id="btnReset">Clear</button></div>
+      <div class="box-pad">
+        <div class="tl-seg" role="radiogroup" aria-label="Sex">
+          <button type="button" data-sex="male" class="on" role="radio" aria-checked="true">Male</button>
+          <button type="button" data-sex="female" role="radio" aria-checked="false">Female</button>
+        </div>
+        <div class="tl-row">
+          <div class="field"><label for="iAge">Age</label><input id="iAge" type="number" inputmode="numeric" min="10" max="100" value="30"></div>
+          <div class="field"><label for="iWeight">Weight (kg)</label><input id="iWeight" type="number" inputmode="decimal" min="25" max="300" step="0.1" value="70"></div>
+        </div>
+        <div class="field">
+          <label for="iHeight">Height</label>
+          <div class="tl-height">
+            <input id="iHeight" type="number" inputmode="decimal" min="120" max="230" step="0.1" value="170" aria-label="Height in centimetres"><span>cm</span>
+            <input id="iFt" type="number" inputmode="numeric" min="4" max="7" aria-label="Feet"><span>ft</span>
+            <input id="iIn" type="number" inputmode="decimal" min="0" max="11.9" step="0.5" aria-label="Inches"><span>in</span>
+          </div>
+        </div>
+        <div class="field"><label for="iActivity">Activity</label><select id="iActivity"></select></div>
+        <div class="field"><label for="iGoal">Goal</label><select id="iGoal"></select></div>
+        <details class="tl-more" id="moreBox">
+          <summary>Tape measurements, body fat and heart rate <span class="muted">(optional)</span></summary>
+          <div class="tl-row">
+            <div class="field"><label for="iWaist">Waist (cm)</label><input id="iWaist" type="number" inputmode="decimal" min="40" max="200" step="0.5" placeholder="at the navel"></div>
+            <div class="field"><label for="iNeck">Neck (cm)</label><input id="iNeck" type="number" inputmode="decimal" min="20" max="70" step="0.5" placeholder="below the larynx"></div>
+          </div>
+          <div class="tl-row">
+            <div class="field"><label for="iHip">Hip (cm)</label><input id="iHip" type="number" inputmode="decimal" min="50" max="200" step="0.5" placeholder="widest point"></div>
+            <div class="field"><label for="iBf">Body fat %</label><input id="iBf" type="number" inputmode="decimal" min="3" max="65" step="0.1" placeholder="if measured"></div>
+          </div>
+          <div class="field"><label for="iRhr">Resting heart rate (bpm)</label><input id="iRhr" type="number" inputmode="numeric" min="30" max="120" placeholder="counted on waking"></div>
+        </details>
+        <p class="help" style="margin:4px 0 0">Saved on this device only. Nothing you type here is sent anywhere.</p>
+      </div>
+    </section>
+
+    <!-- results -->
+    <div class="tl-col"><div class="tl-results" id="results"></div><div class="tl-results" id="rmHost"></div></div>
+  </div>
+
+  <section class="box tl-cta" id="cta"></section>
+
+  <section class="box tl-refs" aria-labelledby="refsH">
+    <div class="box-head"><h2 id="refsH">References</h2></div>
+    <ol class="box-pad" id="refs"></ol>
+    <p class="box-pad help" style="padding-top:0">These tools give estimates for healthy adults. They are not a diagnosis or medical advice. Pregnancy, breastfeeding, diabetes on medication, kidney or heart disease, eating disorders and anyone under 18 need a doctor or registered dietitian.</p>
+  </section>
+</main>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="assets/app.js"></script>
+<script src="assets/tools-calc.js"></script>
+<script>
+(async () => {
+  const C = window.FLCalc, $ = (id) => document.getElementById(id), esc = FL.esc, I = FL.icon;
+  let me = null;
+  try { if (await FL.session()) me = await FL.getProfile(); } catch (_) {}
+  FL.renderHeader(me && me.profile_completed ? me : null);
+  // tools that aren't open yet
+  document.querySelectorAll('#tlTabs a .soon').forEach((x) => { x.parentElement.addEventListener('click', (e) => { e.preventDefault(); FL.toast('Coming very soon — the calculators are ready now.'); }); });
+
+  // ---------------------------------------------------------------- inputs
+  $('iActivity').innerHTML = C.ACTIVITY.map((a) => `<option value="${a.key}">${esc(a.label)}</option>`).join('');
+  $('iGoal').innerHTML = Object.entries(C.GOALS).map(([k, g]) => `<option value="${k}">${esc(g.label)}</option>`).join('');
+  const KEYS = ['iAge', 'iWeight', 'iHeight', 'iActivity', 'iGoal', 'iWaist', 'iNeck', 'iHip', 'iBf', 'iRhr'];
+  let sex = 'male';
+  const load = () => {
+    try {
+      const s = JSON.parse(localStorage.getItem('fl:tools:person') || 'null'); if (!s) return;
+      KEYS.forEach((k) => { if (s[k] != null && s[k] !== '') $(k).value = s[k]; });
+      if (s.sex) setSex(s.sex, false);
+      if (s.iWaist || s.iNeck || s.iBf || s.iRhr) $('moreBox').open = true;
+    } catch (_) {}
+  };
+  const save = () => { try { const o = { sex }; KEYS.forEach((k) => { o[k] = $(k).value; }); localStorage.setItem('fl:tools:person', JSON.stringify(o)); } catch (_) {} };
+  function setSex(v, go = true) {
+    sex = v;
+    document.querySelectorAll('[data-sex]').forEach((b) => { const on = b.dataset.sex === v; b.classList.toggle('on', on); b.setAttribute('aria-checked', on ? 'true' : 'false'); });
+    if (go) run();
+  }
+  document.querySelectorAll('[data-sex]').forEach((b) => { b.onclick = () => setSex(b.dataset.sex); });
+  const num = (id) => { const v = parseFloat($(id).value); return isFinite(v) ? v : null; };
+  // feet + inches ↔ cm
+  const syncFt = () => { const cm = num('iHeight'); if (!cm) return; const tin = cm / 2.54; $('iFt').value = Math.floor(tin / 12); $('iIn').value = Math.round((tin % 12) * 2) / 2; };
+  const fromFt = () => { const ft = num('iFt') || 0, inch = num('iIn') || 0; if (ft) { $('iHeight').value = Math.round((ft * 12 + inch) * 2.54 * 10) / 10; run(); } };
+  $('iFt').oninput = fromFt; $('iIn').oninput = fromFt;
+  $('iHeight').addEventListener('input', syncFt);
+  KEYS.forEach((k) => { $(k).addEventListener($(k).tagName === 'SELECT' ? 'change' : 'input', () => run()); });
+  $('btnReset').onclick = () => { try { localStorage.removeItem('fl:tools:person'); } catch (_) {} location.reload(); };
+
+  // ---------------------------------------------------------------- references (numbered in order of first use)
+  const used = [];
+  const cite = (...keys) => `<sup class="ref">${keys.map((k) => { if (!used.includes(k)) used.push(k); return `<a href="#ref-${k}">${used.indexOf(k) + 1}</a>`; }).join(',')}</sup>`;
+  const f0 = (n) => (n == null || !isFinite(n)) ? '—' : Math.round(n).toLocaleString('en-IN');
+  const f1 = (n) => (n == null || !isFinite(n)) ? '—' : (Math.round(n * 10) / 10).toLocaleString('en-IN');
+  const card = (id, icon, title, body, how) => `<section class="box tl-card" id="${id}"><div class="tl-card-h">${I(icon, 20)}<h3>${title}</h3></div>
+    <div class="tl-card-b">${body}</div>${how ? `<details class="tl-how"><summary>How it's worked out</summary><div>${how}</div></details>` : ''}</section>`;
+  const stat = (v, unit, lbl, cls = '') => `<div class="tl-stat ${cls}"><b>${v}<small>${unit}</small></b><span>${lbl}</span></div>`;
+  const warn = (t) => `<div class="tl-warn">${I('flag', 15)}<span>${esc(t)}</span></div>`;
+
+  function run() {
+    save();
+    used.length = 0;
+    const age = num('iAge'), w = num('iWeight'), h = num('iHeight');
+    const act = $('iActivity').value, goal = $('iGoal').value;
+    const waist = num('iWaist'), neck = num('iNeck'), hip = num('iHip'), bfIn = num('iBf'), rhr = num('iRhr');
+    if (!(age >= 10 && age <= 100 && w >= 25 && w <= 300 && h >= 120 && h <= 230)) {
+      $('results').innerHTML = `<div class="box box-pad tl-empty">Enter age (10–100), weight (25–300 kg) and height (120–230 cm) to see the results.</div>`;
+      return;
+    }
+    const out = [];
+    // BMI
+    const b = C.bmi(w, h), ca = C.bmiClass(b, 'asian'), cw = C.bmiClass(b, 'who'), hr = C.healthyWeightRange(h, 'asian');
+    const pos = Math.max(0, Math.min(100, (b - 15) / (35 - 15) * 100));
+    out.push(card('cBmi', 'chart', 'Body mass index', `
+      <div class="tl-big"><b>${f1(b)}</b><span class="tl-badge k-${ca.key}">${esc(ca.label)}</span></div>
+      <div class="tl-scale" aria-hidden="true"><i style="left:${pos}%"></i><span style="width:${(18.5 - 15) / 20 * 100}%"></span><span style="width:${(23 - 18.5) / 20 * 100}%"></span><span style="width:${(25 - 23) / 20 * 100}%"></span><span style="width:${(35 - 25) / 20 * 100}%"></span></div>
+      <div class="tl-scale-l"><span style="left:0">15</span><span style="left:17.5%">18.5</span><span style="left:40%">23</span><span style="left:50%">25</span><span style="left:100%">35</span></div>
+      <p class="t-sm">For Indian and other Asian adults${cite('who_asian', 'misra')}. By the international WHO scale it is <b>${esc(cw.label.toLowerCase())}</b>${cite('who_bmi')}.</p>
+      <p class="t-sm muted">Healthy weight for ${f0(h)} cm: <b>${f1(hr.min)}–${f1(hr.max)} kg</b> (BMI 18.5–22.9).</p>`,
+      `BMI = weight (kg) ÷ height (m)². Asian Indians carry more body fat and get diabetes and heart disease at lower BMIs, so the Indian consensus uses 23 for overweight and 25 for obesity instead of 25 and 30. BMI can't tell muscle from fat — use the waist and body-fat results too.`));
+    // energy
+    const t = C.targets({ sex, age, weightKg: w, heightCm: h, activity: act, goal, bodyFatPct: bfIn || null });
+    const harris = C.bmrHarris(sex, w, h, age);
+    out.push(card('cEnergy', 'zap', 'Energy: BMR and TDEE', `
+      <div class="tl-stats">${stat(f0(t.bmrMifflin), 'kcal', 'BMR — Mifflin-St Jeor' + cite('mifflin'))}${stat(f0(harris), 'kcal', 'BMR — Harris-Benedict' + cite('roza'))}${t.bmrKatch ? stat(f0(t.bmrKatch), 'kcal', 'BMR — Katch-McArdle' + cite('katch')) : ''}</div>
+      <div class="tl-stats">${stat(f0(t.maintenance), 'kcal/day', 'Maintenance (TDEE)', 'hl')}${stat(C.activityFactor(act).toFixed(3).replace(/0+$/, ''), '×', 'Activity factor' + cite('katch', 'fao'))}</div>`,
+      `BMR is the energy used at complete rest. Mifflin-St Jeor is the most accurate of the common formulas for adults; with a measured body-fat %, it is averaged with Katch-McArdle, which uses lean mass. TDEE = BMR × activity factor. Formulas are typically within about 10% for most people — adjust after 2–3 weeks of real weight data.`));
+    // targets
+    const pct = (n) => `${Math.round(n)}%`;
+    const perMeal = t.protein / 4;
+    out.push(card('cMacros', 'target', `Calories and macros — ${esc(C.GOALS[goal].label.toLowerCase())}`, `
+      <div class="tl-big"><b>${f0(t.kcal)}</b><span>kcal a day ${t.adjust ? `(${t.adjust > 0 ? '+' : ''}${Math.round(t.adjust * 100)}% vs maintenance)` : ''}</span></div>
+      <div class="tl-macro-bar" aria-hidden="true"><span class="p" style="width:${t.split.protein}%"></span><span class="f" style="width:${t.split.fat}%"></span><span class="c" style="width:${t.split.carbs}%"></span></div>
+      <div class="tl-stats tl-macros">
+        ${stat(f0(t.protein), 'g', `Protein · ${pct(t.split.protein)} · ${f1(t.proteinPerKg)} g/kg${t.referenceWeight < w - 0.5 ? ' (adjusted weight)' : ''}${cite('issn_protein', 'helms')}`, 'p')}
+        ${stat(f0(t.fat), 'g', `Fat · ${pct(t.split.fat)}${cite('iom_amdr')}`, 'f')}
+        ${stat(f0(t.carbs), 'g', `Carbs · ${pct(t.split.carbs)} · ${f1(t.carbs / w)} g/kg${cite('acsm_nutr')}`, 'c')}
+      </div>
+      <div class="tl-stats">${stat(f0(t.fibre), 'g', 'Fibre' + cite('icmr_nin'))}${stat(f1(t.water), 'L', 'Water, plus 0.5–1 L per hour of exercise' + cite('efsa_water'))}${stat(f0(perMeal), 'g', 'Protein per meal (4 meals)' + cite('meal_protein'))}</div>
+      ${t.adjust ? `<p class="t-sm muted">Expected change: about <b>${f1(Math.abs(t.weeklyChangeKg))} kg a week</b> ${t.weeklyChangeKg < 0 ? 'down' : 'up'} at first${cite('kcal_kg')}.</p>` : ''}
+      ${t.warnings.map(warn).join('')}`,
+      `Calories = maintenance ${t.adjust ? `${t.adjust > 0 ? '+' : '−'} ${Math.abs(Math.round(t.adjust * 100))}%` : ''}. Fat loss of 0.5–1% of body weight a week keeps muscle${cite('helms')}; muscle gain needs only a small surplus${cite('iraki')}. Protein: 1.4–2.0 g/kg for people who train, more during fat loss${cite('issn_protein')}; for a BMI over 27.5 it is worked out on an adjusted weight so it isn't overstated. Fat: 20–35% of calories (never under 0.5 g/kg). Carbs fill the rest. The calories never go under 1,200 (women) / 1,500 (men) — lower needs medical supervision.`));
+    // body composition
+    let bf = bfIn, bfHow = 'measured';
+    if (!bf) { const nv = C.bodyFatNavy(sex, h, neck, waist, hip); if (nv != null && nv > 2 && nv < 70) { bf = nv; bfHow = 'navy'; } }
+    if (!bf) { bf = C.bodyFatDeurenberg(sex, b, age); bfHow = 'bmi'; }
+    const lean = C.leanFromBodyFat(w, bf), ff = C.ffmi(lean, h), boer = C.leanMassBoer(sex, w, h);
+    out.push(card('cBody', 'activity', 'Body composition', `
+      <div class="tl-stats">${stat(f1(bf), '%', `Body fat — ${bfHow === 'measured' ? 'as measured' : bfHow === 'navy' ? 'US Navy tape method' + cite('navy') : 'estimate from BMI' + cite('deurenberg')}`, 'hl')}${stat(f1(w * bf / 100), 'kg', 'Fat mass')}${stat(f1(lean), 'kg', 'Lean mass')}</div>
+      <div class="tl-stats">${stat(f1(ff.normalized), '', 'FFMI (normalised)' + cite('kouri'))}${stat(f1(boer), 'kg', 'Lean mass — Boer formula' + cite('boer'))}</div>
+      <p class="t-sm">Category: <b>${esc(C.bodyFatBand(sex, bf))}</b>${cite('ace_bf')}.${bfHow === 'bmi' ? ' Add waist, neck' + (sex === 'female' ? ', hip' : '') + ' measurements for a better estimate.' : ''}</p>`,
+      `US Navy: from height, neck and waist (and hip for women), usually within 3–4% of lab methods. The BMI estimate is rough and tends to be low for Indians, who carry more fat at the same BMI. FFMI is lean mass ÷ height²; above about 25 is rare without drug use.`));
+    // waist
+    if (waist) {
+      const wh = C.waistToHeight(waist, h), wr = C.waistRisk(sex, waist), whr = hip ? C.waistToHip(sex, waist, hip) : null;
+      out.push(card('cWaist', 'target', 'Waist and health risk', `
+        <div class="tl-stats">${stat(wh.ratio.toFixed(2), '', `Waist ÷ height — ${esc(wh.band)}${cite('nice_whtr')}`, wh.ratio >= 0.5 ? 'bad' : 'good')}
+          ${stat(f0(waist), 'cm', `Waist — ${wr.high ? 'above' : 'below'} the ${wr.limit} cm limit for Indian ${sex === 'male' ? 'men' : 'women'}${cite('misra')}`, wr.high ? 'bad' : 'good')}
+          ${whr ? stat(whr.ratio.toFixed(2), '', `Waist ÷ hip — ${whr.high ? 'raised risk' : 'fine'} (limit ${whr.limit})${cite('who_waist')}`, whr.high ? 'bad' : 'good') : ''}</div>
+        <p class="t-sm muted">Keep the waist under half the height.</p>`,
+        `Belly fat predicts diabetes and heart disease better than BMI. Measure on bare skin, at the navel, after breathing out.`));
+    }
+    // ideal weight
+    const iw = C.idealWeights(sex, h);
+    out.push(card('cIdeal', 'star', 'Ideal body weight', `
+      <div class="tl-stats">${stat(f1(iw.devine), 'kg', 'Devine')}${stat(f1(iw.robinson), 'kg', 'Robinson')}${stat(f1(iw.miller), 'kg', 'Miller')}</div>
+      <p class="t-sm">Healthy BMI range: <b>${f1(hr.min)}–${f1(hr.max)} kg</b>${cite('devine')}.</p>`,
+      `These formulas were made for medicine doses, not body goals — treat them as a rough guide. Muscular people can be healthy above them.`));
+    // heart rate
+    const z = C.hrZones(age, rhr);
+    out.push(card('cHr', 'activity', 'Heart-rate zones', `
+      <p class="t-sm" style="margin-top:0">Maximum heart rate about <b>${f0(z.max)} bpm</b>${cite('tanaka')} · ${esc(z.method)}${rhr ? cite('karvonen') : ''}</p>
+      <div class="tl-zones">${z.zones.map((x) => `<div class="z z${x.z}"><b>Zone ${x.z}</b><span>${esc(x.label)}</span><em>${f0(x.range[0])}–${f0(x.range[1])} bpm</em></div>`).join('')}</div>
+      ${rhr ? '' : '<p class="t-sm muted">Add resting heart rate for more accurate, personal zones.</p>'}
+      <p class="t-sm muted">Adults: 150–300 minutes of moderate activity a week, plus strength training on 2 or more days${cite('who_pa')}.</p>`,
+      `Max HR = 208 − 0.7 × age. With resting heart rate, zones use the heart-rate reserve: rest + (max − rest) × %. Medicines such as beta-blockers change heart rate — use effort (RPE) instead.`));
+    $('results').innerHTML = out.join('');
+    // the 1RM card has its own inputs, so it is drawn once and never redrawn while typing
+    if (!$('cOneRm')) {
+      $('rmHost').innerHTML = card('cOneRm', 'dumbbell', 'One-rep max', `
+        <div class="tl-row"><div class="field"><label for="rmW">Weight lifted (kg)</label><input id="rmW" type="number" inputmode="decimal" min="1" max="500" value="${oneRm.w}"></div>
+          <div class="field"><label for="rmR">Reps done</label><input id="rmR" type="number" inputmode="numeric" min="1" max="20" value="${oneRm.r}"></div></div>
+        <div id="rmOut"></div>`,
+        `Epley: weight × (1 + reps ÷ 30). Brzycki: weight × 36 ÷ (37 − reps). Most accurate up to 10 reps${cite('epley')}. Don't test true maxes with beginners — these estimates are safer.`);
+      $('rmW').oninput = $('rmR').oninput = drawRm; drawRm();
+    } else cite('epley');
+    // references, numbered in the order they appear
+    $('refs').innerHTML = used.map((k) => `<li id="ref-${k}">${esc(C.REFS[k])}</li>`).join('');
+  }
+  const oneRm = { w: 60, r: 8 };
+  function drawRm() {
+    oneRm.w = parseFloat($('rmW').value) || 0; oneRm.r = parseInt($('rmR').value, 10) || 0;
+    const r = C.oneRepMax(oneRm.w, oneRm.r);
+    if (!r) { $('rmOut').innerHTML = '<p class="t-sm muted">Enter a weight and the reps done.</p>'; return; }
+    $('rmOut').innerHTML = `<div class="tl-big"><b>${f1(r.average)}</b><span>kg estimated 1RM${r.reliable === false ? ' — less accurate above 10 reps' : ''}</span></div>
+      <table class="tl-table"><thead><tr><th>Reps</th><th>% of 1RM</th><th>Load</th></tr></thead><tbody>
+      ${C.PCT_1RM.map(([n, p]) => `<tr><td>${n}</td><td>${p}%</td><td>${f1(r.average * p / 100)} kg</td></tr>`).join('')}</tbody></table>`;
+  }
+
+  // ---------------------------------------------------------------- call to action
+  $('cta').innerHTML = `<div class="tl-cta-in">${I('file', 26)}<div><b>Turn these numbers into a client plan</b>
+      <span>Build an Indian meal plan or a workout from these targets and download it as a PDF with your name, Fit Lab ID and certificate.</span></div>
+      ${me ? '<span class="chip">Coming very soon</span>' : '<a class="pill solid" href="/?next=tools">Join free</a>'}</div>`;
+
+  load(); syncFt(); run();
+})();
+</script>
+</body>
+</html>

@@ -25,6 +25,7 @@
   // ---------------------------------------------------------------- icons
   const P = {
     home: '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',
+    calc: '<rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M8.5 7.5h7M8.5 12h.01M12 12h.01M15.5 12h.01M8.5 15.5h.01M12 15.5h.01M15.5 15.5v2.5M8.5 18.5h.01M12 18.5h.01"/>',
     network: '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3 2.8-5 5.5-5s4.9 2 5.5 5"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.2c2.4.3 4.2 2.1 4.7 4.8"/>',
     courses: '<path d="M3 5.5C5.5 4 8.5 4 12 6c3.5-2 6.5-2 9-.5V19c-2.5-1.5-5.5-1.5-9 .5-3.5-2-6.5-2-9-.5z"/><path d="M12 6v13.5"/>',
     messages: '<path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-5 4V6a1 1 0 0 1 1-1z"/><path d="M8 10h8M8 13h5"/>',
@@ -820,6 +821,7 @@
         ['network', 'network', 'My Network', 'network', 'invitations'],
         ['jobs', 'jobs', 'Jobs', 'briefcase', null],
         ['courses', 'courses', 'Courses', 'courses', null],
+        ['tools', 'tools', 'Tools', 'calc', null],
         ['messages', 'messaging', 'Messaging', 'messages', 'messages'],
         ['notifications', 'notifications', 'Notifications', 'bell', 'notifications'],
       ];
@@ -832,7 +834,7 @@
           <form class="tb-search" action="search" role="search">${icon('search', 17)}
             <input name="q" type="search" placeholder="Search people, jobs, pages" value="${esc(q)}" aria-label="Search"></form>
           <nav class="tb-tabs">
-            ${tabs.map(([k, href, label, ic, cnt]) => `<a class="tb-tab ${k === 'messages' ? 'tb-msg' : ''} ${page === k ? 'on' : ''}" href="${href}">
+            ${tabs.map(([k, href, label, ic, cnt]) => `<a class="tb-tab ${k === 'messages' ? 'tb-msg' : ''} ${k === 'tools' ? 'tb-tools' : ''} ${page === k ? 'on' : ''}" href="${href}"${k === 'tools' ? ' aria-label="Coach tools"' : ''}>
               <span class="ic">${icon(ic, 24)}${cnt ? `<span class="cnt" data-cnt="${cnt}"></span>` : ''}</span><span class="lbl">${label}</span></a>`).join('')}
             <button class="tb-tab tb-me ${page === 'me' || (page === 'profile' && this.param('u') === profile.username) ? 'on' : ''}" type="button" aria-haspopup="true" aria-expanded="false">
               <span class="ic">${this.avatarHtml(profile, 'ava avatar')}</span><span class="lbl">Me ${icon('down', 12)}</span></button>
@@ -843,8 +845,9 @@
         bar.innerHTML = `<div class="topbar-in">
           <a class="tb-logo" href="/" aria-label="The Fit Lab"><img class="logo-d" src="assets/logo-600.png" alt="The Fit Lab"><img class="logo-l" src="assets/logo-600-light.png" alt="" aria-hidden="true"></a>
           <nav class="tb-tabs" style="gap:8px;align-items:center">
-            <a class="txt-btn" href="hire">${icon('hire', 18)}<span class="lbl">Hire a coach</span></a>
-            <a class="txt-btn" href="verify">${icon('award', 18)}<span class="lbl">Verify</span></a>
+            <a class="txt-btn" href="tools" title="Free tools" aria-label="Free tools">${icon('calc', 18)}<span class="lbl">Free tools</span></a>
+            <a class="txt-btn" href="hire" title="Hire a coach" aria-label="Hire a coach">${icon('hire', 18)}<span class="lbl">Hire a coach</span></a>
+            <a class="txt-btn" href="verify" title="Verify a certificate" aria-label="Verify a certificate">${icon('award', 18)}<span class="lbl">Verify</span></a>
             ${this.themeToggleHtml()}
             ${/\/(index(\.html)?)?$/.test(location.pathname) ? '' : '<a class="pill solid sm" href="/">Sign in</a>'}
           </nav></div>`;
@@ -875,6 +878,7 @@
           ${(profile.verified || profile.is_owner) ? `<a href="verification">${icon('tick', 18)}You're verified</a>` : `<a href="verification">${icon('tick', 18)}Get the verified tick</a>`}
           <a href="insights">${icon('chart', 18)}Profile insights</a></div>
         <div class="me-sec"><h6>Clients &amp; bookings</h6>
+          <a href="tools">${icon('calc', 18)}Coach tools</a>
           <a href="bookings">${icon('calendar', 18)}Bookings</a>
           <a href="requests">${icon('target', 18)}Client requests</a>
           <a href="bookings#settings">${icon('clock', 18)}Booking settings</a></div>
