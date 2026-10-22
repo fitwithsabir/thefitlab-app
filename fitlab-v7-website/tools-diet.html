@@ -83,7 +83,7 @@
   let me; try { me = await FL.getProfile(); } catch (e) { return FL.toast(FL.friendly(e), 'err'); }
   if (!me.profile_completed) return location.replace('register');
   FL.renderHeader(me);
-  document.querySelectorAll('#tlTabs a[data-tab="workout"], #tlTabs a[data-tab="ai"]').forEach((a) => { a.insertAdjacentHTML('beforeend', ' <span class="soon">soon</span>'); a.onclick = (e) => { e.preventDefault(); FL.toast('Coming very soon.'); }; });
+  document.querySelectorAll('#tlTabs a[data-tab="ai"]').forEach((a) => { a.insertAdjacentHTML('beforeend', ' <span class="soon">soon</span>'); a.onclick = (e) => { e.preventDefault(); FL.toast('Coming very soon.'); }; });
 
   let access = (await sb.rpc('tools_access')).data || { can_build: false };
   const r0 = (n) => Math.round(n), r1 = (n) => Math.round(n * 10) / 10;

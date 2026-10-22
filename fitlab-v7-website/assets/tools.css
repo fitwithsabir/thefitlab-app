@@ -77,6 +77,7 @@ sup.ref a{color:var(--lime);text-decoration:none}
 .tl-cta-in{display:flex;gap:16px;align-items:center;padding:18px 20px;flex-wrap:wrap}
 .tl-cta-in > svg{color:var(--lime);flex:none}
 .tl-cta-in div{flex:1;min-width:220px;display:flex;flex-direction:column;gap:2px}
+.tl-cta-in .tl-cta-btns{flex:none;min-width:0;flex-direction:row;gap:8px;flex-wrap:wrap}
 .tl-cta-in b{font-size:16px}.tl-cta-in span{font-size:13.5px;color:var(--ash);line-height:1.5}
 .tl-refs{margin-top:18px}
 .tl-refs ol{margin:0;padding-left:38px;font-size:12.5px;color:var(--ash);line-height:1.6}
@@ -154,6 +155,61 @@ em.ok{color:var(--lime)} em.near{color:var(--warn)} em.off{color:var(--danger-te
   .tl-item .mac{grid-column:1/2;grid-row:2;text-align:left}.tl-item .mac span{display:inline;margin-left:6px}
   .tl-meal-h{padding:12px 14px 6px}.tl-add{padding:8px 14px 12px}
   .tl-gate .tl-cta-in{padding:16px}
+}
+/* ---------- workout builder */
+.tl-opts-w{grid-template-columns:minmax(0,1fr) auto auto}
+.tl-witems{display:flex;flex-direction:column}
+.tl-wrow{display:grid;grid-template-columns:minmax(0,1fr) 98px 92px 86px 76px 30px;gap:8px;align-items:center;padding:9px 18px;border-top:1px solid var(--line)}
+.tl-whead{padding-top:6px;padding-bottom:6px;font:700 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ash)}
+.tl-wrow .nm{display:flex;gap:10px;align-items:flex-start;min-width:0}
+.tl-wrow .nm > div{display:flex;flex-direction:column;gap:2px;min-width:0;align-items:flex-start}
+.tl-wrow .n{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--panel-2);border:1px solid var(--line-2);font:700 11px var(--mono);color:var(--ash);margin-top:1px}
+.tl-wrow .nm b{font-size:14px;font-weight:600}
+.tl-wrow .nm select{border:0;background:none;padding:0 18px 0 0;font:600 14px var(--body);color:var(--bone);height:auto;min-height:0;width:auto;max-width:100%;text-overflow:ellipsis;cursor:pointer;box-shadow:none;background-position:right 2px center}
+.tl-wrow .u{font-size:12px;color:var(--ash);line-height:1.35}
+.tl-wrow .cue{border:0;background:none;padding:2px 0;color:var(--lime);font:600 12px var(--body);cursor:pointer;display:inline-flex;align-items:center;gap:4px}
+.tl-wrow .cues{display:flex;flex-direction:column;gap:2px;margin-top:2px;font-size:12.5px;color:var(--bone);line-height:1.4}
+.tl-wrow .cues span::before{content:"• ";color:var(--lime)}
+.tl-wrow .cues[hidden]{display:none}
+.tl-wrow .qty{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--line-2);border-radius:999px;overflow:hidden}
+.tl-wrow .qty button{width:30px;height:30px;border:0;background:none;color:var(--bone);font:600 17px var(--body);cursor:pointer}
+.tl-wrow .qty button:hover{background:var(--hover)}
+.tl-wrow .qty span{min-width:24px;text-align:center;font:700 13px var(--mono)}
+.tl-wrow input,.tl-wrow select[data-f]{height:34px;padding:0 9px;font-size:13px;min-width:0;width:100%}
+.tl-wrow select[data-f]{padding-right:22px;background-position:right 6px center}
+.tl-wrow .x{width:30px;height:30px;border-radius:50%;border:0;background:none;color:var(--ash);cursor:pointer;display:grid;place-items:center}
+.tl-wrow .f{min-width:0}.tl-wrow .f i{display:none;font:700 9.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ash);margin-bottom:4px}
+.tl-wrow .x:hover{background:var(--hover);color:var(--danger-text)}
+.tl-fin{display:flex;gap:8px;align-items:flex-start;padding:10px 18px;border-top:1px solid var(--line);font-size:13.5px;line-height:1.45;background:color-mix(in srgb,var(--lime) 5%,transparent)}
+.tl-fin > svg{flex:none;color:var(--lime);margin-top:2px}.tl-fin span{flex:1}
+.tl-fin .x{width:28px;height:28px;border-radius:50%;border:0;background:none;color:var(--ash);cursor:pointer;display:grid;place-items:center;flex:none}
+.tl-vol{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+.tl-vol .v{border:1px solid var(--line);border-radius:12px;padding:8px 10px;background:var(--panel-2);border-left:4px solid var(--line-2)}
+.tl-vol .v b{display:block;font-family:var(--display);font-weight:400;font-size:26px;line-height:1.05;color:var(--bone)}
+.tl-vol .v span{font-size:12px;color:var(--ash)}
+.tl-vol .b-low{border-left-color:#94a3b8}.tl-vol .b-moderate{border-left-color:#60a5fa}.tl-vol .b-good{border-left-color:var(--lime)}.tl-vol .b-high{border-left-color:var(--warn)}
+.tl-prog{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin-top:6px}
+.tl-prog > div{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--panel-2);font-size:13px;line-height:1.45;color:var(--ash)}
+.tl-prog b{display:block;color:var(--bone);font-size:13px;margin-bottom:3px}
+.tl-libf{display:grid;grid-template-columns:minmax(0,1fr) 160px 180px;gap:8px;margin-bottom:12px}
+.tl-libf input,.tl-libf select{height:40px}
+.tl-lib{display:flex;flex-direction:column;gap:8px;max-height:min(60vh,560px);overflow-y:auto;padding-right:2px}
+.tl-libi{display:flex;gap:12px;justify-content:space-between;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--panel-2)}
+.tl-libi > div{min-width:0}
+.tl-libi b{font-size:14px}
+.tl-libi .lv{font:700 10px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--lime);margin-left:4px}
+.tl-libi .u{display:block;font-size:12px;color:var(--ash);margin-top:2px}
+.tl-libi ul{margin:6px 0 0;padding-left:18px;font-size:12.5px;line-height:1.45}
+.tl-libi select{flex:none;width:150px;height:34px;font-size:13px}
+@media (max-width:767px){
+  .tl-opts-w{grid-template-columns:1fr 1fr}.tl-opts-w .field{grid-column:1/-1}
+  .tl-whead{display:none}
+  .tl-wrow{grid-template-columns:repeat(3,minmax(0,1fr)) 30px;padding:12px 14px;row-gap:8px}
+  .tl-wrow .nm{grid-column:1/4}.tl-wrow .x{grid-column:4;grid-row:1}
+  .tl-wrow .fe{grid-column:1/4}.tl-wrow .f i{display:block}
+  .tl-fin{padding:10px 14px}
+  .tl-libf{grid-template-columns:1fr 1fr}.tl-libf input{grid-column:1/-1}
+  .tl-libi{flex-direction:column}.tl-libi select{width:100%}
 }
 @media (max-width:767px){
   .page.tools{padding:12px 0 24px}

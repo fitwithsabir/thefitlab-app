@@ -80,7 +80,7 @@
     ctx.y += 4;
     doc.setFont('helvetica', 'bold'); doc.setFontSize(12.5); doc.setTextColor(...INK); doc.text(clean(text), 14, ctx.y);
     if (sub) { doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...ASH); doc.text(clean(sub), ctx.W - 14, ctx.y, { align: 'right' }); }
-    ctx.y += 3;
+    ctx.y += 3; ctx.afterHeading = true;
   }
   function table(ctx, head, body, opts = {}) {
     ctx.doc.autoTable({
@@ -91,11 +91,12 @@
       alternateRowStyles: { fillColor: [250, 251, 247] },
       ...opts,
     });
-    ctx.y = ctx.doc.lastAutoTable.finalY + 4;
+    ctx.y = ctx.doc.lastAutoTable.finalY + 4; ctx.afterHeading = false;
   }
   function paragraph(ctx, text, { size = 9, color = ASH, bold = false, indent = 0 } = {}) {
     const { doc } = ctx;
     doc.setFont('helvetica', bold ? 'bold' : 'normal'); doc.setFontSize(size); doc.setTextColor(...color);
+    if (ctx.afterHeading) { ctx.y += 2.6; ctx.afterHeading = false; }   // room under a heading for the first line
     const lines = doc.splitTextToSize(clean(text), ctx.W - 28 - indent);
     for (const ln of lines) { if (ctx.y > 276) { doc.addPage(); ctx.y = 20; } doc.text(ln, 14 + indent, ctx.y); ctx.y += size * 0.45; }
     ctx.y += 1.2;

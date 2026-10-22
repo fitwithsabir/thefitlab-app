@@ -23,7 +23,7 @@
     <nav class="tl-tabs" id="tlTabs" aria-label="Tools">
       <a href="tools" class="on" data-tab="calc">Calculators</a>
       <a href="tools-diet" data-tab="diet">Diet plans</a>
-      <a href="tools-workout" data-tab="workout">Workout plans <span class="soon">soon</span></a>
+      <a href="tools-workout" data-tab="workout">Workout plans</a>
       <a href="tools-ai" data-tab="ai">Coach AI <span class="soon">soon</span></a>
     </nav>
   </header>
@@ -234,8 +234,8 @@
 
   // ---------------------------------------------------------------- call to action
   $('cta').innerHTML = `<div class="tl-cta-in">${I('file', 26)}<div><b>Turn these numbers into a client plan</b>
-      <span>Build an Indian meal plan from these targets — veg, egg, non-veg, vegan or Jain — and download it as a PDF with your name, Fit Lab ID and certificate.</span></div>
-      <a class="pill solid" href="${me ? 'tools-diet' : '/?next=tools-diet'}">${me ? 'Make a diet plan' : 'Join free to make plans'}</a></div>`;
+      <span>Build an Indian meal plan from these targets — veg, egg, non-veg, vegan or Jain — or a weekly workout program from the exercise library, and download it as a PDF with your name, Fit Lab ID and certificate.</span></div>
+      ${me ? '<div class="tl-cta-btns"><a class="pill solid" href="tools-diet">Make a diet plan</a><a class="pill" href="tools-workout">Make a workout plan</a></div>' : '<a class="pill solid" href="/?next=tools-diet">Join free to make plans</a>'}</div>`;
 
   load(); syncFt(); run();
 })();
