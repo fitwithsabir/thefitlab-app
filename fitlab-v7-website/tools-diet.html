@@ -56,6 +56,7 @@
         <div class="box-pad tl-opts">
           <div class="field"><label for="mealsSel">Meals a day</label><select id="mealsSel"><option value="3">3 meals</option><option value="4">3 meals + 1 snack</option><option value="5" selected>3 meals + 2 snacks</option><option value="6">6 small meals</option></select></div>
           <div class="field"><label for="titleIn">Plan name</label><input id="titleIn" maxlength="120" placeholder="e.g. Fat loss — week 1"></div>
+          <button class="pill ai" type="button" id="btnAI" title="Make this plan with Coach AI">✨ Coach AI</button>
           <button class="pill solid" type="button" id="btnBuild">Create the plan</button>
         </div>
       </section>
@@ -73,6 +74,7 @@
 <script src="assets/tools-calc.js"></script>
 <script src="assets/foods.js"></script>
 <script src="assets/tools-diet.js"></script>
+<script src="assets/tools-markers.js"></script>
 <script src="assets/tools-clients.js"></script>
 <script src="assets/tools-pdf.js"></script>
 <script>
@@ -83,7 +85,6 @@
   let me; try { me = await FL.getProfile(); } catch (e) { return FL.toast(FL.friendly(e), 'err'); }
   if (!me.profile_completed) return location.replace('register');
   FL.renderHeader(me);
-  document.querySelectorAll('#tlTabs a[data-tab="ai"]').forEach((a) => { a.insertAdjacentHTML('beforeend', ' <span class="soon">soon</span>'); a.onclick = (e) => { e.preventDefault(); FL.toast('Coming very soon.'); }; });
 
   let access = (await sb.rpc('tools_access')).data || { can_build: false };
   const r0 = (n) => Math.round(n), r1 = (n) => Math.round(n * 10) / 10;
@@ -187,7 +188,9 @@
     D.recalc(plan);
     const t = plan.targets, d = plan.totals;
     const diff = (a, b) => { const p = (a - b) / b * 100; return `<em class="${Math.abs(p) <= 5 ? 'ok' : Math.abs(p) <= 10 ? 'near' : 'off'}">${p > 0 ? '+' : ''}${Math.round(p)}%</em>`; };
+    const ai = plan.ai;
     $('plan').innerHTML = `
+      ${ai ? `<div class="ai-banner">${I('sparkles', 18)}<div><b>Drafted by Coach AI</b> on ${esc(FL.fmtDate(ai.made_at))}${ai.report ? `, using the blood report from ${esc(ai.report.taken_on ? FL.fmtDate(ai.report.taken_on) : 'the latest upload')}` : ''}. Portions and totals are worked out from the food tables. Review every meal before you share it.${ai.summary ? `<br><span class="muted">${esc(ai.summary)}</span>` : ''}</div></div>` : ''}
       <section class="box tl-day"><div class="box-pad">
         <div class="tl-day-h"><div><div class="eyebrow">Day total</div><b>${r0(d.kcal).toLocaleString('en-IN')} kcal</b> ${diff(d.kcal, t.kcal)}</div>
           <div class="tl-mini"><span><b>${r0(d.p)}</b>/${r0(t.protein)} g protein ${diff(d.p, t.protein)}</span><span><b>${r0(d.c)}</b>/${r0(t.carbs)} g carbs ${diff(d.c, t.carbs)}</span><span><b>${r0(d.f)}</b>/${r0(t.fat)} g fat ${diff(d.f, t.fat)}</span><span><b>${r0(d.fib)}</b> g fibre</span></div></div>
@@ -264,13 +267,7 @@
   }
   $('saved').addEventListener('click', async (e) => {
     const o = e.target.closest('[data-open]');
-    if (o) {
-      const { data, error } = await sb.from('coach_plans').select('*').eq('id', o.dataset.open).single();
-      if (error) return FL.toast(FL.friendly(error), 'err');
-      plan = { ...data.plan, meals: data.plan.meals.map((m) => ({ ...m, items: m.items.filter((x) => FOODS[x.id]) })) };
-      planId = data.id; $('titleIn').value = data.title; if (data.inputs && data.inputs.meals) $('mealsSel').value = data.inputs.meals;
-      drawPlan(); window.scrollTo({ top: $('plan').offsetTop - 80, behavior: 'smooth' });
-    }
+    if (o) await openPlan(o.dataset.open);
     const rm = e.target.closest('[data-rm]');
     if (rm) {
       if (!(await FL.confirm('Delete this plan?', 'This can\'t be undone.', 'Delete', true))) return;
@@ -280,6 +277,51 @@
       loadSaved();
     }
   });
+
+  async function openPlan(id) {
+    const { data, error } = await sb.from('coach_plans').select('*').eq('id', id).eq('kind', 'diet').single();
+    if (error) return FL.toast(FL.friendly(error), 'err');
+    plan = { ...data.plan, meals: (data.plan.meals || []).map((m) => ({ ...m, items: (m.items || []).filter((x) => FOODS[x.id]) })), notes: data.plan.notes || [] };
+    planId = data.id; $('titleIn').value = data.title; if (data.inputs && data.inputs.meals) $('mealsSel').value = data.inputs.meals;
+    drawPlan(); window.scrollTo({ top: $('plan').offsetTop - 80, behavior: 'smooth' });
+  }
+
+  // ---------------------------------------------------------------- Coach AI
+  $('btnAI').onclick = () => aiDiet();
+  async function aiDiet() {
+    if (!client) return;
+    if (!access.ai) {
+      const m = FL.modal({ title: 'Make plans with Coach AI', body: `<p class="t-sm" style="line-height:1.6;margin:0">Coach AI plans the day around your client's goal, food habits and <b>blood report</b> — sugar, cholesterol, haemoglobin, vitamin D and B12, kidney and liver results — using the same Indian food tables, so every number is checked. Plans start at ₹499 a month.</p>`,
+        foot: '<button class="pill ghost" data-no>Not now</button><a class="pill solid" href="tools-ai">See Coach AI</a>' });
+      m.q('[data-no]').onclick = m.close; return;
+    }
+    if (!client.id) return FL.toast('Save the client first.');
+    const left = Math.max(0, (access.ai_limit || 0) - (access.ai_used || 0));
+    const { data: reps } = await sb.from('client_reports').select('id, taken_on, created_at, markers').eq('client_id', client.id).order('taken_on', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false }).limit(1);
+    const rep = (reps || [])[0];
+    const read = rep ? FLMarkers.interpret(rep.markers, { sex: client.sex, age: FLClients.age(client) }) : null;
+    const flagged = read ? read.findings.filter((f) => f.status !== 'normal') : [];
+    const m = FL.modal({ title: `Coach AI plan for ${client.full_name}`, body: `
+      ${rep ? `<label class="check" style="margin-bottom:10px"><input type="checkbox" id="aiRep" checked><span>Use the blood report from ${rep.taken_on ? FL.fmtDate(rep.taken_on) : FL.fmtDate(rep.created_at)} — ${flagged.length ? esc(flagged.map((f) => f.label + ' ' + f.status).join(', ')) : 'all read results normal'}</span></label>`
+             : `<p class="t-sm muted" style="margin:0 0 10px">No blood report for this client yet. <a href="tools-ai?client=${client.id}">Add one in Coach AI</a> to plan around their results.</p>`}
+      <div class="field"><label for="aiAsk">Anything Coach AI should know? <span class="muted">(optional)</span></label>
+        <textarea id="aiAsk" maxlength="500" placeholder="e.g. Skips breakfast on weekdays, eats lunch at the office canteen, loves curd rice"></textarea></div>
+      <p class="help" style="margin:0">Uses 1 of your ${left} AI plans left this month. Coach AI sees the client's age, sex, measurements, goal, food habits, screening${rep ? ' and blood results' : ''} — not their name. You review and edit the plan before sharing it.</p>`,
+      foot: `<button class="pill ghost" data-no>Cancel</button><button class="pill solid" data-ok ${left < 1 ? 'disabled' : ''}>Make the plan</button>` });
+    m.q('[data-no]').onclick = m.close;
+    m.q('[data-ok]').onclick = async (e) => {
+      if (plan && !planId && !(await FL.confirm('Replace the plan on screen?', 'The meals on screen will be replaced. Saved plans are not changed.', 'Replace'))) return;
+      FL.busy(e.target, true, 'Coach AI is planning… about 30 s');
+      const useRep = rep && m.q('#aiRep') ? m.q('#aiRep').checked : false;
+      const { data, error } = await FL.fn('coach-ai', { action: 'diet', client_id: client.id, meals: +$('mealsSel').value, instructions: m.q('#aiAsk').value.trim(),
+        report_id: useRep ? rep.id : null, tune });
+      FL.busy(e.target, false);
+      if (error || !data || !data.ok) return FL.toast((data && data.message) || 'Coach AI couldn\'t make the plan. Please try again.', 'err');
+      m.close(); access = (await sb.rpc('tools_access')).data || access;
+      await openPlan(data.plan_id); loadSaved();
+      FL.toast(`Plan ready — ${data.left} AI plans left this month`, 'ok');
+    };
+  }
 
   async function downloadPdf() {
     if (needAccess()) return;
@@ -311,9 +353,18 @@
       if (swaps.length) P.table(ctxp, [`Instead of ${D.amount(FOODS.roti, 1)}`, 'you can have'], swaps, { columnStyles: { 0: { cellWidth: 90 } } });
       if ((plan.coachNotes || '').trim()) { P.heading(ctxp, 'Notes from your coach'); P.paragraph(ctxp, plan.coachNotes.trim(), { size: 9.5, color: P.COLORS.INK }); }
       if (plan.notes.length) { P.heading(ctxp, 'Guidance'); P.bullets(ctxp, plan.notes.map((n) => n.text)); }
+      if (plan.ai && plan.ai.report) {
+        const fl = (plan.ai.report.findings || []).filter((f) => f.status !== 'normal');
+        if (fl.length) {
+          P.heading(ctxp, 'Blood report', plan.ai.report.taken_on ? 'test date ' + FL.fmtDate(plan.ai.report.taken_on) : '');
+          P.table(ctxp, ['Test', 'Result', 'What it means for the plan'], fl.map((f) => [f.label, `${f.value} ${f.unit}`, f.text]), { columnStyles: { 0: { cellWidth: 40 }, 1: { cellWidth: 30 } } });
+        }
+      }
       P.heading(ctxp, 'Important');
+      if (plan.ai) P.paragraph(ctxp, 'This plan was drafted with the help of AI, then checked and approved by your coach.', { color: P.COLORS.INK });
       P.paragraph(ctxp, 'This plan is general nutrition guidance from a fitness professional, based on published formulas and food tables. It is not a medical diagnosis or treatment. If you have a medical condition, are pregnant or breastfeeding, take regular medicines, or feel unwell, check with your doctor or a registered dietitian before changing your diet. Stop and seek medical advice if you feel dizzy, faint or unwell.');
-      P.paragraph(ctxp, 'Sources: ' + [FLFoods.SOURCES[0], 'USDA FoodData Central', 'Mifflin-St Jeor equation (Am J Clin Nutr 1990)', 'ISSN position stand on protein (2017)', 'ICMR-NIN Dietary Guidelines for Indians (2024)'].map((x) => x.replace(/\.\s*$/, '')).join('; ') + '.', { size: 7.5 });
+      const labRefs = plan.ai && plan.ai.report ? ['ADA Standards of Care 2024', 'NCEP ATP III', 'WHO haemoglobin (2011) and ferritin (2020) guidance', 'IOM vitamin D (2011)', 'KDIGO 2024'] : [];
+      P.paragraph(ctxp, 'Sources: ' + [FLFoods.SOURCES[0], 'USDA FoodData Central', 'Mifflin-St Jeor equation (Am J Clin Nutr 1990)', 'ISSN position stand on protein (2017)', 'ICMR-NIN Dietary Guidelines for Indians (2024)', ...labRefs].map((x) => x.replace(/\.\s*$/, '')).join('; ') + '.', { size: 7.5 });
       P.footer(ctxp.doc, `Made with The Fit Lab Coach Tools · thefitlab.in · Prepared by ${(access.coach && access.coach.name) || me.full_name}`);
       P.save(ctxp.doc, `${c.full_name} diet plan`);
     } catch (e) { FL.toast(e.message || 'Couldn\'t make the PDF', 'err'); }
@@ -321,7 +372,12 @@
   }
 
   // ---------------------------------------------------------------- start
-  if (access.can_build) await loadClients(new URLSearchParams(location.search).get('client'));
+  const qs = new URLSearchParams(location.search);
+  if (access.can_build) {
+    await loadClients(qs.get('client'));
+    if (qs.get('plan')) await openPlan(qs.get('plan'));
+    else if (qs.get('ai') && client) aiDiet();
+  }
   else {
     // without Premium: try the builder with a client that isn't saved
     $('btnNew').textContent = 'Try with a client';

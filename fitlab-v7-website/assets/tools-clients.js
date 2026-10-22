@@ -50,7 +50,7 @@
           <label class="check" id="consentRow"><input type="checkbox" id="cConsent" ${c.health_consent_at ? 'checked' : ''}><span>The client agreed that I can keep these health details to plan for them, and knows they can ask me to delete them at any time.</span></label>
           <div class="field" style="margin-top:12px"><label for="cNotes">Private notes</label><textarea id="cNotes" maxlength="2000" placeholder="Food likes and dislikes, timings, injuries…">${esc(c.notes || '')}</textarea></div>
           <div class="err" id="cErr" hidden></div></div>`,
-        foot: `${existing ? '<button class="pill ghost red-o" data-archive>Archive</button><span style="flex:1"></span>' : ''}<button class="pill ghost" data-no>Cancel</button><button class="pill solid" data-ok>${existing ? 'Save' : 'Add client'}</button>` });
+        foot: `${existing ? '<button class="pill ghost red-o" data-archive>Archive</button><button class="txt-btn" data-erase>Delete for good</button><span style="flex:1"></span>' : ''}<button class="pill ghost" data-no>Cancel</button><button class="pill solid" data-ok>${existing ? 'Save' : 'Add client'}</button>` });
       const q = m.q, err = (t) => { const e = q('#cErr'); e.textContent = t; e.hidden = !t; };
       q('[data-no]').onclick = m.close;
       const arch = q('[data-archive]');
@@ -59,6 +59,17 @@
         const { error } = await sb.from('coach_clients').update({ archived_at: new Date().toISOString() }).eq('id', existing.id);
         if (error) return err(FL.friendly(error));
         cache = null; done = true; m.close(); resolve({ archived: true });
+      };
+      // the client's right to have their data deleted: plans, reports and report files go too
+      const erase = q('[data-erase]');
+      if (erase) erase.onclick = async () => {
+        if (!(await FL.confirm(`Delete ${c.full_name} for good?`, 'Their details, saved plans, blood reports and report files are deleted and can\'t be brought back. Use this when the client asks you to delete their data.', 'Delete everything', true))) return;
+        const uid = (await FL.session()).user.id;
+        const { data: files } = await sb.storage.from('client-reports').list(`${uid}/${existing.id}`, { limit: 100 });
+        if ((files || []).length) await sb.storage.from('client-reports').remove(files.map((f) => `${uid}/${existing.id}/${f.name}`));
+        const { error } = await sb.from('coach_clients').delete().eq('id', existing.id);
+        if (error) return err(FL.friendly(error));
+        cache = null; done = true; m.close(); FL.toast('Client and their data deleted', 'ok'); resolve({ archived: true, deleted: true });
       };
       q('[data-ok]').onclick = async (e) => {
         err('');

@@ -209,7 +209,9 @@
       sizeItems(m.items, m.target);
       m.items = m.items.filter((x) => x.units > 0); m.totals = sum(m.items);
     });
-    // short of protein: raise or add a protein food in the meal that is furthest below its share
+    // short of protein: raise or add a protein food in the meal that is furthest below its share,
+    // then correct the calories — twice, because trimming side dishes also trims some protein
+    for (let round = 0; round < 3; round++) {
     for (let pass = 0; pass < 4; pass++) {
       const day = dayTotals(meals), gap = targets.protein - day.p;
       if (gap / targets.protein < 0.06) break;
@@ -228,6 +230,8 @@
       m.totals = sum(m.items);
     }
     fitDay(meals, targets);
+    if ((targets.protein - dayTotals(meals).p) / targets.protein < 0.06) break;
+    }
     // still well short of calories (no starch chosen, say): add a staple to the meals that need it most
     const STAPLE = { breakfast: ['oats', 'poha', 'idli', 'bread_brown', 'ragi'], lunch: ['rice', 'roti', 'jowar', 'quinoa'], dinner: ['roti', 'rice', 'jowar', 'quinoa'], snack: ['banana', 'apple', 'chana', 'makhana'], bedtime: ['banana'] };
     for (let pass = 0; pass < 4; pass++) {

@@ -110,7 +110,7 @@ sup.ref a{color:var(--lime);text-decoration:none}
 em.ok{color:var(--lime)} em.near{color:var(--warn)} em.off{color:var(--danger-text)}
 .tl-empty-plan .box-pad{padding:28px 22px;text-align:center}
 .tl-empty-plan b{display:block;font-size:16px;margin-bottom:6px}
-.tl-opts{display:grid;grid-template-columns:200px minmax(0,1fr) auto;gap:12px;align-items:end;padding:16px 18px}
+.tl-opts{display:grid;grid-template-columns:180px minmax(0,1fr) auto auto;gap:12px;align-items:end;padding:16px 18px}
 .tl-opts .field{margin:0}
 .tl-opts .pill{height:44px}
 #plan > .box{margin-top:14px}
@@ -157,7 +157,7 @@ em.ok{color:var(--lime)} em.near{color:var(--warn)} em.off{color:var(--danger-te
   .tl-gate .tl-cta-in{padding:16px}
 }
 /* ---------- workout builder */
-.tl-opts-w{grid-template-columns:minmax(0,1fr) auto auto}
+.tl-opts-w{grid-template-columns:minmax(0,1fr) auto auto auto}
 .tl-witems{display:flex;flex-direction:column}
 .tl-wrow{display:grid;grid-template-columns:minmax(0,1fr) 98px 92px 86px 76px 30px;gap:8px;align-items:center;padding:9px 18px;border-top:1px solid var(--line)}
 .tl-whead{padding-top:6px;padding-bottom:6px;font:700 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ash)}
@@ -211,6 +211,55 @@ em.ok{color:var(--lime)} em.near{color:var(--warn)} em.off{color:var(--danger-te
   .tl-libf{grid-template-columns:1fr 1fr}.tl-libf input{grid-column:1/-1}
   .tl-libi{flex-direction:column}.tl-libi select{width:100%}
 }
+/* ---------- Coach AI */
+.ai-plans{margin:0 0 18px}
+.ai-plans .seg2{display:inline-flex;border:1px solid var(--line-2);border-radius:999px;padding:3px;gap:2px;background:var(--panel-2)}
+.ai-plans .seg2 button{border:0;background:none;color:var(--ash);font:600 13px var(--body);padding:6px 14px;border-radius:999px;cursor:pointer}
+.ai-plans .seg2 button.on{background:var(--lime);color:var(--on-lime)}
+.ai-plans .seg2 .save{font:700 10px var(--mono);letter-spacing:.04em;text-transform:uppercase;margin-left:4px}
+.ai-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.ai-card{position:relative;display:flex;flex-direction:column;gap:4px;border:1px solid var(--line);border-radius:14px;padding:18px;background:var(--panel-2)}
+.ai-card.hl{border-color:var(--accent-line);background:color-mix(in srgb,var(--lime) 5%,var(--panel-2))}
+.ai-card > b{font-size:18px}
+.ai-pop{position:absolute;top:-10px;right:14px;background:var(--lime);color:var(--on-lime);font:700 10px var(--mono);letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:999px}
+.ai-price{font-family:var(--display);font-size:38px;line-height:1;color:var(--bone);margin-top:8px}
+.ai-price small{font-family:var(--body);font-size:13px;color:var(--ash);margin-left:3px}
+.ai-card ul{list-style:none;margin:10px 0 14px;padding:0;display:flex;flex-direction:column;gap:6px;font-size:13.5px;flex:1}
+.ai-card li{display:flex;gap:6px;align-items:flex-start}.ai-card li svg{color:var(--lime);flex:none;margin-top:2px}
+.ai-status{margin:0 0 18px;border-color:var(--accent-line)}
+.ai-st-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.ai-st-h b{display:block;font-size:20px;margin:2px 0}
+.ai-meter{margin-top:10px}
+.ai-meter > div{display:flex;justify-content:space-between;font-size:13px;color:var(--ash)}.ai-meter > div b{color:var(--bone)}
+.ai-meter i{display:block;height:8px;border-radius:99px;background:var(--line);overflow:hidden;margin:5px 0 3px}
+.ai-meter i em{display:block;height:100%;background:var(--lime);border-radius:99px}
+.ai-meter small{font-size:11.5px;color:var(--ash)}
+.ai-make{display:flex;flex-direction:column;gap:8px}
+.ai-make .pill{height:40px}
+.ai-seat{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.ai-seat-add{display:flex;gap:8px;margin-top:10px}.ai-seat-add input{flex:1;min-width:0;height:34px}
+.ai-grid .tl-col > .box{margin-bottom:14px}
+.ai-rep{padding:14px 18px;border-top:1px solid var(--line)}
+.ai-rep-h{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap}
+.ai-rep-h b{font-size:15px}.ai-rep-h span.t-xs{display:block;margin-top:2px}
+.ai-rep-a{display:flex;gap:2px;flex-wrap:wrap}
+.ai-find td{vertical-align:top}
+.ai-find tr.s-high td:nth-child(2),.ai-find tr.s-low td:nth-child(2){color:var(--danger-text);font-weight:700}
+.ai-find tr.s-borderline td:nth-child(2){color:var(--warn);font-weight:700}
+.ai-badge{display:inline-block;padding:2px 8px;border-radius:999px;font:700 11px var(--body);border:1px solid currentColor;white-space:nowrap}
+.ai-badge.s-normal{color:var(--lime)}.ai-badge.s-borderline{color:var(--warn)}.ai-badge.s-high,.ai-badge.s-low{color:var(--danger-text)}.ai-badge.s-refer{color:#60a5fa}
+.ai-focus{display:flex;flex-direction:column;gap:6px;margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--panel-2);font-size:13px;line-height:1.45}
+.ai-focus div{display:flex;gap:6px;align-items:flex-start}.ai-focus svg{color:var(--lime);flex:none;margin-top:2px}
+.ai-vrow{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,.8fr) minmax(0,.8fr) 30px;gap:8px;margin-bottom:8px;align-items:center}
+.ai-vrow input{height:36px;padding:0 10px;font-size:13.5px}
+.ai-vrow .x{width:30px;height:30px;border-radius:50%;border:0;background:none;color:var(--ash);cursor:pointer;display:grid;place-items:center}
+.ai-legal ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;line-height:1.55;color:var(--ash)}
+.ai-legal b{color:var(--bone)}
+.ai-banner{display:flex;gap:10px;align-items:flex-start;padding:12px 16px;border:1px solid var(--accent-line);border-radius:12px;background:color-mix(in srgb,var(--lime) 6%,var(--panel));font-size:13.5px;line-height:1.5;margin-top:14px}
+.ai-banner > svg{color:var(--lime);flex:none;margin-top:2px}
+.pill.ai{border-color:var(--lime);color:var(--lime)}
+.pill.ai svg{color:inherit}
+@media (max-width:767px){.ai-find thead{display:none}.ai-find tr{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:4px 10px;padding:8px 0;border-bottom:1px solid var(--line)}.ai-find td{border:0;padding:0}.ai-find td:nth-child(4){grid-column:1/-1}.ai-rep{padding:12px 14px}.ai-vrow{grid-template-columns:minmax(0,1fr) 70px 64px 30px}}
 @media (max-width:767px){
   .page.tools{padding:12px 0 24px}
   .tl-hero{padding:0 16px}

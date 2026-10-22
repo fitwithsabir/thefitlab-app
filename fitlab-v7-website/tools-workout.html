@@ -68,6 +68,7 @@
         <div class="box-pad tl-opts tl-opts-w">
           <div class="field"><label for="titleIn">Program name</label><input id="titleIn" maxlength="120" placeholder="e.g. Strength block 1"></div>
           <button class="pill ghost" type="button" data-lib>Exercise library</button>
+          <button class="pill ai" type="button" id="btnAI" title="Make this program with Coach AI">✨ Coach AI</button>
           <button class="pill solid" type="button" id="btnBuild">Create the program</button>
         </div>
       </section>
@@ -97,7 +98,6 @@
   let me; try { me = await FL.getProfile(); } catch (e) { return FL.toast(FL.friendly(e), 'err'); }
   if (!me.profile_completed) return location.replace('register');
   FL.renderHeader(me);
-  document.querySelectorAll('#tlTabs a[data-tab="ai"]').forEach((a) => { a.insertAdjacentHTML('beforeend', ' <span class="soon">soon</span>'); a.onclick = (e) => { e.preventDefault(); FL.toast('Coming very soon.'); }; });
 
   let access = (await sb.rpc('tools_access')).data || { can_build: false };
   const r1 = (n) => Math.round(n * 10) / 10;
@@ -184,7 +184,9 @@
     plan.days.forEach((d) => { d.minutes = W.minutes(d); });
     const vol = W.volume(plan), addOpts = addOptions();
     const totalSets = plan.days.reduce((t, d) => t + d.items.reduce((a, x) => a + (+x.sets || 0), 0), 0);
+    const ai = plan.ai;
     $('plan').innerHTML = `
+      ${ai ? `<div class="ai-banner">${I('sparkles', 18)}<div><b>Drafted by Coach AI</b> on ${esc(FL.fmtDate(ai.made_at))} from your settings and the exercise library. Sets that fit the session were checked by the app. Review every exercise before you share it.${ai.summary ? `<br><span class="muted">${esc(ai.summary)}</span>` : ''}</div></div>` : ''}
       <section class="box tl-day"><div class="box-pad">
         <div class="tl-day-h"><div><div class="eyebrow">${esc(plan.split)}</div><b>${plan.days.length} days</b> <span class="muted t-sm">· ${totalSets} sets a week · ${esc(W.GOALS[plan.ctx.goal].label.toLowerCase())}</span></div>
           <div class="tl-mini">${plan.days.map((d) => `<span><b>${esc(d.when)}</b> ${esc(d.name)}</span>`).join('')}</div></div>
@@ -315,18 +317,7 @@
   }
   $('saved').addEventListener('click', async (e) => {
     const o = e.target.closest('[data-open]');
-    if (o) {
-      const { data, error } = await sb.from('coach_plans').select('*').eq('id', o.dataset.open).single();
-      if (error) return FL.toast(FL.friendly(error), 'err');
-      const p = data.plan || {};
-      plan = { ...p, days: (p.days || []).map((d) => ({ ...d, items: (d.items || []).filter((x) => BY[x.id]) })), notes: p.notes || [], progression: p.progression || [], warmup: p.warmup || [], ctx: { ...(p.ctx || {}), conditions: client.conditions || [] } };
-      planId = data.id; $('titleIn').value = data.title;
-      const c = p.ctx || {};
-      if (c.goal) $('wGoal').value = c.goal; if (c.level) $('wLevel').value = c.level; if (c.days) $('wDays').value = c.days; if (c.minutes) $('wMin').value = c.minutes;
-      if (c.equipment) { drawEq(c.equipment); $('wEqPreset').value = 'custom'; $('eqChips').hidden = false; }
-      document.querySelectorAll('#injChips input').forEach((x) => { x.checked = (c.injuries || []).includes(x.value); });
-      drawPlan(); window.scrollTo({ top: $('plan').offsetTop - 80, behavior: 'smooth' });
-    }
+    if (o) await openPlan(o.dataset.open);
     const rm = e.target.closest('[data-rm]');
     if (rm) {
       if (!(await FL.confirm('Delete this program?', 'This can\'t be undone.', 'Delete', true))) return;
@@ -336,6 +327,49 @@
       loadSaved();
     }
   });
+
+  async function openPlan(id) {
+    const { data, error } = await sb.from('coach_plans').select('*').eq('id', id).eq('kind', 'workout').single();
+    if (error) return FL.toast(FL.friendly(error), 'err');
+    const p = data.plan || {};
+    plan = { ...p, days: (p.days || []).map((d) => ({ ...d, items: (d.items || []).filter((x) => BY[x.id]) })), notes: p.notes || [], progression: p.progression || [], warmup: p.warmup || [], ctx: { ...(p.ctx || {}), conditions: client.conditions || [] } };
+    planId = data.id; $('titleIn').value = data.title;
+    const c = p.ctx || {};
+    if (c.goal) $('wGoal').value = c.goal; if (c.level) $('wLevel').value = c.level; if (c.days) $('wDays').value = c.days; if (c.minutes) $('wMin').value = c.minutes;
+    if (c.equipment) { drawEq(c.equipment); $('wEqPreset').value = 'custom'; $('eqChips').hidden = false; }
+    document.querySelectorAll('#injChips input').forEach((x) => { x.checked = (c.injuries || []).includes(x.value); });
+    drawPlan(); window.scrollTo({ top: $('plan').offsetTop - 80, behavior: 'smooth' });
+  }
+
+  // ---------------------------------------------------------------- Coach AI
+  $('btnAI').onclick = () => aiWorkout();
+  function aiWorkout() {
+    if (!client) return;
+    if (!access.ai) {
+      const m = FL.modal({ title: 'Make programs with Coach AI', body: '<p class="t-sm" style="line-height:1.6;margin:0">Coach AI designs the week from your settings, the client\'s screening and anything you tell it — "glute focus", "cricket on Sundays", "only 3 kg dumbbells" — using only exercises from the library that suit them, then the app checks sets, rest and session time. Plans start at ₹499 a month.</p>',
+        foot: '<button class="pill ghost" data-no>Not now</button><a class="pill solid" href="tools-ai">See Coach AI</a>' });
+      m.q('[data-no]').onclick = m.close; return;
+    }
+    if (!client.id) return FL.toast('Save the client first.');
+    const left = Math.max(0, (access.ai_limit || 0) - (access.ai_used || 0)), c = ctxNow();
+    const eqTxt = c.equipment.length ? c.equipment.map((e) => (X.EQUIPMENT.find((q) => q[0] === e) || [, e])[1].toLowerCase()).join(', ') : 'bodyweight only';
+    const m = FL.modal({ title: `Coach AI program for ${client.full_name}`, body: `
+      <p class="t-sm" style="margin:0 0 10px;line-height:1.55"><b>${esc(W.GOALS[c.goal].label)}</b> · ${['', 'beginner', 'intermediate', 'advanced'][+c.level]} · ${c.days} days · ${c.minutes} min · ${esc(eqTxt)}${c.injuries.length ? ' · around ' + esc(c.injuries.join(', ')) : ''}<br><span class="muted">Change these on the left first if needed.</span></p>
+      <div class="field"><label for="aiAsk">Anything Coach AI should know? <span class="muted">(optional)</span></label>
+        <textarea id="aiAsk" maxlength="500" placeholder="e.g. Wants stronger glutes, plays cricket on Sundays, has only 2–10 kg dumbbells"></textarea></div>
+      <p class="help" style="margin:0">Uses 1 of your ${left} AI plans left this month. Coach AI sees the client's age, sex, measurements and screening — not their name. You review and edit the program before sharing it.</p>`,
+      foot: `<button class="pill ghost" data-no>Cancel</button><button class="pill solid" data-ok ${left < 1 ? 'disabled' : ''}>Make the program</button>` });
+    m.q('[data-no]').onclick = m.close;
+    m.q('[data-ok]').onclick = async (e) => {
+      FL.busy(e.target, true, 'Coach AI is planning… about 30 s');
+      const { data, error } = await FL.fn('coach-ai', { action: 'workout', client_id: client.id, goal: c.goal, level: c.level, days: c.days, minutes: c.minutes, equipment: c.equipment, injuries: c.injuries, instructions: m.q('#aiAsk').value.trim() });
+      FL.busy(e.target, false);
+      if (error || !data || !data.ok) return FL.toast((data && data.message) || 'Coach AI couldn\'t make the program. Please try again.', 'err');
+      m.close(); access = (await sb.rpc('tools_access')).data || access;
+      await openPlan(data.plan_id); loadSaved();
+      FL.toast(`Program ready — ${data.left} AI plans left this month`, 'ok');
+    };
+  }
 
   async function downloadPdf() {
     if (needAccess()) return;
@@ -368,6 +402,7 @@
       if ((plan.coachNotes || '').trim()) { P.heading(ctxp, 'Notes from your coach'); P.paragraph(ctxp, plan.coachNotes.trim(), { size: 9.5, color: P.COLORS.INK }); }
       P.heading(ctxp, 'Safety and guidance'); P.bullets(ctxp, plan.notes.map((n) => n.text));
       P.heading(ctxp, 'Important');
+      if (plan.ai) P.paragraph(ctxp, 'This program was drafted with the help of AI, then checked and approved by your coach.', { color: P.COLORS.INK });
       P.paragraph(ctxp, 'This program is general exercise guidance from a fitness professional, based on published guidelines. It is not medical advice, diagnosis or treatment. Check with a doctor before starting if you have a medical condition, are pregnant, take regular medicines or have been inactive for a long time. Stop and seek medical help for chest pain, unusual breathlessness, dizziness or sharp pain.');
       P.paragraph(ctxp, 'Sources: ACSM progression models in resistance training (2009); ACSM position stand on exercise quantity and quality (2011); Schoenfeld et al., training volume (2017), frequency (2016) and loading (2021); Helms et al., RIR scale (2016); WHO physical activity guidelines (2020); PAR-Q+ (2011)' + (plan.ctx.conditions.includes('pregnant') ? '; ACOG Committee Opinion 804 (2020)' : '') + '.', { size: 7.5 });
       if (plan.withLog !== false) {
@@ -386,7 +421,12 @@
   }
 
   // ---------------------------------------------------------------- start
-  if (access.can_build) await loadClients(new URLSearchParams(location.search).get('client'));
+  const qs = new URLSearchParams(location.search);
+  if (access.can_build) {
+    await loadClients(qs.get('client'));
+    if (qs.get('plan')) await openPlan(qs.get('plan'));
+    else if (qs.get('ai') && client) aiWorkout();
+  }
   else { $('btnNew').textContent = 'Try with a client'; $('btnNew').onclick = () => tryClient(); }
   function tryClient() {
     const m = FL.modal({ title: 'Try the builder', body: `<p class="t-sm muted" style="margin:0 0 12px">This client isn't saved. Premium lets you save up to 10 clients.</p>

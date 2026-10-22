@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Coach AI — Coach tools — The Fit Lab</title>
+<meta name="description" content="AI-made diet plans from blood reports and AI workout programs for your clients, built on Indian food tables and a coached exercise library. Plans for coaches, nutritionists and studios.">
+<script src="assets/theme.js"></script>
+<link rel="icon" href="assets/favicon.png">
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<link rel="stylesheet" href="assets/tools.css">
+</head>
+<body data-page="tools">
+<div id="nav"></div>
+<main class="page tools">
+  <header class="tl-hero">
+    <div class="eyebrow">Coach tools</div>
+    <h1>Coach AI</h1>
+    <p class="muted">Diet plans that read your client's blood report, and workout programs built around their goal, equipment and sore spots. Coach AI drafts, the food tables and exercise library do the maths, and you review and send.</p>
+    <nav class="tl-tabs" id="tlTabs" aria-label="Tools">
+      <a href="tools" data-tab="calc">Calculators</a>
+      <a href="tools-diet" data-tab="diet">Diet plans</a>
+      <a href="tools-workout" data-tab="workout">Workout plans</a>
+      <a href="tools-ai" class="on" data-tab="ai">Coach AI</a>
+    </nav>
+  </header>
+  <div id="status"></div>
+  <section id="plansBox" class="box ai-plans" hidden>
+    <div class="box-head"><h2 id="plansTitle">Choose a Coach AI plan</h2>
+      <div class="seg2" role="group" aria-label="Billing period"><button data-per="month" class="on">Monthly</button><button data-per="year">Yearly <span class="save" id="saveTag"></span></button></div></div>
+    <div class="box-pad"><div class="ai-cards" id="cards"></div>
+      <p class="help" style="margin:12px 0 0">Paid once through Razorpay (UPI, cards, net banking). Nothing renews automatically. Moving to a different plan starts it today and carries over the unused days of your current paid plan at their value.</p></div>
+  </section>
+  <div class="tl-grid ai-grid" id="work" hidden>
+    <aside class="tl-person">
+      <section class="box">
+        <div class="box-head"><h2>Client</h2><span class="chip" id="limitChip"></span></div>
+        <div class="box-pad">
+          <div class="field"><label for="clientSel">Saved clients</label><select id="clientSel"><option value="">— Choose a client —</option></select></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="pill solid sm" type="button" id="btnNew">New client</button><button class="pill ghost sm" type="button" id="btnEdit" disabled>Edit</button></div>
+          <div id="clientCard" class="tl-client" hidden></div>
+        </div>
+      </section>
+      <section class="box" id="makeBox" hidden>
+        <div class="box-head"><h2>Make with Coach AI</h2></div>
+        <div class="box-pad ai-make">
+          <a class="pill solid block" id="goDiet" href="#">AI diet plan</a>
+          <a class="pill block" id="goWorkout" href="#">AI workout program</a>
+          <p class="help" style="margin:2px 0 0">Opens the builder with this client — press <b>Coach AI</b> there. Each plan uses 1 of your monthly AI plans.</p>
+        </div>
+      </section>
+      <section class="box" id="seatsBox" hidden>
+        <div class="box-head"><h2>Studio coaches</h2></div>
+        <div class="box-pad" id="seats"></div>
+      </section>
+    </aside>
+    <div class="tl-col">
+      <section class="box" id="reportsBox">
+        <div class="box-head"><h2>Blood reports</h2><button class="pill sm" type="button" id="btnAddReport" disabled>Add a report</button></div>
+        <div id="reports"><div class="box-pad muted t-sm">Choose a client to see their reports.</div></div>
+      </section>
+      <section class="box" id="recentBox">
+        <div class="box-head"><h2>Recent AI plans</h2></div>
+        <div id="recent"></div>
+      </section>
+      <section class="box ai-legal">
+        <div class="box-head"><h2>How Coach AI works — and what you're responsible for</h2></div>
+        <div class="box-pad">
+          <ul>
+            <li><b>You stay the professional.</b> Coach AI drafts plans for you to review, edit and approve. It doesn't diagnose, treat or prescribe, and it isn't a substitute for a doctor or registered dietitian. Check every plan before you share it.</li>
+            <li><b>Numbers come from published sources.</b> Calories and macros are worked out from the Indian Food Composition Tables 2017 (NIN-ICMR) and USDA FoodData Central, targets from Mifflin-St Jeor, ISSN, ICMR-NIN and IOM guidance, and blood results are read against ADA 2024, NCEP ATP III, WHO, KDIGO 2024 and other cut-offs listed on each plan.</li>
+            <li><b>Consent first.</b> Only add a client's health details or blood report with their clear consent, and note how they gave it. They can ask you to delete it at any time — delete removes the file and the values.</li>
+            <li><b>What the AI sees.</b> To make a plan, Coach AI sends the client's age, sex, measurements, goal, food preference, allergies, health screening and blood-test values to our AI provider (Anthropic) — never their name. To read a report, the file you upload is sent, and it may show the client's name. The provider processes it to give the answer under its commercial terms, which say API data isn't used to train its models.</li>
+            <li><b>Refer when it says refer.</b> Results flagged "discuss with the doctor" — very high sugar, low haemoglobin, kidney or liver changes — need a medical opinion before you change the plan.</li>
+          </ul>
+          <p class="help" style="margin:8px 0 0">See the <a href="terms#coach-ai">Coach AI terms</a> and <a href="privacy#coach-ai">privacy notice</a>.</p>
+        </div>
+      </section>
+    </div>
+  </div>
+</main>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="assets/app.js"></script>
+<script src="assets/tools-calc.js"></script>
+<script src="assets/foods.js"></script>
+<script src="assets/tools-diet.js"></script>
+<script src="assets/tools-markers.js"></script>
+<script src="assets/tools-clients.js"></script>
+<script>
+(async () => {
+  const $ = (id) => document.getElementById(id), esc = FL.esc, I = FL.icon, C = FLCalc, M = FLMarkers;
+  const rupees = (p) => '₹' + Math.round(p / 100).toLocaleString('en-IN');
+  const dt = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+  const session = await FL.session();
+  let me = null; if (session) { try { me = await FL.getProfile(); } catch (_) {} }
+  FL.renderHeader(me && me.profile_completed ? me : null);
+  $('goDiet').textContent = 'AI diet plan';
+
+  const plans = ((await sb.from('coach_ai_plans').select('*').eq('active', true).order('sort')).data) || [];
+  // is the AI switched on yet? (until it is, plans can't be bought)
+  let ready = true;
+  if (me) { const r = await FL.fn('coach-ai', { action: 'status' }); ready = !!(r.data && r.data.ok && r.data.ready); }
+  let access = me ? ((await sb.rpc('tools_access')).data || {}) : {};
+  let period = 'month';
+  const PLAN_FEATURES = {
+    starter: ['10 clients', '40 AI plans a month', 'AI diet plans from blood reports', 'AI workout programs', 'Branded PDFs'],
+    pro: ['30 clients', '120 AI plans a month', 'Everything in Starter', 'Best for busy coaches and nutritionists'],
+    studio: ['100 clients shared by your team', '400 AI plans a month', '3 coaches (you + 2 seats)', 'Everything in Pro'],
+  };
+
+  // ---------------------------------------------------------------- status and plans
+  function drawStatus() {
+    const ai = access.ai;
+    if (!me) {
+      $('status').innerHTML = `<section class="box tl-gate"><div class="tl-cta-in">${I('sparkles', 26)}<div><b>Sign in to use Coach AI</b><span>Join free, then pick a plan below.</span></div><a class="pill solid" href="/?next=tools-ai">Sign in or join</a></div></section>`;
+      return;
+    }
+    if (!ai) {
+      $('status').innerHTML = `<section class="box tl-gate"><div class="tl-cta-in">${I('sparkles', 26)}<div><b>You don't have Coach AI yet</b>
+        <span>${access.premium ? 'Your Premium already includes the diet and workout builders with 10 clients. Coach AI adds AI plans, blood-report reading and more clients.' : 'The calculators are free, and the builders come with Premium. Coach AI adds AI plans, blood-report reading and more clients.'}</span></div></div></section>`;
+      return;
+    }
+    const used = access.ai_used || 0, lim = access.ai_limit || 0, pct = lim ? Math.min(100, Math.round(used / lim * 100)) : 0;
+    const soon = ready ? '' : `<div class="notice warn" style="margin:12px 0 0">${I('clock', 18)}<div class="t-sm">Coach AI is being switched on. Your plan is active — AI plans and report reading open very soon, and the builders work now.</div></div>`;
+    $('status').innerHTML = `<section class="box ai-status"><div class="box-pad">
+      <div class="ai-st-h"><div><div class="eyebrow">${ai.seat ? 'Studio seat' : ai.source === 'admin' ? 'Given by The Fit Lab' : 'Active plan'}</div><b>${esc(ai.name)}</b>
+        <span class="muted t-sm">${ai.seat ? `through ${esc(ai.owner || 'your studio')} · ` : ''}until ${dt(ai.expires_at)}</span></div>
+        ${ai.seat ? '' : '<button class="pill sm" type="button" id="btnChange">Extend or change</button>'}</div>
+      <div class="ai-meter"><div><span>AI plans this month</span><b>${used} of ${lim}</b></div><i><em style="width:${pct}%"></em></i><small>Resets on the 1st. A plan that fails isn't counted.</small></div>
+      ${soon}
+      <div class="ai-meter"><div><span>Clients</span><b>${access.clients_used || 0} of ${access.clients_limit || 0}</b></div><i><em style="width:${access.clients_limit ? Math.min(100, Math.round((access.clients_used || 0) / access.clients_limit * 100)) : 0}%"></em></i><small>Archive a client to free a place.</small></div>
+    </div></section>`;
+    const b = $('btnChange'); if (b) b.onclick = () => { $('plansBox').hidden = !$('plansBox').hidden; if (!$('plansBox').hidden) $('plansBox').scrollIntoView({ behavior: 'smooth' }); };
+  }
+  function drawPlans() {
+    const ai = access.ai;
+    $('plansBox').hidden = !!(ai && !$('plansBox').dataset.open);
+    if (ai && ai.seat) $('plansBox').hidden = true;
+    $('plansTitle').textContent = ai ? 'Extend or change your plan' : 'Choose a Coach AI plan';
+    const save = plans.length ? Math.round(100 - plans[0].price_year / (plans[0].price_month * 12) * 100) : 0;
+    $('saveTag').textContent = save > 0 ? `save ${save}%` : '';
+    document.querySelectorAll('[data-per]').forEach((b) => b.classList.toggle('on', b.dataset.per === period));
+    $('cards').innerHTML = plans.map((p) => {
+      const price = period === 'year' ? p.price_year : p.price_month;
+      const cur = ai && !ai.seat && ai.plan === p.code;
+      return `<div class="ai-card${p.code === 'pro' ? ' hl' : ''}">
+        ${p.code === 'pro' ? '<span class="ai-pop">Most popular</span>' : ''}
+        <b>${esc(p.name.replace('Coach AI ', ''))}</b><span class="muted t-sm">${esc(p.tagline || '')}</span>
+        <div class="ai-price">${rupees(price)}<small>/${period === 'year' ? 'year' : 'month'}</small></div>
+        ${period === 'year' ? `<span class="t-xs muted">${rupees(price / 12)} a month</span>` : '<span class="t-xs muted">&nbsp;</span>'}
+        <ul>${(PLAN_FEATURES[p.code] || []).map((f) => `<li>${I('check', 14)} ${esc(f)}</li>`).join('')}</ul>
+        ${ready ? `<button class="pill ${p.code === 'pro' ? 'solid' : ''} block" type="button" data-buy="${p.code}">${cur ? 'Add more time' : ai && !ai.seat ? 'Switch to ' + esc(p.name.replace('Coach AI ', '')) : 'Get ' + esc(p.name.replace('Coach AI ', ''))}</button>`
+                : '<button class="pill block" type="button" disabled>Opening very soon</button>'}</div>`;
+    }).join('');
+  }
+  $('plansBox').addEventListener('click', (e) => {
+    const p = e.target.closest('[data-per]'); if (p) { period = p.dataset.per; $('plansBox').dataset.open = '1'; return drawPlans(); }
+    const b = e.target.closest('[data-buy]'); if (b) buy(b.dataset.buy, b);
+  });
+  async function buy(plan, btn) {
+    if (!me) return location.assign('/?next=tools-ai');
+    const ai = access.ai, target = plans.find((p) => p.code === plan);
+    if (ai && !ai.seat && ai.plan !== plan && ai.source === 'razorpay') {
+      if (!(await FL.confirm(`Switch to ${target.name}?`, `${target.name} starts today. The unused days of ${ai.name} carry over at their value, so you don't lose what you paid for.`, 'Continue'))) return;
+    }
+    FL.busy(btn, true, 'Opening…');
+    const { data, error } = await FL.fn('premium-checkout', { action: 'ai_order', plan, period, meta: window.FLTrack ? FLTrack.meta('coach-ai') : {} });
+    FL.busy(btn, false);
+    if (error) return FL.toast('Payments couldn\'t be opened. Please try again.', 'err');
+    if (!data || !data.ok) return FL.toast((data && data.message) || 'Payments couldn\'t be opened.', 'err');
+    try { await loadRazorpay(); } catch (_) { return FL.toast('Couldn\'t load the payment window. Check your connection and try again.', 'err'); }
+    const cid = `coach-ai-${plan}-${period}`;
+    window.FLTrack && FLTrack.event('InitiateCheckout', { content_name: data.name, content_ids: [cid], content_type: 'product', value: data.amount / 100, currency: 'INR', num_items: 1 });
+    const rz = new window.Razorpay({ key: data.key_id, amount: data.amount, currency: data.currency, order_id: data.order_id, name: 'The Fit Lab', description: `${data.name} · ${data.description}`, prefill: data.prefill,
+      theme: { color: getComputedStyle(document.documentElement).getPropertyValue('--lime').trim() || '#a3e635' },
+      modal: { ondismiss: () => FL.toast('Payment cancelled. You weren\'t charged.') },
+      handler: async (resp) => {
+        FL.toast('Confirming your payment…');
+        const v = await FL.fn('premium-checkout', { action: 'verify', order_id: resp.razorpay_order_id, payment_id: resp.razorpay_payment_id, signature: resp.razorpay_signature });
+        if (v.data && v.data.ok) {
+          window.FLTrack && FLTrack.event('Purchase', { content_name: data.name, content_ids: [cid], content_type: 'product', value: data.amount / 100, currency: 'INR', num_items: 1 }, resp.razorpay_order_id);
+          access = (await sb.rpc('tools_access')).data || access; delete $('plansBox').dataset.open;
+          FL.toast(`${data.name} is on`, 'ok'); drawAll(); window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else FL.toast((v.data && v.data.message) || 'We couldn\'t confirm the payment yet. If money was taken, Coach AI switches on within a few minutes.', 'err');
+      } });
+    rz.on('payment.failed', (r) => FL.toast((r && r.error && r.error.description) || 'Payment failed. No money was taken.', 'err'));
+    rz.open();
+  }
+  function loadRazorpay() {
+    if (window.Razorpay) return Promise.resolve();
+    return new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://checkout.razorpay.com/v1/checkout.js'; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+  }
+
+  // ---------------------------------------------------------------- studio seats
+  function drawSeats() {
+    const ai = access.ai;
+    $('seatsBox').hidden = !(ai && !ai.seat && ai.plan === 'studio');
+    if ($('seatsBox').hidden) return;
+    const list = access.seats || [];
+    $('seats').innerHTML = `<p class="t-sm muted" style="margin:0 0 10px">Give 2 more coaches Coach AI. They use your clients limit and AI plans.</p>
+      ${list.map((s) => `<div class="ai-seat"><span><b>${esc(s.name || s.username)}</b> <span class="muted">@${esc(s.username)}</span></span><button class="txt-btn" type="button" data-unseat="${esc(s.username)}">Remove</button></div>`).join('') || '<p class="t-sm muted">No coaches added yet.</p>'}
+      ${list.length < 2 ? `<div class="ai-seat-add"><input id="seatUser" placeholder="Their Fit Lab username" maxlength="40" aria-label="Username"><button class="pill sm" type="button" id="btnSeat">Add</button></div>` : ''}`;
+    const b = $('btnSeat'); if (b) b.onclick = async () => {
+      const u = $('seatUser').value.trim().replace(/^@/, ''); if (!u) return;
+      const r = await FL.call('coach_ai_seat', { p_username: u, p_add: true }); if (!r) return;
+      access = (await sb.rpc('tools_access')).data || access; drawSeats(); FL.toast('Coach added', 'ok');
+    };
+  }
+  $('seats').addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-unseat]'); if (!b) return;
+    if (!(await FL.confirm('Remove this coach?', 'They lose Coach AI straight away. Their clients and plans stay with them.', 'Remove', true))) return;
+    const r = await FL.call('coach_ai_seat', { p_username: b.dataset.unseat, p_add: false }); if (!r) return;
+    access = (await sb.rpc('tools_access')).data || access; drawSeats();
+  });
+
+  // ---------------------------------------------------------------- clients
+  let clients = [], client = null;
+  async function loadClients(sel) {
+    try { clients = await FLClients.list(true); } catch (_) { clients = []; }
+    $('clientSel').innerHTML = '<option value="">— Choose a client —</option>' + clients.map((c) => `<option value="${c.id}">${esc(c.full_name)}</option>`).join('');
+    if (sel) { $('clientSel').value = sel; pick(clients.find((c) => c.id === sel) || null); }
+  }
+  $('clientSel').onchange = () => pick(clients.find((c) => c.id === $('clientSel').value) || null);
+  $('btnNew').onclick = async () => { const c = await FLClients.form(null, { access }); if (c && c.id) { access = (await sb.rpc('tools_access')).data || access; drawStatus(); showLimit(); await loadClients(c.id); } };
+  $('btnEdit').onclick = async () => { if (!client) return; const c = await FLClients.form(client, { access }); if (!c) return; access = (await sb.rpc('tools_access')).data || access; showLimit(); await loadClients(c.archived ? null : c.id); if (c.archived) pick(null); };
+  const showLimit = () => { $('limitChip').textContent = `${access.clients_used || 0} of ${access.clients_limit || 0} clients`; };
+  function pick(c) {
+    client = c;
+    $('btnEdit').disabled = !c; $('btnAddReport').disabled = !c; $('makeBox').hidden = !c;
+    if (!c) { $('clientCard').hidden = true; $('reports').innerHTML = '<div class="box-pad muted t-sm">Choose a client to see their reports.</div>'; return; }
+    const age = FLClients.age(c), b = C.bmi(Number(c.weight_kg), Number(c.height_cm));
+    $('clientCard').hidden = false;
+    $('clientCard').innerHTML = `<b>${esc(c.full_name)}</b><span>${c.sex === 'male' ? 'Male' : 'Female'} · ${age} y · ${Math.round(c.height_cm)} cm · ${Math.round(c.weight_kg * 10) / 10} kg · BMI ${Math.round(b * 10) / 10}</span>
+      <span>${esc(C.GOALS[c.goal]?.label || '')} · ${esc((FLClients.DIETS.find((d) => d[0] === c.diet) || ['', ''])[1])}</span>
+      ${c.health_consent_at ? `<span class="t-xs muted">Health consent noted ${dt(c.health_consent_at)}</span>` : '<span class="tl-flag">' + I('flag', 13) + ' No health consent noted yet — edit the client first</span>'}`;
+    $('goDiet').href = `tools-diet?client=${c.id}&ai=1`; $('goWorkout').href = `tools-workout?client=${c.id}&ai=1`;
+    loadReports();
+  }
+
+  // ---------------------------------------------------------------- blood reports
+  const STATUS = { normal: 'Normal', borderline: 'Borderline', high: 'High', low: 'Low' };
+  async function loadReports() {
+    const { data, error } = await sb.from('client_reports').select('*').eq('client_id', client.id).order('taken_on', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false });
+    if (error) { $('reports').innerHTML = `<div class="box-pad err">${esc(FL.friendly(error))}</div>`; return; }
+    if (!(data || []).length) { $('reports').innerHTML = `<div class="box-pad t-sm muted">No reports yet. Add one to plan nutrition around the client's blood results — upload the lab's PDF or a clear photo, or type the values.</div>`; return; }
+    $('reports').innerHTML = data.map((r, i) => {
+      const read = M.interpret(r.markers, { sex: client.sex, age: FLClients.age(client), pregnant: (client.conditions || []).includes('pregnant') });
+      return `<div class="ai-rep" data-rep="${r.id}">
+        <div class="ai-rep-h"><div><b>${r.taken_on ? dt(r.taken_on) : 'Undated report'}</b>${i === 0 ? ' <span class="chip">used for new plans</span>' : ''}<span class="t-xs muted">${esc(r.lab_name || '')}${r.lab_name ? ' · ' : ''}${(r.markers || []).length} results · consent: ${esc(r.consent_by)}</span></div>
+          <div class="ai-rep-a">${r.file_path ? `<button class="txt-btn" type="button" data-file="${esc(r.file_path)}">${I('file', 14)} File</button>` : ''}<button class="txt-btn" type="button" data-edit="${r.id}">${I('edit', 14)} Values</button><button class="txt-btn" type="button" data-del="${r.id}" aria-label="Delete">${I('trash', 14)}</button></div></div>
+        ${read.findings.length ? `<table class="tl-table ai-find"><thead><tr><th>Test</th><th>Result</th><th>Reading</th><th></th></tr></thead><tbody>${read.findings.map((f) => `<tr class="s-${f.status}"><td>${esc(f.label)}</td><td>${f.value} ${esc(f.unit)}</td><td><span class="ai-badge s-${f.status}">${STATUS[f.status]}</span>${f.refer ? ' <span class="ai-badge s-refer">Doctor</span>' : ''}</td><td class="t-xs">${esc(f.text)}${f.ref ? ` <span class="muted">(${esc(refShort(f.ref))})</span>` : ''}</td></tr>`).join('')}</tbody></table>`
+          : '<p class="t-sm muted" style="margin:8px 0 0">None of these results are ones Coach AI reads yet — they are kept with the report.</p>'}
+        ${read.focus.length ? `<div class="ai-focus">${read.focus.map((k) => `<div>${I('check', 14)}<span>${esc(M.FOCUS[k])}</span></div>`).join('')}</div>` : ''}
+      </div>`;
+    }).join('') + `<p class="help box-pad" style="margin:0">Read against ADA 2024, NCEP ATP III, WHO (2011, 2020), IOM 2011, NIH ODS, KDIGO 2024, ACR 2020 and AASLD 2023 cut-offs. Coach AI never diagnoses — anything marked "Doctor" needs a medical opinion.</p>`;
+  }
+  const refShort = (k) => ({ ada: 'ADA 2024', atp3: 'NCEP ATP III', who_hb: 'WHO 2011', who_ferritin: 'WHO 2020', iom_vitd: 'IOM 2011', ods_b12: 'NIH ODS', kdigo: 'KDIGO 2024', acr_gout: 'ACR 2020', aasld: 'AASLD 2023' }[k] || k);
+  $('reports').addEventListener('click', async (e) => {
+    const f = e.target.closest('[data-file]');
+    if (f) { const { data, error } = await sb.storage.from('client-reports').createSignedUrl(f.dataset.file, 120); if (error) return FL.toast(FL.friendly(error), 'err'); return window.open(data.signedUrl, '_blank', 'noopener'); }
+    const d = e.target.closest('[data-del]');
+    if (d) {
+      if (!(await FL.confirm('Delete this report?', 'The file and all its values are deleted for good. Plans already made keep their notes.', 'Delete', true))) return;
+      const { data: row } = await sb.from('client_reports').select('file_path').eq('id', d.dataset.del).single();
+      if (row && row.file_path) await sb.storage.from('client-reports').remove([row.file_path]);
+      const { error } = await sb.from('client_reports').delete().eq('id', d.dataset.del);
+      if (error) return FL.toast(FL.friendly(error), 'err');
+      FL.toast('Report deleted', 'ok'); return loadReports();
+    }
+    const ed = e.target.closest('[data-edit]');
+    if (ed) { const { data } = await sb.from('client_reports').select('*').eq('id', ed.dataset.edit).single(); if (data) valuesForm(data); }
+  });
+
+  // add a report: consent → file (read by Coach AI) or typed values
+  $('btnAddReport').onclick = () => {
+    if (!client) return;
+    const m = FL.modal({ title: `Add a blood report for ${client.full_name}`, wide: true, body: `
+      <div class="notice" style="margin:0 0 12px">${I('shield', 18)}<div class="t-sm" style="line-height:1.55">Only add a report with the client's clear consent. They should know it is used to plan their nutrition, that Coach AI's provider reads the file to pick out the values, and that they can ask you to delete it any time.</div></div>
+      <label class="check"><input type="checkbox" id="rConsent"><span>${esc(client.full_name)} agreed that I can store and use this report to plan for them.</span></label>
+      <div class="field" style="margin-top:12px"><label class="req" for="rHow">How they agreed</label><input id="rHow" maxlength="120" placeholder="e.g. WhatsApp message on 12 Oct, signed intake form"></div>
+      <div class="tl-row"><div class="field"><label for="rDate">Test date <span class="muted">(optional)</span></label><input id="rDate" type="date"></div>
+        <div class="field"><label for="rFile">The lab's PDF or a clear photo</label><input id="rFile" type="file" accept="application/pdf,image/jpeg,image/png,image/webp"></div></div>
+      <p class="help" style="margin:-4px 0 0">Up to 10 MB. Reading the file uses 1 AI plan; typing the values yourself is free.</p>
+      <div class="err" id="rErr" hidden></div>`,
+      foot: '<button class="pill ghost" data-type>Type the values</button><span style="flex:1"></span><button class="pill ghost" data-no>Cancel</button><button class="pill solid" data-read>Read with Coach AI</button>' });
+    const err = (t) => { const x = m.q('#rErr'); x.textContent = t; x.hidden = !t; };
+    const consent = () => { if (!m.q('#rConsent').checked) { err('Tick the consent box first.'); return null; } const how = m.q('#rHow').value.trim(); if (how.length < 3) { err('Note how the client agreed.'); return null; } return how; };
+    m.q('[data-no]').onclick = m.close;
+    m.q('[data-type]').onclick = () => { const how = consent(); if (!how) return; m.close(); valuesForm({ client_id: client.id, markers: [], consent_by: how, taken_on: m.q('#rDate').value || null }); };
+    m.q('[data-read]').onclick = async (e) => {
+      err(''); const how = consent(); if (!how) return;
+      const file = m.q('#rFile').files[0];
+      if (!file) return err('Choose the report file, or type the values instead.');
+      if (file.size > 10 * 1024 * 1024) return err('That file is over 10 MB — try a smaller photo or the lab\'s PDF.');
+      if ((access.ai_limit || 0) - (access.ai_used || 0) < 1) return err('You\'ve used all your AI plans for this month. Type the values instead — that\'s free.');
+      FL.busy(e.target, true, 'Reading the report…');
+      const ext = (file.type === 'application/pdf' ? 'pdf' : file.type.split('/')[1] || 'jpg').replace('jpeg', 'jpg');
+      const path = `${session.user.id}/${client.id}/report-${Date.now().toString(36)}.${ext}`;
+      const up = await sb.storage.from('client-reports').upload(path, file, { contentType: file.type, upsert: false });
+      if (up.error) { FL.busy(e.target, false); return err(FL.friendly(up.error)); }
+      const { data, error } = await FL.fn('coach-ai', { action: 'report', client_id: client.id, file_path: path, consent_by: how, taken_on: m.q('#rDate').value || null });
+      FL.busy(e.target, false);
+      if (error || !data || !data.ok) { if (!data || data.code !== 'unreadable') await sb.storage.from('client-reports').remove([path]); return err((data && data.message) || 'Coach AI couldn\'t read the report. Please try again.'); }
+      m.close(); access = (await sb.rpc('tools_access')).data || access; drawStatus();
+      FL.toast(`${data.report.markers.length} results read — check them against the report`, 'ok'); await loadReports();
+    };
+  };
+  // check or type the values of a report
+  function valuesForm(r) {
+    const known = M.DEFS;
+    const rows = (r.markers || []).length ? r.markers : [{ name: 'HbA1c', value: '', unit: '%' }];
+    const row = (x) => `<div class="ai-vrow"><input list="mkList" value="${esc(x.name || '')}" placeholder="Test" aria-label="Test" data-k="name"><input value="${esc(x.value ?? '')}" inputmode="decimal" placeholder="Value" aria-label="Value" data-k="value"><input value="${esc(x.unit || '')}" placeholder="Unit" aria-label="Unit" data-k="unit"><button type="button" class="x" data-rm aria-label="Remove">${I('close', 14)}</button></div>`;
+    const m = FL.modal({ title: r.id ? 'Check the values' : 'Type the values', wide: true, body: `
+      <p class="t-sm muted" style="margin:0 0 10px">${r.id ? 'Compare each value with the report and correct anything that was misread.' : 'Type each result as it appears on the report.'}</p>
+      <datalist id="mkList">${known.map((d) => `<option value="${esc(d.label)}">`).join('')}</datalist>
+      <div id="vRows">${rows.map(row).join('')}</div>
+      <button class="txt-btn" type="button" id="vAdd">${I('plus', 14)} Add a result</button>
+      <div class="field" style="margin-top:10px"><label for="vDate">Test date</label><input id="vDate" type="date" value="${esc(r.taken_on || '')}"></div>
+      <div class="err" id="vErr" hidden></div>`, foot: '<button class="pill ghost" data-no>Cancel</button><button class="pill solid" data-ok>Save</button>' });
+    m.q('[data-no]').onclick = m.close;
+    m.q('#vAdd').onclick = () => m.q('#vRows').insertAdjacentHTML('beforeend', row({}));
+    m.q('#vRows').addEventListener('click', (e) => { const b = e.target.closest('[data-rm]'); if (b) b.closest('.ai-vrow').remove(); });
+    m.q('#vRows').addEventListener('change', (e) => {   // fill the usual unit for a known test
+      if (e.target.dataset.k !== 'name') return; const d = known.find((x) => x.label === e.target.value); const u = e.target.closest('.ai-vrow').querySelector('[data-k=unit]'); if (d && !u.value) u.value = d.unit;
+    });
+    m.q('[data-ok]').onclick = async (e) => {
+      const markers = [...m.el.querySelectorAll('.ai-vrow')].map((x) => ({ name: x.querySelector('[data-k=name]').value.trim(), value: parseFloat(x.querySelector('[data-k=value]').value), unit: x.querySelector('[data-k=unit]').value.trim() || null }))
+        .filter((x) => x.name && isFinite(x.value)).map((x) => { const old = (r.markers || []).find((o) => o.name === x.name) || {}; return { ...x, ref_low: old.ref_low ?? null, ref_high: old.ref_high ?? null, key: M.keyFor(x.name) }; });
+      if (!markers.length) { const x = m.q('#vErr'); x.textContent = 'Add at least one result.'; x.hidden = false; return; }
+      FL.busy(e.target, true, 'Saving…');
+      const row = { markers, taken_on: m.q('#vDate').value || null };
+      const res = r.id ? await sb.from('client_reports').update(row).eq('id', r.id)
+                       : await sb.from('client_reports').insert({ ...row, client_id: client.id, coach_id: session.user.id, consent_at: new Date().toISOString(), consent_by: r.consent_by });
+      FL.busy(e.target, false);
+      if (res.error) { const x = m.q('#vErr'); x.textContent = FL.friendly(res.error); x.hidden = false; return; }
+      m.close(); FL.toast('Saved', 'ok'); loadReports();
+    };
+  }
+
+  // ---------------------------------------------------------------- recent AI plans
+  async function loadRecent() {
+    const { data } = await sb.rpc('my_ai_activity', { p_limit: 12 });
+    $('recent').innerHTML = (data || []).length ? data.map((p) => `<div class="tl-saved"><a class="lnk" href="tools-${p.kind === 'diet' ? 'diet' : 'workout'}?client=${p.client_id}&plan=${p.id}">${esc(p.title)}</a><span>${p.kind === 'diet' ? 'Diet' : 'Workout'} · ${dt(p.created_at)}</span><span></span></div>`).join('')
+      : '<div class="box-pad t-sm muted">Plans you make with Coach AI show here.</div>';
+  }
+
+  function drawAll() {
+    drawStatus(); drawPlans(); drawSeats();
+    const ai = access.ai;
+    $('work').hidden = !ai;
+    if (ai) { showLimit(); loadClients(new URLSearchParams(location.search).get('client')); loadRecent(); }
+  }
+  drawAll();
+})();
+</script>
+</body>
+</html>
