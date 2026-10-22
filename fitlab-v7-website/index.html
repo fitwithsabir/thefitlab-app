@@ -146,6 +146,15 @@
     history.replaceState(null, '', location.pathname);
   }
 
+  // a reset link from our own email (#reset=<token>): exchange it for a sign-in, then ask for the new password
+  const resetToken = linkInfo.get('reset');
+  if (resetToken) {
+    history.replaceState(null, '', location.pathname);
+    const { error } = await sb.auth.verifyOtp({ token_hash: resetToken, type: 'recovery' });
+    if (error) { show('forgot'); say('That link has expired or was already used. Enter your email and we\'ll send a new one.'); }
+    else { recovering = true; show('recover'); }
+  }
+
   // Already signed in? Skip the landing (unless we're mid-recovery)
   const session = await FL.session();
   if (recovering) show('recover');
@@ -212,6 +221,11 @@
     const btn = e.submitter; FL.busy(btn, true, 'Sending…');
     const email = $('fgEmail').value.trim();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { FL.busy(btn, false); return say('Enter the email you signed up with.'); }
+    // first through The Fit Lab's own mailbox; Supabase's built-in email is the back-up
+    let mine = null;
+    try { const r = await sb.functions.invoke('password-reset', { body: { email } }); mine = r && r.data; } catch (_) { mine = null; }
+    if (mine && mine.ok) { FL.busy(btn, false); return say('If that email has an account, a reset link is on its way. Check your inbox and spam folder — the link works for 1 hour.', true); }
+    if (mine && (mine.code === 'rate_limited' || mine.code === 'bad_email')) { FL.busy(btn, false); return say(FL.esc(mine.message)); }
     const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/' });
     FL.busy(btn, false);
     if (error) {
