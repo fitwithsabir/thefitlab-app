@@ -80,17 +80,8 @@
     { kcal: 0, p: 0, c: 0, f: 0, fib: 0 });
   const snap = (v, it) => Math.min(it.max, Math.max(it.min, Math.round(v / it.step) * it.step));
 
-  // build one meal from a template, then size the adjustable items to hit its share of the targets
-  function buildMeal(tpl, target, ctx, used = null) {
-    const items = [];
-    for (const [choice, role, def, min, max, step] of tpl.items) {
-      const id = pickFood(choice, ctx.diet, ctx.allergies, role === 'protein' ? used : null);
-      if (!id) continue;
-      if (ctx.lowGI && FOODS[id].group === 'sugar') continue;
-      const dup = items.find((x) => x.id === id);
-      if (dup) { dup.max = Math.max(dup.max, max); continue; }
-      items.push({ id, role, units: def, min, max, step });
-    }
+  // move the protein, carb and fat items of one meal towards its share of the targets
+  function sizeItems(items, target) {
     for (let round = 0; round < 12; round++) {
       let changed = false;
       for (const role of ['protein', 'carb', 'fat']) {
@@ -108,6 +99,20 @@
       }
       if (!changed) break;
     }
+  }
+
+  // build one meal from a template, then size the adjustable items to hit its share of the targets
+  function buildMeal(tpl, target, ctx, used = null) {
+    const items = [];
+    for (const [choice, role, def, min, max, step] of tpl.items) {
+      const id = pickFood(choice, ctx.diet, ctx.allergies, role === 'protein' ? used : null);
+      if (!id) continue;
+      if (ctx.lowGI && FOODS[id].group === 'sugar') continue;
+      const dup = items.find((x) => x.id === id);
+      if (dup) { dup.max = Math.max(dup.max, max); continue; }
+      items.push({ id, role, units: def, min, max, step });
+    }
+    sizeItems(items, target);
     const kept = items.filter((x) => x.units > 0);
     return { key: tpl.key, name: tpl.name, items: kept, totals: sum(kept) };
   }
@@ -140,6 +145,12 @@
       if (m) { used.push(m.key); m.items.filter((x) => x.role === 'protein').forEach((x) => { proteins[x.id] = (proteins[x.id] || 0) + 1; }); }
       return { slot, label, time, target, ...(m || { key: null, name: '—', items: [], totals: { kcal: 0, p: 0, c: 0, f: 0, fib: 0 } }) };
     });
+    fitDay(meals, targets);
+    return { meals, totals: dayTotals(meals), targets, ctx: c, notes: notesFor(ctx, targets) };
+  }
+  // the whole day: correct the calories with the carb items first, then the fats, then the side dishes
+  // (protein is left alone), and trim any extra fat
+  function fitDay(meals, targets) {
     // the whole day: if it is more than 4% off the calories, move the carb items first,
     // then the fats, then the side dishes (dal, curd…) — protein is left alone
     for (const roles of [['carb'], ['carb'], ['fat'], ['fixed'], ['carb']]) {
@@ -173,9 +184,66 @@
       }
       meals.forEach((m) => { m.items = m.items.filter((x) => x.units > 0); m.totals = sum(m.items); });
     }
-    return { meals, totals: dayTotals(meals), targets, ctx: c, notes: notesFor(ctx, targets) };
   }
   const dayTotals = (meals) => meals.reduce((t, m) => { const s = sum(m.items); t.kcal += s.kcal; t.p += s.p; t.c += s.c; t.f += s.f; t.fib += s.fib; return t; }, { kcal: 0, p: 0, c: 0, f: 0, fib: 0 });
+
+  // how a food behaves in the portion maths, for meals not built from a template (Coach AI)
+  const ROLE = { grain: 'carb', fruit: 'carb', snack: 'carb', protein: 'protein', nut: 'fat', fat: 'fat', sugar: 'fixed', pulse: 'fixed', dairy: 'fixed', veg: 'fixed', drink: 'fixed' };
+  function itemFor(id, units) {
+    const f = FOODS[id]; if (!f) return null;
+    const role = f.id === 'greek' || f.id === 'whey' ? 'protein' : (ROLE[f.group] || 'fixed');
+    const step = f.grams >= 100 || ['katori', 'plate', 'bowl', 'glass', 'cup'].some((w) => f.unit.startsWith(w)) ? 0.5 : 1;
+    const u = Math.max(step, Math.round((+units || 1) / step) * step);
+    // a food chosen on purpose stays in the meal (at least one step); side dishes keep their size
+    const half = Math.max(step, Math.round(u / 2 / step) * step);
+    const max = role === 'carb' ? Math.max(u * 3, 4) : role === 'protein' ? Math.max(u * 2.5, 4) : role === 'fat' ? Math.max(u * 3, 3) : Math.max(u * 1.5, u + step);
+    return { id, role, units: u, min: role === 'fat' ? 0 : role === 'fixed' ? half : step, max: Math.round(max / step) * step, step };
+  }
+  // size meals someone else chose (Coach AI) to the targets with the same maths as the builder
+  function fitMeals(meals, targets, ctx) {
+    const pattern = PATTERNS[meals.length] || null;
+    meals.forEach((m, i) => {
+      const share = pattern && pattern[i] ? pattern[i] : [m.slot, m.label, m.time, 1 / meals.length, 1 / meals.length];
+      m.target = { kcal: targets.kcal * share[3], p: targets.protein * share[4], c: targets.carbs * share[3], f: targets.fat * share[3] };
+      m.items = m.items.filter((x) => FOODS[x.id] && F.fits(FOODS[x.id], ctx.diet, ctx.allergies || []));
+      sizeItems(m.items, m.target);
+      m.items = m.items.filter((x) => x.units > 0); m.totals = sum(m.items);
+    });
+    // short of protein: raise or add a protein food in the meal that is furthest below its share
+    for (let pass = 0; pass < 4; pass++) {
+      const day = dayTotals(meals), gap = targets.protein - day.p;
+      if (gap / targets.protein < 0.06) break;
+      const m = [...meals].sort((a, b) => (b.target.p - sum(b.items).p) - (a.target.p - sum(a.items).p))[0];
+      let it = m.items.find((x) => x.role === 'protein' && x.units < x.max);
+      if (!it) {
+        // the leanest protein food that suits the client and isn't already in this meal
+        const pool = [...new Set([...(P_LEAN[ctx.diet] || []), ...(P_MAIN[ctx.diet] || []), ...(SNACK_P[ctx.diet] || [])])]
+          .filter((id) => FOODS[id] && F.fits(FOODS[id], ctx.diet, ctx.allergies || []) && !m.items.some((x) => x.id === id) && FOODS[id].meals.includes({ breakfast: 'b', lunch: 'l', dinner: 'd' }[m.slot] || 's'));
+        const id = pool.sort((a, b) => FOODS[b].p / FOODS[b].kcal - FOODS[a].p / FOODS[a].kcal)[0];
+        if (!id) break;
+        it = itemFor(id, 0); it.units = 0; it.min = 0; m.items.push(it);
+      }
+      const p1 = per(FOODS[it.id], 1).p;
+      it.units = snap(it.units + Math.max(it.step, Math.min(gap, m.target.p) / p1), it);
+      m.totals = sum(m.items);
+    }
+    fitDay(meals, targets);
+    // still well short of calories (no starch chosen, say): add a staple to the meals that need it most
+    const STAPLE = { breakfast: ['oats', 'poha', 'idli', 'bread_brown', 'ragi'], lunch: ['rice', 'roti', 'jowar', 'quinoa'], dinner: ['roti', 'rice', 'jowar', 'quinoa'], snack: ['banana', 'apple', 'chana', 'makhana'], bedtime: ['banana'] };
+    for (let pass = 0; pass < 4; pass++) {
+      if (dayTotals(meals).kcal >= targets.kcal * 0.94) break;
+      const m = [...meals].sort((a, b) => (b.target.kcal - sum(b.items).kcal) - (a.target.kcal - sum(a.items).kcal))[0];
+      if (m.items.some((x) => x.role === 'carb' && x.units < x.max)) { fitDay(meals, targets); if (dayTotals(meals).kcal >= targets.kcal * 0.94) break; }
+      const id = (STAPLE[m.slot] || STAPLE.snack).find((k) => FOODS[k] && F.fits(FOODS[k], ctx.diet, ctx.allergies || []) && !m.items.some((x) => x.id === k));
+      if (!id) break;
+      const it = itemFor(id, 1); it.min = 0;
+      it.units = snap((m.target.kcal - sum(m.items).kcal) / per(FOODS[id], 1).kcal, it);
+      if (it.units > 0) m.items.push(it);
+      m.totals = sum(m.items);
+    }
+    meals.forEach((m) => { m.items = m.items.filter((x) => x.units > 0); m.totals = sum(m.items); });
+    return meals;
+  }
 
   // swap one meal for the next-best template
   function reshuffle(plan, index) {
@@ -244,7 +312,7 @@
     return `${frac(units)} ${plural(base, units)} (${size})`;
   }
 
-  const api = { PATTERNS, TEMPLATES: T, CONDITIONS, buildDay, reshuffle, recalc, swapsFor, per, sum, dayTotals, amount, frac };
+  const api = { PATTERNS, TEMPLATES: T, CONDITIONS, buildDay, reshuffle, recalc, swapsFor, per, sum, dayTotals, amount, frac, sizeItems, fitDay, fitMeals, itemFor, notesFor };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.FLDiet = api;
 })(typeof window !== 'undefined' ? window : globalThis);
