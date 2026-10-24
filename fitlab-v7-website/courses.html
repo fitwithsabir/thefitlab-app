@@ -31,7 +31,12 @@
   .mod .mn{font:700 11px/1 var(--mono);color:var(--lime);letter-spacing:.08em;min-width:62px}
   .mod .mt{flex:1;min-width:0}.mod .mt b{display:block;color:var(--bone);font-size:14.5px}.mod .mt span{font-size:12.5px;color:var(--ash)}
   .mod ol{margin:0;padding:0 20px 14px 94px;font-size:13.5px;line-height:1.7;color:var(--ash)}
-  @media (max-width:640px){.buy{grid-template-columns:1fr}.mod ol{padding-left:38px}}
+  .certify{display:flex;gap:14px 20px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:18px;padding:16px 18px;border:1px solid var(--line);border-radius:14px;background:color-mix(in srgb,var(--lime) 4%,transparent);transition:box-shadow .3s}
+  .certify h3{margin:4px 0 6px;font:700 16px/1.3 var(--body);color:var(--bone)}
+  .certify p{margin:0;font-size:13.5px;line-height:1.55;color:var(--ash);max-width:560px}
+  .certify .pill{flex:none}
+  .certify.flash{box-shadow:0 0 0 2px var(--lime)}
+  @media (max-width:640px){.buy{grid-template-columns:1fr}.mod ol{padding-left:38px}.certify .pill{width:100%;justify-content:center}}
 </style>
 </head>
 <body data-page="courses">
@@ -85,6 +90,11 @@
     return { doneCount, allDone, passed, used, cert, issued, next, pct: Math.round(doneCount / c.total_days * 100) };
   }
 
+  // the certificate's name: the course, or "<course> — Direct Certification" (exam without the days)
+  const certTitle = (c, x) => x && x.kind === 'direct' ? `${(c.title || 'Course').replace(/^\s*\d+[- ]day\s+/i, '')} — Direct Certification` : (c.title || 'Course');
+  // direct certification bought: the direct track, or a course member who bought it on top
+  const examUnlocked = (e) => !!e && (e.track === 'direct' || !!e.exam_unlocked_at);
+
   function ctaFor(c, s) {
     if (s.issued) return `<span class="otw">${FL.icon('award', 15)}Certified</span><a class="pill solid" href="verify?id=${encodeURIComponent(me.unique_id)}">View certificate</a>
       ${s.cert.certificate_url ? `<a class="pill" href="${esc(s.cert.certificate_url)}" target="_blank" rel="noopener">Download</a>` : ''}`;
@@ -93,7 +103,7 @@
     if (s.cert || s.passed) return `<span class="otw">${FL.icon('check', 15)}Exam passed${s.passed ? ' · ' + Math.round(s.passed.percentage) + '%' : ''}</span>
       <span class="t-sm muted">Certificate awaiting review — you'll be emailed.</span><a class="pill sm" href="verify?id=${encodeURIComponent(me.unique_id)}">My result page</a>`;
     const ee = enrolled(c);
-    if (ee && ee.track === 'direct') return `<a class="pill solid lg" href="exam?course=${encodeURIComponent(c.slug)}">Take the certification exam</a>
+    if (ee && examUnlocked(ee) && !s.allDone) return `<a class="pill solid lg" href="exam?course=${encodeURIComponent(c.slug)}">Take the certification exam</a>
       <span class="t-sm muted">${c.exam_question_count} questions · ${c.exam_seconds_per_question || 60}s each · pass ${c.pass_percentage}% · attempts ${s.used}/${c.max_attempts}</span>`;
     if (s.allDone) return `<a class="pill solid lg" href="exam?course=${encodeURIComponent(c.slug)}">Take the final exam</a>
       <span class="t-sm muted">${c.exam_question_count} questions · ${c.exam_time_minutes} min · pass ${c.pass_percentage}% · attempts ${s.used}/${c.max_attempts}</span>`;
@@ -121,13 +131,23 @@
     const p = rupees(price(c));
     return `<div class="buy">
       <div class="buy-opt main"><div class="eyebrow" style="font-size:10px">Learn + certify</div><h3>Full course</h3><div class="price">${p}</div>
-        <ul><li>All ${c.total_days} daily chapters in ${modulesFor(c).length} modules</li><li>Checks and assignments every day</li><li>Final certification exam after Day ${c.total_days}</li></ul>
+        <ul><li>All ${c.total_days} daily chapters in ${modulesFor(c).length} modules</li><li>Checks and assignments every day</li><li>Final exam after Day ${c.total_days} — the Course Completion certificate</li></ul>
         <button class="pill solid" data-buy="full">Buy full course — ${p}</button></div>
       <div class="buy-opt"><div class="eyebrow" style="font-size:10px">Already experienced?</div><h3>Direct certification</h3><div class="price">${p}</div>
-        <ul><li>Skip the lessons — take the exam right away</li><li>The same ${c.exam_question_count}-question exam, same ${c.pass_percentage}% pass mark</li><li>${c.exam_seconds_per_question || 60} seconds a question, no going back</li></ul>
+        <ul><li>Skip the lessons — take the exam right away</li><li>The same ${c.exam_question_count}-question exam, same ${c.pass_percentage}% pass mark</li><li>${c.exam_seconds_per_question || 60} seconds a question, no going back</li><li>Pass for the Direct Certification certificate</li></ul>
         <button class="pill" data-buy="direct">Buy direct certification — ${p}</button></div>
     </div>
     <p class="t-xs muted" style="margin:10px 0 0">One-time payment via Razorpay — UPI, cards, net banking. Lifetime access. ${c.max_attempts} exam attempts included.</p>`;
+  }
+
+  // a course member who hasn't finished can still take the exam now: direct certification is its own ₹99 product
+  function certifyOffer(c, e, s) {
+    if (!e || e.track !== 'full' || e.exam_unlocked_at || s.allDone || s.cert || s.passed || !price(c)) return '';
+    const p = rupees(price(c));
+    return `<div class="certify" id="certify">
+      <div><div class="eyebrow" style="font-size:10px">Direct certification · ${p}</div><h3>Want to certify now?</h3>
+        <p>Take the exam today without finishing the days — pass and you earn the <b>Direct Certification</b> certificate. Finish all ${c.total_days} days first and the exam is included, with the <b>Course Completion</b> certificate. Your course stays open either way.</p></div>
+      <button class="pill" data-buy="direct">Buy direct certification — ${p}</button></div>`;
   }
 
   function loadRazorpay() {
@@ -181,6 +201,7 @@
         <h1>${esc(c.title)}</h1><p class="sub">${esc(c.subtitle || '')}</p>
         ${e ? `<div class="cprog" style="margin-top:14px"><span class="progress"><i style="width:${s.pct}%"></i></span><span class="t-sm"><b>${s.doneCount}/${c.total_days}</b> days · ${s.pct}%</span></div>` : ''}
         ${e ? `<div class="cta-row">${ctaFor(c, s)}</div>` : price(c) ? buyBox(c) : `<div class="cta-row"><button class="pill solid lg" id="btnEnroll">Enroll — free</button></div>`}
+        ${certifyOffer(c, e, s)}
         <div class="stats3">${stt.enrolled_count != null ? `<span><b>${stt.enrolled_count}</b> enrolled</span><span><b>${stt.completed_count}</b> completed</span><span><b>${stt.in_progress_count}</b> in progress</span>` : ''}</div>
         ${c.description ? `<p class="desc">${esc(c.description)}</p>` : ''}
       </div></div>
@@ -192,9 +213,9 @@
       <div class="box"${!e && price(c) ? ' style="display:none"' : ''}><div class="box-head"><h2>Course content</h2><span class="sub">${days.length} of ${c.total_days} days published</span></div>
         <p class="t-sm muted" style="margin:0 20px 8px">${(me.is_admin || me.is_owner) ? 'Admin view — every published day is open and timers are off.' : 'Completed days stay open to revise any time, with no reading timer. The next day unlocks when you finish the one before.'}</p>
         <div class="syl" id="syl"></div>
-        <div class="syl-day ${s.allDone ? 'next' : 'locked'}" style="border-top:1px solid var(--line)">
+        <div class="syl-day ${(s.allDone || examUnlocked(e)) && !s.passed ? 'next' : 'locked'}" style="border-top:1px solid var(--line)">
           <span class="syl-n">${FL.icon('award', 16)}</span><span class="meta"><b>Final exam</b><span>${c.exam_question_count} questions · ${c.exam_time_minutes} minutes · ${c.pass_percentage}% to pass</span></span>
-          ${s.allDone && !s.passed && e ? `<a class="go" href="exam?course=${encodeURIComponent(c.slug)}">Start →</a>` : s.passed ? `<span class="go">Passed</span>` : `<span class="t-xs muted">${FL.icon('lock', 14)}</span>`}</div>
+          ${(s.allDone || examUnlocked(e)) && !s.passed && e ? `<a class="go" href="exam?course=${encodeURIComponent(c.slug)}">Start →</a>` : s.passed ? `<span class="go">Passed</span>` : `<span class="t-xs muted">${FL.icon('lock', 14)}</span>`}</div>
       </div>`;
     const syl = $('syl');
     syl.innerHTML = Array.from({ length: c.total_days }, (_, i) => {
@@ -215,6 +236,8 @@
     const be = $('btnEnroll');
     if (be) be.onclick = () => enroll(c, be);
     $('main').querySelectorAll('[data-buy]').forEach((b) => { b.onclick = () => buy(c, b.dataset.buy, b); });
+    const offer = $('certify');
+    if (offer && location.hash === '#certify') { offer.scrollIntoView({ block: 'center' }); offer.classList.add('flash'); setTimeout(() => offer.classList.remove('flash'), 2600); }
     side(c);
   }
 
@@ -260,9 +283,9 @@
       } else {
         body.innerHTML = issued.length ? issued.map((x) => { const c = courses.find((y) => y.id === x.course_id) || {};
           return `<div class="cert-row"><span class="sq" style="width:52px;height:52px;border-radius:10px;background:var(--accent-soft);color:var(--lime);display:grid;place-items:center">${FL.icon('award', 26)}</span>
-            <div class="ent-main"><b>${esc(c.title || 'Course')}</b><div class="ent-meta">Issued ${FL.fmtDate(x.issued_at)} · Certificate no. <span class="mono">${esc(x.verification_code)}</span></div></div>
+            <div class="ent-main"><b>${esc(certTitle(c, x))}</b><div class="ent-meta">${x.kind === 'direct' ? 'Direct certification' : 'Course completion'} · Issued ${FL.fmtDate(x.issued_at)} · Certificate no. <span class="mono">${esc(x.verification_code)}</span></div></div>
             <a class="pill sm" href="verify?id=${encodeURIComponent(me.unique_id)}">Verify</a>${x.certificate_url ? `<a class="pill ghost sm" href="${esc(x.certificate_url)}" target="_blank" rel="noopener">Download</a>` : ''}</div>`; }).join('')
-          : `<div class="empty"><b>No certificates yet</b>Finish all days and pass the final exam — your certificate then appears here and on your profile.</div>`;
+          : `<div class="empty"><b>No certificates yet</b>Finish all days and pass the final exam, or pass the exam through direct certification — your certificate then appears here and on your profile.</div>`;
       }
     };
     $('ctabs').onclick = (e) => { const b = e.target.closest('[data-t]'); if (b) setTab(b.dataset.t); };

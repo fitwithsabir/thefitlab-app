@@ -54,11 +54,14 @@
         <a class="btn" href="verify">Try another ID</a></div>`;
       return;
     }
+    // course completion = every day done, then the exam · direct certification = the exam on its own
+    const kindLabel = (c) => c.kind === 'direct' ? 'Direct certification — certification exam passed' : 'Course completion — all days and the final exam';
     const certs = (data.certificates || []).map((c) => c.status === 'pending' ? `
       <div class="card hud cert"><span class="c1"></span><span class="c2"></span>
         <div class="badge warn">Exam passed · certificate under review</div>
         <h3 class="display" style="font-size:30px;margin:8px 0 2px">${FL.esc(c.course)}</h3>
         <dl class="kv" style="margin-top:10px">
+          <dt>Type</dt><dd>${kindLabel(c)}</dd>
           ${c.passed_at ? `<dt>Exam passed</dt><dd>${FL.fmtDate(c.passed_at)}</dd>` : ''}
           ${c.percentage != null ? `<dt>Exam score</dt><dd class="mono">${c.percentage}%</dd>` : ''}
         </dl>
@@ -68,6 +71,7 @@
         <div class="seal">Verified by The Fit Lab</div>
         <h3 class="display" style="font-size:30px;margin:8px 0 2px">${FL.esc(c.course)}</h3>
         <dl class="kv" style="margin-top:10px">
+          <dt>Type</dt><dd>${kindLabel(c)}</dd>
           <dt>Issued</dt><dd>${FL.fmtDate(c.issued_at)}</dd>
           <dt>Certificate no.</dt><dd class="mono">${FL.esc(c.verification_code)}</dd>
           ${c.percentage != null ? `<dt>Exam score</dt><dd class="mono">${c.percentage}%</dd>` : ''}

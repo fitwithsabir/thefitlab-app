@@ -158,9 +158,13 @@
     sb.from('exam_attempts').select('id, status, passed, percentage, started_at').eq('user_id', uid).eq('course_id', course.id).order('started_at', { ascending: false }),
     sb.from('certificates').select('*').eq('user_id', uid).eq('course_id', course.id),
   ]);
-  const direct = enr && enr.track === 'direct';
+  // direct certification: the direct track, or a course member who bought it and hasn't finished the days
+  const allDays = (doneDays || 0) >= course.total_days;
+  const unlocked = !!(enr && enr.track === 'full' && enr.exam_unlocked_at);
+  const direct = !!enr && (enr.track === 'direct' || (unlocked && !allDays));
+  const certName = direct ? `${course.title.replace(/^\s*\d+[- ]day\s+/i, '')} — Direct Certification` : course.title;
   $('iEyebrow').textContent = direct ? 'Direct certification' : 'Final assessment';
-  $('iSub').textContent = `${course.exam_question_count} questions · ${secs} seconds each · ${course.pass_percentage}% to pass`;
+  $('iSub').textContent = `${course.exam_question_count} questions · ${secs} seconds each · ${course.pass_percentage}% to pass · earns the ${direct ? 'Direct Certification' : 'Course Completion'} certificate`;
 
   if (!enr) return block('Not bought yet', 'Buy the course or direct certification first',
     'The exam opens as soon as your payment is confirmed.', `<a class="btn btn-primary" href="courses?c=${encodeURIComponent(course.slug)}">See options</a>`);
@@ -172,9 +176,14 @@
       : 'Your certificate has been issued. You can view it from the Courses tab.';
     return block(c.status === 'approved' || c.status === 'auto_approved' ? 'Already certified' : 'Exam passed', 'You have passed this exam', msg);
   }
-  if (!direct && (doneDays || 0) < course.total_days) {
+  if (!direct && !allDays) {
+    const fee = course.price_paise >= 100 ? '₹' + (course.price_paise / 100).toLocaleString('en-IN') : null;
+    const nextDay = Math.min((doneDays || 0) + 1, course.total_days);
     return block('Not yet', `${course.total_days - (doneDays || 0)} days still to go`,
-      `The exam unlocks once all ${course.total_days} days are complete. You have finished ${doneDays || 0}.`);
+      `The course exam unlocks once all ${course.total_days} days are complete — you have finished ${doneDays || 0}.` +
+      (fee ? ` Want to certify now? Direct certification (${fee}) opens the exam straight away and earns the Direct Certification certificate. Your course stays open either way.` : ''),
+      `<a class="btn btn-primary" href="lesson?course=${encodeURIComponent(course.slug)}&day=${nextDay}">${doneDays ? 'Continue Day ' + nextDay : 'Start Day 1'}</a>` +
+      (fee ? `<a class="btn" href="courses?c=${encodeURIComponent(course.slug)}#certify">Certify now — ${fee}</a>` : ''));
   }
   const used = (attempts || []).filter((a) => a.status === 'submitted').length;
   const left = course.max_attempts - used;
@@ -301,7 +310,7 @@
     $('rEyebrow').style.color = col;
     $('rTitle').textContent = r.passed ? 'You passed the certification exam.' : `${pct}% — the pass mark is ${r.pass_percentage}%.`;
     $('rBody').textContent = r.passed
-      ? `${r.correct} of ${r.total} correct. Your certificate is issued — it appears in the Courses tab within a minute and is emailed to you, and your public verification page is already live.`
+      ? `${r.correct} of ${r.total} correct. Your ${certName} certificate is issued — it appears in the Courses tab within a minute and is emailed to you, and your public verification page is already live.`
       : `${r.correct} of ${r.total} correct. ${direct ? 'Study the course days on the topics you found hard' : 'Revisit the days you found hardest'}, then try again when you are ready.`;
     const leftNow = course.max_attempts - (used + 1);
     $('rActions').innerHTML = r.passed
