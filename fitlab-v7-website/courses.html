@@ -35,7 +35,8 @@
   .certify h3{margin:4px 0 6px;font:700 16px/1.3 var(--body);color:var(--bone)}
   .certify p{margin:0;font-size:13.5px;line-height:1.55;color:var(--ash);max-width:560px}
   .certify .pill{flex:none}
-  .certify.flash{box-shadow:0 0 0 2px var(--lime)}
+  .certify.flash,.syl-day.flash{box-shadow:0 0 0 2px var(--lime)}
+  .syl-day.locked[data-lock]{cursor:pointer}
   @media (max-width:640px){.buy{grid-template-columns:1fr}.mod ol{padding-left:38px}.certify .pill{width:100%;justify-content:center}}
 </style>
 </head>
@@ -230,9 +231,18 @@
         <span class="meta"><b>Day ${n} · ${esc(d.title)}</b><span>${d.estimated_minutes || 25} min${done ? ' · Completed' : ''}</span></span>
         ${open ? `<span class="go">${done ? 'Revise' : isNext ? 'Start' : 'Open'} →</span>` : `<span class="t-xs muted">${FL.icon('lock', 14)}</span>`}`;
       return open ? `<a class="syl-day ${done ? 'done' : ''} ${isNext ? 'next' : ''}" href="${href}">${inner}</a>`
-                  : `<div class="syl-day locked" title="${e ? 'Finish Day ' + (n - 1) + ' first' : 'Enroll to start'}">${inner}</div>`;
+                  : `<div class="syl-day locked" role="button" tabindex="0" data-lock="${n}">${inner}</div>`;
     }).join('');
     const nextEl = syl.querySelector('.next'); if (nextEl && s.doneCount > 3) nextEl.scrollIntoView({ block: 'center' });
+    // a locked day says why (on a phone there's no hover hint) and points to the day to finish
+    const lockedTap = (el) => {
+      if (!e) return FL.toast(price(c) ? 'Buy the course to open the days.' : 'Enroll to start Day 1.');
+      const first = s.next ? s.next.day_number : null;
+      FL.toast(first ? `Day ${el.dataset.lock} opens after you complete Day ${first}. Finish every card, pass the checks, save the assignment and tap “Complete Day ${first}”.` : 'This day opens after the one before it is complete.');
+      if (first) { const go = syl.querySelector('.syl-day.next'); if (go) { go.scrollIntoView({ block: 'center', behavior: 'smooth' }); go.classList.add('flash'); setTimeout(() => go.classList.remove('flash'), 2400); } }
+    };
+    syl.addEventListener('click', (ev) => { const el = ev.target.closest('.syl-day[data-lock]'); if (el) lockedTap(el); });
+    syl.addEventListener('keydown', (ev) => { const el = ev.target.closest('.syl-day[data-lock]'); if (el && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); lockedTap(el); } });
     const be = $('btnEnroll');
     if (be) be.onclick = () => enroll(c, be);
     $('main').querySelectorAll('[data-buy]').forEach((b) => { b.onclick = () => buy(c, b.dataset.buy, b); });

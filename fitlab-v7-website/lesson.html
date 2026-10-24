@@ -54,6 +54,19 @@
   const { data: idx } = await sb.from('lesson_index').select('id, day_number, title').eq('course_id', course.id).order('day_number');
   const index = idx || [];
   if (!lesson) {
+    // the day exists but isn't open to this member yet: the day before isn't complete
+    if (!adminPreview && day > 1 && index.some((d) => d.day_number === day)) {
+      const { data: doneRows } = await sb.from('lesson_progress').select('lesson_id').eq('user_id', uid).eq('course_id', course.id);
+      const doneSet = new Set((doneRows || []).map((r) => r.lesson_id));
+      const first = (index.find((d) => !doneSet.has(d.id)) || {}).day_number || day - 1;
+      host.innerHTML = `<div class="lcard" style="margin-top:36px">
+        <div class="lab"><span class="eyebrow">Day ${day} is locked</span></div>
+        <h2>Finish Day ${first} first</h2>
+        <p class="ash">Each day opens when you complete the one before it. On Day ${first}: read every card (each has a short reading timer), pass the knowledge checks, save the assignment, then tap <b>“Complete Day ${first}”</b>. Day ${first + 1} opens straight after.</p>
+        <div class="btn-row" style="margin-top:18px"><a class="btn btn-primary" href="lesson?course=${encodeURIComponent(course.slug)}&day=${first}">Go to Day ${first} →</a><a class="btn" href="courses?c=${encodeURIComponent(course.slug)}">All days</a></div>
+      </div>`;
+      return;
+    }
     return stop(`Day ${day} isn't published yet`, `It will open here as soon as it's released. You can continue from your dashboard.`);
   }
   document.title = `Day ${day}: ${lesson.title} — The Fit Lab Academy`;
@@ -132,7 +145,7 @@
       <div class="intro-meta"><span class="badge">${lesson.estimated_minutes || 25} min</span><span class="badge">${sections.filter((s) => s.type !== 'check').length} cards</span>${nChecks ? `<span class="badge">${nChecks} knowledge check${nChecks > 1 ? 's' : ''}</span>` : ''}${hasAssignment ? '<span class="badge">1 assignment</span>' : ''}</div>
       ${lesson.recap ? `<div class="recap"><b style="color:var(--lime);font-family:var(--mono);font-size:11px;letter-spacing:.16em">YESTERDAY</b><br>${esc(lesson.recap)}</div>` : ''}
       ${objs.length ? `<div class="eyebrow" style="margin-top:22px">By the end of today you will be able to</div><ul class="intro-obj">${objs.map((o) => `<li>${esc(o)}</li>`).join('')}</ul>` : ''}
-      <div class="cardnav"><span class="help">${completed ? 'You can revisit any card freely.' : 'Cards unlock as you read. Knowledge checks must be passed to move on.'}</span>
+      <div class="cardnav"><span class="help">${completed ? 'You can revisit any card freely.' : 'Each card has a short reading timer — Continue opens when it ends. Pass the checks, save the assignment and tap “Complete Day ' + day + '” to open the next day.'}</span>
         <button class="btn btn-primary" data-nav="${resume ? Math.min(st.unlocked, N - 1) : 1}" id="btnNext">${resume ? `Resume at card ${st.unlocked + 1} →` : completed ? 'Review lesson →' : 'Begin lesson →'}</button></div>
     </div>`;
   }
@@ -143,7 +156,7 @@
     const gated = !noGates && i >= st.unlocked;
     const need = readSecs(card), had = st.read[i] || 0;
     const nav = gated
-      ? `<span class="readgate" id="gate"><span class="ring" style="--p:${Math.round((had / need) * 100)}%"></span><span id="gateTxt">Reading…</span></span>
+      ? `<span class="readgate" id="gate"><span class="ring" style="--p:${Math.round((had / need) * 100)}%"></span><span id="gateTxt">Reading · ${Math.max(1, need - had)}s</span></span>
          <button class="btn btn-primary" id="btnNext" data-nav="${i + 1}" disabled>Continue →</button>`
       : (st.returnTo != null ? `<button class="btn" data-nav="${i + 1}">Continue →</button><button class="btn btn-primary" data-nav="${st.returnTo}">Back to the question →</button>` : nextBtn(i));
     return `<div class="lcard">
@@ -183,9 +196,10 @@
       <div class="charcount" id="cc"></div>
       <div class="cardnav">${backBtn(i)}<span class="btn-row">
         <button class="btn" id="btnSaveAsg">${existingSub ? 'Update assignment' : 'Save assignment'}</button>
-        <button class="btn btn-primary" id="btnFinish" ${(existingSub || completed) ? '' : 'disabled'}>${completed ? 'Continue →' : `Complete Day ${day} →`}</button>
+        <button class="btn btn-primary" id="btnFinish" ${(existingSub || completed) ? '' : 'aria-disabled="true" style="opacity:.55"'}>${completed ? 'Continue →' : `Complete Day ${day} →`}</button>
       </span></div>
-      <p class="help" style="margin:12px 0 0">Saved against your Unique ID <span class="mono lime">${esc(profile.unique_id || '')}</span>. Reviewed before certification. Minimum ${min} characters.</p>
+      ${completed ? '' : `<p class="help" id="asgSteps" style="margin:12px 0 0">${existingSub ? `Saved. Tap <b>Complete Day ${day}</b> to record today${isLast ? '' : ` and open Day ${day + 1}`}.` : `Write at least ${min} characters (any language), tap <b>Save assignment</b>, then <b>Complete Day ${day}</b>${isLast ? '' : ` — Day ${day + 1} opens straight after`}.`}</p>`}
+      <p class="help" style="margin:8px 0 0">Saved against your Unique ID <span class="mono lime">${esc(profile.unique_id || '')}</span>. Reviewed before certification. Minimum ${min} characters.</p>
     </div>`;
   }
 
@@ -224,6 +238,7 @@
           st.read[i] = (st.read[i] || 0) + 1;
           const p = Math.min(100, Math.round((st.read[i] / need) * 100));
           if (ring) ring.style.setProperty('--p', p + '%');
+          if (txt && st.read[i] < need) txt.textContent = `Reading · ${need - st.read[i]}s`;
           if (st.read[i] >= need) {
             clearGate(); unlockTo(i + 1);
             if (txt) txt.textContent = 'Read'; if (btn) btn.disabled = false;
@@ -287,12 +302,19 @@
         FL.busy(sv, false);
         if (error) return FL.toast('Could not save: ' + FL.friendly(error), 'err');
         existingSub = content; st.asgSaved = true; save();
-        sv.textContent = 'Update assignment'; fin.disabled = false;
+        sv.textContent = 'Update assignment'; fin.removeAttribute('aria-disabled'); fin.style.opacity = '';
+        const steps = host.querySelector('#asgSteps'); if (steps) steps.innerHTML = `Saved. Tap <b>Complete Day ${day}</b> to record today${isLast ? '' : ` and open Day ${day + 1}`}.`;
         FL.toast('Assignment saved', 'ok');
         const badge = host.querySelector('.lab .badge'); if (badge) badge.outerHTML = '<span class="badge ok">Saved</span>';
       });
       fin.addEventListener('click', async () => {
         if (completed) return go(i + 1);
+        if (!existingSub) {
+          const n = ta.value.trim().length;
+          FL.toast(n < min ? `Write at least ${min} characters first — you have ${n}.` : 'Tap “Save assignment” first, then Complete.', 'err');
+          (n < min ? ta : sv).focus();
+          return;
+        }
         FL.busy(fin, true, 'Recording…');
         const { data, error } = await sb.rpc('complete_lesson', { p_lesson_id: lesson.id, p_checks: st.checks, p_time_spent: st.time });
         if (error) { FL.busy(fin, false); return FL.toast(FL.friendly(error), 'err'); }
