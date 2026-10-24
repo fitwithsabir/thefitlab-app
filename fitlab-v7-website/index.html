@@ -14,34 +14,41 @@
 </head>
 <body class="home">
 <div id="nav"></div>
+
+<!-- ================= shared top bar ================= -->
 <div class="hm-wrap">
   <header class="hm-nav">
-    <a class="hm-logo" href="/" aria-label="The Fit Lab — home"><img class="logo-d" src="assets/logo-600.png" alt="The Fit Lab"><img class="logo-l" src="assets/logo-600-light.png" alt="" aria-hidden="true"></a>
+    <a class="hm-logo" href="/" aria-label="The Fit Lab — home"><img class="logo-d" src="assets/logo-600.png" alt="The Fit Lab"><img class="logo-l" src="assets/logo-600-light.png" alt="" aria-hidden="true"><span class="hm-word only-pro">THE FIT LAB</span></a>
     <nav class="hm-links" aria-label="Main">
-      <a href="jobs">Jobs</a><a href="tools">Coach tools</a><a href="hire">Hire a coach</a><a href="company">Gyms &amp; clinics</a><a href="verify">Verify</a>
+      <a href="jobs">Jobs</a><a href="academy">Academy</a><a href="tools">Coach tools</a><a href="tools-ai">Coach AI</a><a href="hire">Hire a coach</a><a href="pricing" class="only-pro">Pricing</a>
     </nav>
     <div class="hm-acts">
       <span id="hmLookSlot"></span>
-      <button type="button" class="hm-btn hm-login" data-auth="login">Log in</button>
-      <button type="button" class="hm-btn go" data-auth="signup">Join free</button>
+      <button type="button" class="hm-btn hm-login" data-auth="login"><span class="no-pro">Log in</span><span class="only-pro">Sign in</span></button>
+      <button type="button" class="hm-btn go" data-auth="signup"><span class="no-pro">Join free</span><span class="only-pro">Get started</span></button>
     </div>
   </header>
 
+  <!-- ================= hero (copy shared, details per look) ================= -->
   <section class="hm-hero" id="top">
-    <div>
-      <div class="hm-tag hm-in"><i></i>The professional network for health &amp; fitness</div>
-      <h1 class="hm-h1 hm-in d1">Don't just know exercises. <span class="hm-hl">Make coaching <b>decisions.</b></span></h1>
-      <p class="hm-lead hm-in d2">For trainers, coaches, physios, doctors, dietitians, gyms and clinics. Jobs with the pay always shown, the verified tick, QR-certified courses and free coach tools — all in one lab.</p>
+    <div class="hm-copy">
+      <div class="hm-tag only-neon hm-in"><i></i>The professional network for health &amp; fitness</div>
+      <span class="hm-sticker only-pop hm-in"><svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0 L14.5 9.5 L24 12 L14.5 14.5 L12 24 L9.5 14.5 L0 12 L9.5 9.5 Z" fill="#111210"/></svg>NEW · Coach AI is here</span>
+      <a class="hm-badge only-pro hm-in" href="tools-ai"><span class="pd"></span>Coach AI is live — plans from blood reports <b>→</b></a>
+      <h1 class="hm-h1 hm-in d1"><span class="w" style="--i:0">Don't</span> <span class="w" style="--i:1">just</span> <span class="w" style="--i:2">know</span> <span class="w" style="--i:3">exercises.</span><br class="only-pro"> <span class="hm-hl"><span class="w" style="--i:5">Make</span> <span class="w" style="--i:6">coaching</span> <span class="w dec" style="--i:7">decisions.<svg class="squig only-pop" viewBox="0 0 200 24" preserveAspectRatio="none" aria-hidden="true"><path d="M3 14 C 34 2, 62 22, 96 12 S 158 4, 197 13" fill="none" stroke="#8e7cff" stroke-width="7" stroke-linecap="round"/></svg></span></span></h1>
+      <p class="hm-lead hm-in d2 only-neon">For trainers, coaches, physios, doctors, dietitians, gyms and clinics. Jobs with the pay always shown, the verified tick, QR-certified courses and free coach tools — all in one lab.</p>
+      <p class="hm-lead hm-in d2 only-pop">The network for trainers, coaches, physios, doctors, dietitians, gyms and clinics. Jobs with the pay always shown, the verified tick, QR-certified courses and free coach tools.</p>
+      <p class="hm-lead hm-in d2 only-pro">The professional network for health and fitness — jobs with the pay always shown, the verified tick, QR-certified courses, and coach tools where every number has a reference.</p>
       <div class="hm-cta hm-in d3">
-        <button type="button" class="hm-btn go lg" data-auth="signup">Join The Fit Lab — free <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></button>
-        <a class="hm-btn lg" href="tools">Try the free coach tools</a>
+        <button type="button" class="hm-btn go lg" data-auth="signup"><span class="no-pro">Join The Fit Lab — free</span><span class="only-pro">Create a free account</span><svg class="no-pro" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></button>
+        <a class="hm-btn lg" href="tools"><span class="only-neon">Try the free coach tools</span><span class="only-pop">Try free tools</span><span class="only-pro">Open the coach tools</span></a>
       </div>
-      <div class="hm-trust hm-in d4"><span><i></i>Pay always shown</span><span><i></i>Verified tick</span><span><i></i>QR certificates</span></div>
+      <div class="hm-trust only-neon hm-in d4"><span><i></i>Pay always shown</span><span><i></i>Verified tick</span><span><i></i>QR certificates</span></div>
     </div>
 
     <div class="hm-art hm-in d2" aria-hidden="true">
       <!-- Neon Lab: the lab orb -->
-      <div class="art art-neon">
+      <div class="art-neon only-neon">
         <svg class="orb" viewBox="0 0 560 560">
           <defs><radialGradient id="orbCore" cx="50%" cy="50%" r="50%"><stop offset="0%" style="stop-color:var(--fill);stop-opacity:.42"/><stop offset="55%" style="stop-color:var(--fill);stop-opacity:.06"/><stop offset="100%" style="stop-color:var(--fill);stop-opacity:0"/></radialGradient></defs>
           <circle cx="280" cy="280" r="260" fill="url(#orbCore)"/>
@@ -59,8 +66,8 @@
         <div class="chipx row c4"><span class="qr"><svg width="34" height="34" viewBox="0 0 7 7"><path d="M0 0h3v3H0z M4 0h3v3H4z M0 4h3v3H0z M4 4h1v1H4z M6 4h1v1H6z M5 5h1v1H5z M4 6h1v1H4z M6 6h1v1H6z" fill="#06070a"/><path d="M1 1h1v1H1z M5 1h1v1H5z M1 5h1v1H1z" fill="#f2f5ee"/></svg><span class="scanline"></span></span><span><b style="font:800 15px var(--body);margin:0">Certificate</b><small style="text-transform:none;letter-spacing:0;font-family:var(--body);font-size:12px">Scan to verify</small></span></div>
       </div>
 
-      <!-- Lab Notebook Pop: the collage -->
-      <div class="art art-pop">
+      <!-- Notebook Pop: the collage -->
+      <div class="art-pop only-pop">
         <div class="stk s1"><small>JOB · KAKINADA</small><b>Strength coach</b><span class="pay">₹25,000–35,000/mo</span><span class="sticker">PAY SHOWN!</span></div>
         <div class="stk s2"><small>TDEE · ×1.55 ACTIVE</small><b>2,310</b><span style="font-weight:700;font-size:15px">kcal a day</span><small style="margin-top:10px;font-size:11px">Mifflin–St Jeor, 1990</small></div>
         <div class="stk s3"><svg width="64" height="64" viewBox="0 0 7 7"><path d="M0 0h3v3H0z M4 0h3v3H4z M0 4h3v3H0z M4 4h1v1H4z M6 4h1v1H6z M5 5h1v1H5z M4 6h1v1H4z M6 6h1v1H6z" fill="#111210"/><path d="M1 1h1v1H1z M5 1h1v1H5z M1 5h1v1H1z" fill="#fff"/></svg><div><b>Certified!</b><span>Scan the QR to verify any Fit Lab certificate.</span></div></div>
@@ -87,52 +94,59 @@
       </div>
 
       <!-- Performance OS: the live dashboard -->
-      <div class="art art-pro">
+      <div class="art-pro only-pro">
         <div class="dash">
-          <div class="dash-top"><span>Client · Priya, 34 · 160 cm · 68.9 kg · Fat loss</span><span class="live">LIVE</span></div>
-          <div class="dash-grid">
-            <div>
-              <div class="dash-l">Energy · kcal/day</div>
-              <div class="dbar"><div><span>BMR · Mifflin–St Jeor</span><b>1,358</b></div><span><i style="width:64.5%;background:var(--line-2);animation-delay:.9s"></i></span></div>
-              <div class="dbar"><div><span>TDEE · ×1.55</span><b>2,105</b></div><span><i style="width:100%;background:var(--acc2);animation-delay:1.05s"></i></span></div>
-              <div class="dbar"><div><span>Target · −20%</span><b style="color:var(--lime)">1,684</b></div><span><i style="width:80%;background:var(--fill);animation-delay:1.2s"></i></span></div>
+          <div class="dash-top"><span class="dots"><i></i><i></i><i></i></span><span>Client · Priya, 34 · 160 cm · 68.9 kg · Fat loss</span><span class="live">LIVE</span></div>
+          <div class="dash-body">
+            <div class="dash-side">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M8 7h8M8.5 12h.01M12 12h.01M15.5 12h.01"/></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/></svg>
             </div>
-            <div>
-              <div class="dash-l">Macros · g/day</div>
-              <div class="rings">
-                <svg width="96" height="96" viewBox="0 0 120 120">
-                  <circle cx="60" cy="60" r="52" fill="none" stroke-width="10" style="stroke:var(--line)"/><circle class="rg" cx="60" cy="60" r="52" fill="none" stroke-width="10" stroke-linecap="round" stroke-dasharray="327" stroke-dashoffset="65" style="--len:327;stroke:var(--fill);animation-delay:1s"/>
-                  <circle cx="60" cy="60" r="37" fill="none" stroke-width="10" style="stroke:var(--line)"/><circle class="rg" cx="60" cy="60" r="37" fill="none" stroke-width="10" stroke-linecap="round" stroke-dasharray="232" stroke-dashoffset="70" style="--len:232;stroke:var(--acc2);animation-delay:1.2s"/>
-                  <circle cx="60" cy="60" r="22" fill="none" stroke-width="10" style="stroke:var(--line)"/><circle class="rg" cx="60" cy="60" r="22" fill="none" stroke-width="10" stroke-linecap="round" stroke-dasharray="138" stroke-dashoffset="62" style="--len:138;stroke:var(--bone);animation-delay:1.4s"/>
+            <div class="dash3">
+              <div>
+                <div class="dash-l">Energy · kcal / day</div>
+                <div class="dbar"><div><span>BMR · Mifflin–St Jeor</span><b>1,358</b></div><span><i style="width:64.5%;background:var(--line-2);animation-delay:1.2s"></i></span></div>
+                <div class="dbar"><div><span>TDEE · ×1.55</span><b>2,105</b></div><span><i style="width:100%;background:var(--acc2);animation-delay:1.35s"></i></span></div>
+                <div class="dbar"><div><span>Target · −20%</span><b style="color:var(--lime)">1,684</b></div><span><i style="width:80%;background:var(--fill);animation-delay:1.5s"></i></span></div>
+              </div>
+              <div>
+                <div class="dash-l">Macros · g / day</div>
+                <div class="rings">
+                  <svg width="118" height="118" viewBox="0 0 120 120">
+                    <circle cx="60" cy="60" r="52" fill="none" stroke-width="9" style="stroke:var(--line)"/><circle class="rg" cx="60" cy="60" r="52" fill="none" stroke-width="9" stroke-linecap="round" stroke-dasharray="327" stroke-dashoffset="65" style="--len:327;stroke:var(--fill);animation-delay:1.2s"/>
+                    <circle cx="60" cy="60" r="39" fill="none" stroke-width="9" style="stroke:var(--line)"/><circle class="rg" cx="60" cy="60" r="39" fill="none" stroke-width="9" stroke-linecap="round" stroke-dasharray="245" stroke-dashoffset="74" style="--len:245;stroke:var(--acc2);animation-delay:1.4s"/>
+                    <circle cx="60" cy="60" r="26" fill="none" stroke-width="9" style="stroke:var(--line)"/><circle class="rg" cx="60" cy="60" r="26" fill="none" stroke-width="9" stroke-linecap="round" stroke-dasharray="163" stroke-dashoffset="74" style="--len:163;stroke:var(--bone);animation-delay:1.6s"/>
+                  </svg>
+                  <ul><li><i style="background:var(--fill)"></i>Protein<b>138</b></li><li><i style="background:var(--acc2)"></i>Carbs<b>177</b></li><li><i style="background:var(--bone)"></i>Fat<b>47</b></li></ul>
+                </div>
+              </div>
+              <div>
+                <div class="dash-l">HR zones · Tanaka · max 184</div>
+                <div class="zones">
+                  <i style="height:38%;background:var(--line-2);animation-delay:1.2s"></i><i style="height:54%;background:color-mix(in srgb,var(--bone) 25%,var(--panel));animation-delay:1.3s"></i>
+                  <i style="height:70%;background:var(--acc2);animation-delay:1.4s"></i><i style="height:86%;background:color-mix(in srgb,var(--fill) 70%,var(--panel));animation-delay:1.5s"></i><i style="height:100%;background:var(--fill);animation-delay:1.6s"></i>
+                </div>
+                <div class="zones-n"><span>92</span><span>110</span><span>129</span><span>147</span><span>166</span></div>
+              </div>
+              <div class="wide">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap"><span class="dash-l">Weight · 8 weeks</span><span class="hm-mono" style="font-size:13px"><span style="color:var(--lime)">−3.5 kg</span><span style="color:var(--ash)"> · 72.4 → 68.9</span></span></div>
+                <svg class="dline" viewBox="0 0 600 130" preserveAspectRatio="none">
+                  <path d="M0 32 H600 M0 72 H600 M0 112 H600" stroke-width="1" style="stroke:var(--line)"/>
+                  <path class="ln" d="M0 22 L75 30 L150 26 L225 48 L300 56 L375 70 L450 84 L525 92 L600 104" fill="none" stroke-width="2.5" stroke-linejoin="round" style="stroke:var(--lime)"/>
+                  <circle cx="600" cy="104" r="5" style="fill:var(--lime)"/><circle class="ping" cx="600" cy="104" r="5" style="fill:var(--lime)"/>
                 </svg>
-                <ul><li><i style="background:var(--fill)"></i>Protein<b>138</b></li><li><i style="background:var(--acc2)"></i>Carbs<b>177</b></li><li><i style="background:var(--bone)"></i>Fat<b>47</b></li></ul>
               </div>
-            </div>
-            <div class="wide">
-              <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="dash-l">Weight · 8 weeks</span><span class="hm-mono" style="font-size:12.5px"><span style="color:var(--lime)">−3.5 kg</span><span style="color:var(--ash)"> · 72.4 → 68.9</span></span></div>
-              <svg class="dline" viewBox="0 0 600 100" preserveAspectRatio="none">
-                <path d="M0 25 H600 M0 60 H600 M0 95 H600" stroke-width="1" style="stroke:var(--line)"/>
-                <path class="ln" d="M0 16 L75 24 L150 20 L225 40 L300 47 L375 60 L450 72 L525 79 L600 89" fill="none" stroke-width="2.5" stroke-linejoin="round" style="stroke:var(--lime)"/>
-                <circle cx="600" cy="89" r="5" style="fill:var(--lime)"/><circle class="ping" cx="600" cy="89" r="5" style="fill:var(--lime)"/>
-              </svg>
-            </div>
-            <div>
-              <div class="dash-l">HR zones · max 184</div>
-              <div style="display:flex;align-items:flex-end;gap:8px;height:74px;margin-top:12px">
-                <i style="flex:1;height:38%;border-radius:6px 6px 2px 2px;background:var(--line-2);transform-origin:bottom;animation:hmCol 1.2s 1.1s both"></i>
-                <i style="flex:1;height:54%;border-radius:6px 6px 2px 2px;background:var(--line-2);transform-origin:bottom;animation:hmCol 1.2s 1.2s both"></i>
-                <i style="flex:1;height:70%;border-radius:6px 6px 2px 2px;background:var(--acc2);transform-origin:bottom;animation:hmCol 1.2s 1.3s both"></i>
-                <i style="flex:1;height:86%;border-radius:6px 6px 2px 2px;background:color-mix(in srgb,var(--fill) 65%,var(--panel));transform-origin:bottom;animation:hmCol 1.2s 1.4s both"></i>
-                <i style="flex:1;height:100%;border-radius:6px 6px 2px 2px;background:var(--fill);transform-origin:bottom;animation:hmCol 1.2s 1.5s both"></i>
+              <div>
+                <div class="dash-l" style="display:flex;align-items:center;gap:10px"><svg class="spin-ai" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" style="stroke:var(--lime)"><path d="M12 3a9 9 0 1 0 9 9"/></svg>Coach AI · building plan</div>
+                <ol class="steps-ai">
+                  <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--lime)"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Blood report read · 14 markers</li>
+                  <li class="st" style="animation-delay:.6s"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--lime)"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Foods from IFCT 2017</li>
+                  <li class="st" style="animation-delay:1.2s"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--lime)"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Portions fitted to 1,684 kcal</li>
+                  <li class="wait"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2" style="stroke:var(--ash)"><circle cx="12" cy="12" r="8" stroke-dasharray="3 3"/></svg>PDF with your name</li>
+                </ol>
               </div>
-            </div>
-            <div>
-              <div class="dash-l" style="display:flex;align-items:center;gap:8px"><svg class="spin-ai" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" style="stroke:var(--lime)"><path d="M12 3a9 9 0 1 0 9 9"/></svg>Coach AI</div>
-              <ol class="steps-ai">
-                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--lime)"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Blood report read</li>
-                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--lime)"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Foods from IFCT 2017</li>
-                <li class="wait"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke-width="2" style="stroke:var(--ash)"><circle cx="12" cy="12" r="8" stroke-dasharray="3 3"/></svg>PDF with your name</li>
-              </ol>
             </div>
           </div>
         </div>
@@ -141,105 +155,263 @@
   </section>
 </div>
 
-<div class="hm-ticks" aria-hidden="true">
-  <div class="hm-tick two"><div class="hm-track"><span>TRAINERS ✱ COACHES ✱ PHYSIOS ✱ DOCTORS ✱ DIETITIANS ✱ YOGA TEACHERS ✱ GYMS ✱ CLINICS ✱ STUDIOS ✱</span><span>TRAINERS ✱ COACHES ✱ PHYSIOS ✱ DOCTORS ✱ DIETITIANS ✱ YOGA TEACHERS ✱ GYMS ✱ CLINICS ✱ STUDIOS ✱</span></div></div>
-  <div class="hm-tick one"><div class="hm-track">
-    <span>Personal trainers</span><em>✱</em><span class="o">Strength coaches</span><em>✱</em><span>Physiotherapists</span><em>✱</em><span class="o">Dietitians</span><em>✱</em><span>Doctors</span><em>✱</em><span class="o">Yoga teachers</span><em>✱</em><span>Gyms</span><em>✱</em><span class="o">Clinics &amp; studios</span><em>✱</em>
-    <span>Personal trainers</span><em>✱</em><span class="o">Strength coaches</span><em>✱</em><span>Physiotherapists</span><em>✱</em><span class="o">Dietitians</span><em>✱</em><span>Doctors</span><em>✱</em><span class="o">Yoga teachers</span><em>✱</em><span>Gyms</span><em>✱</em><span class="o">Clinics &amp; studios</span><em>✱</em>
+<!-- ================================================================ NEON LAB (draft A) -->
+<div class="only-neon">
+  <div class="n-marq" aria-hidden="true"><div class="n-track">
+    <span>Personal trainers</span><em>⁄</em><span class="o">Strength coaches</span><em>⁄</em><span>Physiotherapists</span><em>⁄</em><span class="o">Dietitians</span><em>⁄</em><span>Doctors</span><em>⁄</em><span class="o">Yoga teachers</span><em>⁄</em><span>Gyms</span><em>⁄</em><span class="o">Clinics &amp; studios</span><em>⁄</em>
+    <span>Personal trainers</span><em>⁄</em><span class="o">Strength coaches</span><em>⁄</em><span>Physiotherapists</span><em>⁄</em><span class="o">Dietitians</span><em>⁄</em><span>Doctors</span><em>⁄</em><span class="o">Yoga teachers</span><em>⁄</em><span>Gyms</span><em>⁄</em><span class="o">Clinics &amp; studios</span><em>⁄</em>
   </div></div>
-</div>
+  <main class="hm-wrap">
+    <section class="n-sec" id="inside">
+      <div class="n-eyebrow hm-rv">Inside the lab</div>
+      <h2 class="n-h2 hm-rv d1">One login. Your whole fitness career.</h2>
+      <div class="n-bento">
+        <article class="n-card w4 hm-rv">
+          <div><h3>Jobs with the pay always shown</h3><p>Every listing shows the salary range up front — no "DM for details". Apply in a tap, track every application.</p></div>
+          <div aria-hidden="true">
+            <div class="jrow"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11"/></svg></span><span class="t"><b>Strength coach</b><span>Kakinada · Full-time</span></span><span class="pay">₹25,000–35,000/mo</span><span class="ap">Apply</span></div>
+            <div class="jrow"><span class="ic b"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.6-7 10-7 10z"/></svg></span><span class="t"><b>Physiotherapist</b><span>Visakhapatnam · Clinic</span></span><span class="pay b">₹40,000–55,000/mo</span><span class="done"><i><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></i>Applied</span></div>
+          </div>
+        </article>
+        <article class="n-card hm-rv d1" style="align-items:flex-start">
+          <div class="vseal" aria-hidden="true">
+            <svg viewBox="0 0 560 560"><defs><path id="sealRing" d="M280 280 m-210 0 a210 210 0 1 1 420 0 a210 210 0 1 1 -420 0"/></defs><text style="fill:var(--lime);font-family:var(--mono);font-size:46px;letter-spacing:9px;font-weight:600"><textPath href="#sealRing">VERIFIED · PROFESSIONAL · VERIFIED · PROFESSIONAL ·</textPath></text></svg>
+            <i><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></i>
+          </div>
+          <div><h3>The verified tick</h3><p>Trainers, physios, doctors and dietitians — checked, then ticked. Clients know who's real.</p></div>
+        </article>
+        <article class="n-card hm-rv">
+          <div class="cert" aria-hidden="true"><small>CERTIFICATE OF COMPLETION</small><b data-c="title">30-Day Fitness Coaching Mastery</b>
+            <div class="row"><span>Fit Lab ID<br><strong>TFL-2026-00005</strong></span><span class="qrbox"><svg width="56" height="56" viewBox="0 0 7 7"><path d="M0 0h3v3H0z M4 0h3v3H4z M0 4h3v3H0z M4 4h1v1H4z M6 4h1v1H6z M5 5h1v1H5z M4 6h1v1H4z M6 6h1v1H6z" fill="#06070a"/><path d="M1 1h1v1H1z M5 1h1v1H5z M1 5h1v1H1z" fill="#f2f5ee"/></svg><span class="scanline"></span></span></div></div>
+          <div><h3>QR-certified courses</h3><p>Learn, pass the exam, and get a certificate anyone can scan to verify.</p></div>
+        </article>
+        <article class="n-card hm-rv d1">
+          <div class="macro" aria-hidden="true">
+            <svg width="120" height="120" viewBox="0 0 120 120"><circle cx="60" cy="60" r="46" fill="none" stroke-width="14" style="stroke:color-mix(in srgb,var(--bone) 8%,transparent)"/><circle class="arc" cx="60" cy="60" r="46" fill="none" stroke-width="14" stroke-dasharray="87 289" style="stroke:var(--fill)"/><circle class="arc" cx="60" cy="60" r="46" fill="none" stroke-width="14" stroke-dasharray="130 289" stroke-dashoffset="-89" style="stroke:var(--acc2);animation-delay:.3s"/><circle class="arc" cx="60" cy="60" r="46" fill="none" stroke-width="14" stroke-dasharray="66 289" stroke-dashoffset="-221" style="stroke:var(--bone);animation-delay:.6s"/></svg>
+            <ul><li><i style="background:var(--fill)"></i>Protein 142 g</li><li><i style="background:var(--acc2)"></i>Carbs 214 g</li><li><i style="background:var(--bone)"></i>Fat 62 g</li></ul>
+          </div>
+          <div><h3>Free coach tools</h3><p>BMI, BMR, TDEE, macros, 1RM and heart-rate zones — every formula referenced.</p></div>
+        </article>
+        <article class="n-card ai hm-rv d2">
+          <div class="chat" aria-hidden="true"><div class="q"><small>BLOOD REPORT</small>HbA1c 6.1% · Vitamin D 18</div><div class="a">Low-GI plan · 5 meals · 142 g protein<i></i></div></div>
+          <div><h3>Coach AI <span class="n-pill">PRO</span></h3><p>Diet and workout plans from goals and blood reports, built on Indian food tables.</p></div>
+        </article>
+      </div>
+    </section>
 
-<main class="hm-wrap">
-  <section class="hm-sec" id="inside">
-    <div class="hm-eyebrow hm-hm-rv">Inside the lab</div>
-    <h2 class="hm-h2 hm-hm-rv d1">One login. Your whole fitness career.</h2>
-    <div class="hm-bento">
-      <article class="bx w4 k-jobs hm-hm-rv">
-        <div><h3>Jobs with the pay always shown</h3><p>Every listing shows the salary range up front — no "DM for details". Apply in a tap and track every application.</p></div>
-        <div aria-hidden="true">
-          <div class="jrow"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11"/></svg></span><span class="t"><b>Strength coach</b><span>Kakinada · Full-time</span></span><span class="pay">₹25,000–35,000/mo</span><span class="ap">Apply</span></div>
-          <div class="jrow"><span class="ic b"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.6-7 10-7 10z"/></svg></span><span class="t"><b>Physiotherapist</b><span>Visakhapatnam · Clinic</span></span><span class="pay b">₹40,000–55,000/mo</span><span class="done"><i><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></i>Applied</span></div>
-        </div>
-        <a class="hm-btn" href="jobs" style="align-self:flex-start">Browse jobs →</a>
-      </article>
-      <article class="bx k-tick hm-hm-rv d1">
-        <div class="vseal" aria-hidden="true">
-          <svg viewBox="0 0 560 560"><defs><path id="sealRing" d="M280 280 m-210 0 a210 210 0 1 1 420 0 a210 210 0 1 1 -420 0"/></defs><text style="fill:var(--lime);font-family:var(--mono);font-size:46px;letter-spacing:9px;font-weight:600"><textPath href="#sealRing">VERIFIED · PROFESSIONAL · VERIFIED · PROFESSIONAL ·</textPath></text></svg>
-          <i><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></i>
-        </div>
-        <div><h3>The verified tick</h3><p>Trainers, physios, doctors and dietitians — checked, then ticked. Clients know who's real.</p></div>
-      </article>
-      <article class="bx hm-hm-rv">
-        <div class="cert" aria-hidden="true"><small>CERTIFICATE OF COMPLETION</small><b>30-Day Fitness Coaching Mastery</b>
-          <div class="row"><span>Fit Lab ID<br><strong>TFL-2026-00005</strong></span><span class="qrbox"><svg width="56" height="56" viewBox="0 0 7 7"><path d="M0 0h3v3H0z M4 0h3v3H4z M0 4h3v3H0z M4 4h1v1H4z M6 4h1v1H6z M5 5h1v1H5z M4 6h1v1H4z M6 6h1v1H6z" fill="#06070a"/><path d="M1 1h1v1H1z M5 1h1v1H5z M1 5h1v1H1z" fill="#f2f5ee"/></svg><span class="scanline"></span></span></div></div>
-        <div><h3>QR-certified courses</h3><p>Learn a lesson a day, pass the exam, and get a certificate anyone can scan to verify.</p></div>
-      </article>
-      <article class="bx k-tools hm-hm-rv d1">
-        <div class="macro" aria-hidden="true">
-          <svg width="116" height="116" viewBox="0 0 120 120"><circle cx="60" cy="60" r="46" fill="none" stroke-width="14" style="stroke:color-mix(in srgb,currentColor 12%,transparent)"/><circle class="arc" cx="60" cy="60" r="46" fill="none" stroke-width="14" stroke-dasharray="87 289" style="stroke:var(--fill)"/><circle class="arc" cx="60" cy="60" r="46" fill="none" stroke-width="14" stroke-dasharray="130 289" stroke-dashoffset="-89" style="stroke:var(--acc2);animation-delay:.3s"/><circle class="arc" cx="60" cy="60" r="46" fill="none" stroke-width="14" stroke-dasharray="66 289" stroke-dashoffset="-221" style="stroke:currentColor;animation-delay:.6s"/></svg>
-          <ul><li><i style="background:var(--fill)"></i>Protein 142 g</li><li><i style="background:var(--acc2)"></i>Carbs 214 g</li><li><i style="background:currentColor"></i>Fat 62 g</li></ul>
-        </div>
-        <div><h3>Free coach tools</h3><p>BMI, BMR, TDEE, macros, 1RM and heart-rate zones — every formula referenced. Branded PDFs for your clients.</p></div>
-        <a class="hm-btn" href="tools" style="align-self:flex-start">Open the tools →</a>
-      </article>
-      <article class="bx k-ai hm-hm-rv d2">
-        <div class="chat" aria-hidden="true"><div class="q"><small>BLOOD REPORT</small>HbA1c 6.1% · Vitamin D 18</div><div class="a">Low-GI plan · 5 meals · 142 g protein<i></i></div></div>
-        <div><h3>Coach AI <span class="pro-pill">PLANS</span></h3><p>Diet and workout plans from your client's goals and blood reports, built on Indian food tables — ready to edit and send.</p></div>
-      </article>
-    </div>
-  </section>
-
-  <section class="hm-sec">
-    <div class="hm-eyebrow hm-hm-rv">The method</div>
-    <h2 class="hm-h2 hm-hm-rv d1">Assess. Plan. Coach. Repeat.</h2>
-    <div class="hm-method hm-hm-rv d2">
-      <ol>
+    <section class="n-sec">
+      <div class="n-eyebrow hm-rv">The method</div>
+      <h2 class="n-h2 hm-rv d1">Assess. Plan. Coach. Repeat.</h2>
+      <div class="n-method hm-rv d2"><ol>
         <li><span>01</span>Assess</li><li><span>02</span>Identify</li><li><span>03</span>Plan</li><li><span>04</span>Coach</li>
         <li><span>05</span>Monitor</li><li><span>06</span>Progress</li><li><span>07</span>Modify</li><li><span>08</span>Refer</li>
-      </ol>
-    </div>
-  </section>
+      </ol></div>
+    </section>
 
-  <section class="hm-sec" id="courses">
-    <div class="hm-eyebrow hm-hm-rv">Courses</div>
-    <h2 class="hm-h2 hm-hm-rv d1">What you can study</h2>
-    <div class="hm-courses" id="courseList"><div class="skeleton" style="height:180px;border-radius:30px"></div></div>
-  </section>
+    <section class="n-sec" style="padding-top:60px">
+      <div class="n-course hm-rv">
+        <div style="max-width:640px">
+          <div class="n-eyebrow">Now enrolling</div>
+          <h3 data-c="title">30-Day Fitness Coaching Mastery</h3>
+          <div class="n-chips"><span><b data-c="days">30</b> days</span><span data-c="chip1">Basic → Advanced Foundations</span><span data-c="chip2">Male &amp; Female Coaching</span><span class="a">QR certificate</span></div>
+        </div>
+        <button type="button" class="hm-btn go lg" data-auth="signup">Start the course <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></button>
+      </div>
+    </section>
 
-  <section class="hm-sec" id="looks">
-    <div class="hm-eyebrow hm-hm-rv">Make it yours</div>
-    <h2 class="hm-h2 hm-hm-rv d1">Three looks. Pick the one that feels like you.</h2>
+    <section class="n-final">
+      <h2 class="hm-rv">Step into <span class="glow">the Lab.</span></h2>
+      <p class="hm-rv d1">Free to join. Built for health and fitness professionals in India.</p>
+      <div class="hm-cta hm-rv d2"><button type="button" class="hm-btn go lg" data-auth="signup">Create my account</button><button type="button" class="hm-btn lg" data-auth="login">I already have one</button></div>
+    </section>
+  </main>
+</div>
+
+<!-- ================================================================ NOTEBOOK POP (draft B) -->
+<div class="only-pop">
+  <div class="p-tapes" aria-hidden="true">
+    <div class="p-tape a"><div class="tr"><span>TRAINERS ✱ COACHES ✱ PHYSIOS ✱ DOCTORS ✱ DIETITIANS ✱ YOGA TEACHERS ✱ GYMS ✱ CLINICS ✱ STUDIOS ✱</span><span>TRAINERS ✱ COACHES ✱ PHYSIOS ✱ DOCTORS ✱ DIETITIANS ✱ YOGA TEACHERS ✱ GYMS ✱ CLINICS ✱ STUDIOS ✱</span></div></div>
+    <div class="p-tape b"><div class="tr"><span>PAY ALWAYS SHOWN ✱ VERIFIED TICK ✱ QR CERTIFICATES ✱ FREE COACH TOOLS ✱ COACH AI ✱</span><span>PAY ALWAYS SHOWN ✱ VERIFIED TICK ✱ QR CERTIFICATES ✱ FREE COACH TOOLS ✱ COACH AI ✱</span></div></div>
+  </div>
+  <main class="hm-wrap">
+    <section class="p-sec">
+      <h2 class="p-h2 hm-rv">What's in the <span class="p-circ">lab<svg viewBox="0 0 140 80" preserveAspectRatio="none" aria-hidden="true"><path d="M70 6 C 20 4, 4 30, 10 50 C 18 76, 120 80, 134 46 C 144 20, 100 2, 52 10" fill="none" stroke="#8e7cff" stroke-width="4" stroke-linecap="round"/></svg></span>?</h2>
+      <div class="p-grid">
+        <article class="p-card w3 lime hm-rv">
+          <span class="p-rupee" aria-hidden="true">₹</span>
+          <h3>Jobs with the pay always shown</h3>
+          <p>No "DM for salary". Every job shows the range, so you only apply where it's worth it.</p>
+        </article>
+        <article class="p-card w3 hm-rv d1">
+          <div class="p-avs" aria-hidden="true"><span style="background:#8e7cff">AR</span><span style="background:var(--fill)">HR</span><span style="background:#fff">GK</span><span style="background:#111210;color:#fff">+</span></div>
+          <h3>Your people, your pages</h3>
+          <p>Connect with coaches and physios, follow gyms and clinics, message, post your client wins.</p>
+        </article>
+        <article class="p-card violet hm-rv">
+          <span class="p-hop" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#111210" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+          <h3>The verified tick</h3>
+          <p>Trainers, physios, doctors and dietitians — checked, then ticked.</p>
+        </article>
+        <article class="p-card hm-rv d1">
+          <div class="p-track" role="img" aria-label="A 30-day course tracker">
+            <i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i>
+            <i class="f"></i><i class="f"></i><i class="now"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+            <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="end"></i>
+          </div>
+          <h3><span data-c="days">30</span>-day courses, QR certificates</h3>
+          <p><span data-c="title">30-Day Fitness Coaching Mastery</span> — one lesson a day, an exam, a certificate that scans.</p>
+        </article>
+        <article class="p-card ink hm-rv d2">
+          <div class="p-chips" aria-hidden="true"><span class="l">BMI</span><span>BMR</span><span class="v">TDEE</span><span>MACROS</span><span>1RM</span><span class="l">HR ZONES</span></div>
+          <h3>Free coach tools</h3>
+          <p>Every formula comes with its reference. Make a branded PDF for your client.</p>
+        </article>
+        <article class="p-card w6 hm-rv">
+          <div style="max-width:520px">
+            <span class="p-tagk">COACH AI</span>
+            <h3 style="font-size:clamp(28px,3vw,40px);margin:14px 0 10px">AI writes the first draft. You make the call.</h3>
+            <p>Diet and workout plans from your client's goals and blood reports, built on Indian food tables — ready to edit and send as a PDF.</p>
+          </div>
+          <div class="p-bub" aria-hidden="true">
+            <div class="q"><b>Client:</b> 34, female, PCOS, vegetarian, fat loss</div>
+            <div class="a1">5-meal low-GI plan · 1,620 kcal · 96 g protein</div>
+            <div class="a2">4-day strength split · 45 min</div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="p-sec">
+      <div class="p-loop">
+        <div class="tx hm-rv">
+          <h2 class="p-h2" style="margin:0">The coaching loop.</h2>
+          <p>Eight steps every good coach runs on repeat — and every course, tool and plan here is built around them.</p>
+        </div>
+        <div class="fig hm-rv d1">
+          <svg viewBox="0 0 400 400" role="img" aria-label="The coaching loop: assess, identify, plan, coach, monitor, progress, modify, refer">
+            <circle cx="200" cy="200" r="150" fill="none" stroke-width="3" stroke-dasharray="10 10" style="stroke:var(--edge)"/>
+            <g class="orbit"><circle cx="200" cy="50" r="14" fill="#8e7cff" stroke-width="3" style="stroke:var(--edge)"/></g>
+            <circle cx="200" cy="200" r="70" stroke-width="3" style="fill:var(--fill);stroke:var(--edge)"/>
+            <path d="M208 158 L184 204 H200 L194 240 L222 192 H206 Z" fill="#111210"/>
+            <g style="font-family:var(--mono);font-size:15px;font-weight:500" text-anchor="middle">
+              <rect x="160" y="20" width="80" height="30" rx="15" stroke-width="2.5" style="fill:var(--panel);stroke:var(--edge)"/><text x="200" y="40" style="fill:var(--bone)">ASSESS</text>
+              <rect x="270" y="72" width="96" height="30" rx="15" stroke-width="2.5" style="fill:var(--panel);stroke:var(--edge)"/><text x="318" y="92" style="fill:var(--bone)">IDENTIFY</text>
+              <rect x="318" y="185" width="70" height="30" rx="15" stroke-width="2.5" style="fill:var(--panel);stroke:var(--edge)"/><text x="353" y="205" style="fill:var(--bone)">PLAN</text>
+              <rect x="268" y="298" width="80" height="30" rx="15" stroke-width="2.5" style="fill:var(--panel);stroke:var(--edge)"/><text x="308" y="318" style="fill:var(--bone)">COACH</text>
+              <rect x="154" y="352" width="92" height="30" rx="15" stroke-width="2.5" style="fill:var(--panel);stroke:var(--edge)"/><text x="200" y="372" style="fill:var(--bone)">MONITOR</text>
+              <rect x="36" y="298" width="104" height="30" rx="15" stroke-width="2.5" style="fill:var(--panel);stroke:var(--edge)"/><text x="88" y="318" style="fill:var(--bone)">PROGRESS</text>
+              <rect x="8" y="185" width="84" height="30" rx="15" stroke-width="2.5" style="fill:var(--panel);stroke:var(--edge)"/><text x="50" y="205" style="fill:var(--bone)">MODIFY</text>
+              <rect x="40" y="72" width="80" height="30" rx="15" stroke-width="2.5" style="fill:var(--panel);stroke:var(--edge)"/><text x="80" y="92" style="fill:var(--bone)">REFER</text>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <section class="p-final">
+      <div class="card hm-rv">
+        <div>
+          <h2>Step into<br><span>the Lab.</span></h2>
+          <p>Free to join. Built for health and fitness pros in India.</p>
+        </div>
+        <div class="acts">
+          <button type="button" class="hm-btn go lg" data-auth="signup">Create my account</button>
+          <button type="button" class="lnk" data-auth="login">I already have one</button>
+        </div>
+        <svg class="twk" width="40" height="40" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0 L14.5 9.5 L24 12 L14.5 14.5 L12 24 L9.5 14.5 L0 12 L9.5 9.5 Z" style="fill:var(--fill)"/></svg>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ================================================================ PERFORMANCE OS (draft C) -->
+<div class="only-pro">
+  <main class="hm-wrap">
+    <div class="c-roles hm-rv" aria-label="Who it's for"><span>TRAINERS</span><span>COACHES</span><span>PHYSIOS</span><span>DOCTORS</span><span>DIETITIANS</span><span>GYMS</span><span>CLINICS</span><span>STUDIOS</span></div>
+
+    <section class="c-sec">
+      <div class="c-eyebrow hm-rv">ONE PLATFORM</div>
+      <h2 class="c-h2 hm-rv d1">Built like a performance lab.</h2>
+      <div class="c-trio">
+        <article class="c-card hm-rv">
+          <div class="k">01 · JOBS</div>
+          <div class="c-well" aria-hidden="true">
+            <div style="display:flex;justify-content:space-between;font-size:14px"><b style="font-weight:600">Strength coach</b><span style="color:var(--ash)">Kakinada</span></div>
+            <div class="c-range"><i></i></div>
+            <div class="c-rangen"><span>₹25,000</span><span style="color:var(--bone)">pay range shown</span><span>₹35,000</span></div>
+          </div>
+          <h3>Pay on every listing.</h3>
+          <p>Salary ranges are required, not optional. Apply, track and get hired by verified gyms and clinics.</p>
+        </article>
+        <article class="c-card hm-rv d1">
+          <div class="k">02 · NETWORK</div>
+          <svg class="c-graph" viewBox="0 0 300 110" aria-hidden="true">
+            <path class="lk" d="M60 55 L150 30 L240 58 M150 30 L150 85 M60 55 L150 85 L240 58" fill="none" stroke-width="1.5" stroke-dasharray="4 6" style="stroke:var(--line-2)"/>
+            <circle cx="60" cy="55" r="14" style="fill:var(--panel-2);stroke:var(--line-2)"/><circle cx="240" cy="58" r="14" style="fill:var(--panel-2);stroke:var(--line-2)"/><circle cx="150" cy="85" r="12" style="fill:var(--panel-2);stroke:var(--line-2)"/>
+            <circle cx="150" cy="30" r="17" style="fill:var(--fill)"/><path d="M143 30.5l4.5 4.5 9-9.5" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--on-fill)"/>
+          </svg>
+          <h3>Verified people, real pages.</h3>
+          <p>The verified tick for trainers, physios, doctors and dietitians. Pages for gyms, clinics and studios.</p>
+        </article>
+        <article class="c-card hm-rv d2">
+          <div class="k">03 · ACADEMY</div>
+          <div class="c-well c-ringrow" aria-hidden="true">
+            <svg width="80" height="80" viewBox="0 0 80 80"><circle cx="40" cy="40" r="32" fill="none" stroke-width="7" style="stroke:var(--line)"/><circle class="rg" cx="40" cy="40" r="32" fill="none" stroke-width="7" stroke-linecap="round" stroke-dasharray="201" stroke-dashoffset="121" style="--len:201;stroke:var(--fill)"/></svg>
+            <div><b>12<span>/<span data-c="days">30</span></span></b><div style="font-size:13px;color:var(--ash)">days · QR certificate at the end</div></div>
+          </div>
+          <h3 data-c="title">30-Day Fitness Coaching Mastery</h3>
+          <p>Basic to advanced foundations, an exam, and a certificate anyone can scan to verify.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="c-sec">
+      <div class="c-spec">
+        <div class="hm-rv">
+          <div class="c-eyebrow">COACH TOOLS · FREE</div>
+          <h2 class="c-h2" style="margin-bottom:0">Every number has a source.</h2>
+        </div>
+        <p class="hm-rv d1">Calculators, diet and workout builders, and Coach AI all run on the same published formulas and food tables — so you can show your client exactly where a number came from.</p>
+      </div>
+      <div class="c-table hm-rv d2" role="table" aria-label="Formulas and their references">
+        <div class="c-tr" role="row"><b role="cell">Resting energy</b><span role="cell">Mifflin–St Jeor</span><em role="cell">Am J Clin Nutr · 1990</em></div>
+        <div class="c-tr" role="row"><b role="cell">Body fat</b><span role="cell">US Navy circumference</span><em role="cell">Hodgdon &amp; Beckett · 1984</em></div>
+        <div class="c-tr" role="row"><b role="cell">Max heart rate</b><span role="cell">Tanaka</span><em role="cell">J Am Coll Cardiol · 2001</em></div>
+        <div class="c-tr" role="row"><b role="cell">Protein</b><span role="cell">ISSN position stand</span><em role="cell">J Int Soc Sports Nutr · 2017</em></div>
+        <div class="c-tr" role="row"><b role="cell">Indian foods</b><span role="cell">IFCT 2017</span><em role="cell">NIN-ICMR, Hyderabad · 2017</em></div>
+      </div>
+    </section>
+
+    <section class="c-final">
+      <h2 class="hm-rv">Step into the Lab<span>.</span></h2>
+      <p class="hm-rv d1">Free to join. Coach AI when you want it.</p>
+      <div class="hm-cta hm-rv d2"><button type="button" class="hm-btn go lg" data-auth="signup">Create a free account</button><a class="hm-btn lg" href="pricing">See Coach AI plans</a></div>
+    </section>
+  </main>
+</div>
+
+<!-- ================= shared: try another look + footer ================= -->
+<main class="hm-wrap">
+  <section class="hm-looks-sec" id="looks">
+    <div class="hd hm-rv"><div><div class="hm-mono" style="font-size:12px;letter-spacing:.2em;color:var(--lime)">MAKE IT YOURS</div><h2>Three looks. Pick the one that feels like you.</h2></div><p>Change it any time — it's saved to your account.</p></div>
     <div class="hm-looks">
-      <button type="button" class="lk hm-hm-rv" data-look-set="neon" aria-pressed="false">
+      <button type="button" class="lk hm-rv" data-look-set="neon" aria-pressed="false">
         <span class="shot shot-neon" aria-hidden="true"><span class="t1">Make coaching<br><i>decisions.</i></span><span class="o"></span><span class="p">Join free</span></span>
         <span class="meta"><span><b>Neon Lab</b><span>Dark, glowing, futuristic</span></span><em>Use this</em></span>
       </button>
-      <button type="button" class="lk hm-hm-rv d1" data-look-set="pop" aria-pressed="false">
+      <button type="button" class="lk hm-rv d1" data-look-set="pop" aria-pressed="false">
         <span class="shot shot-pop" aria-hidden="true"><span class="t1">Make coaching<br><i>decisions.</i></span><span class="s">2,310 kcal</span><span class="p">Join free →</span></span>
         <span class="meta"><span><b>Notebook Pop</b><span>Bright, playful, bold</span></span><em>Use this</em></span>
       </button>
-      <button type="button" class="lk hm-hm-rv d2" data-look-set="pro" aria-pressed="false">
+      <button type="button" class="lk hm-rv d2" data-look-set="pro" aria-pressed="false">
         <span class="shot shot-pro" aria-hidden="true"><span class="t1">Make coaching<br><i>decisions.</i></span><span class="bars"><i style="height:38%"></i><i style="height:54%"></i><i style="height:70%"></i><i style="height:86%"></i><i style="height:100%"></i></span><span class="p">Get started</span></span>
         <span class="meta"><span><b>Performance OS</b><span>Premium sports-tech</span></span><em>Use this</em></span>
       </button>
     </div>
   </section>
 
-  <section class="hm-final" id="join">
-    <div class="card-pop">
-      <div>
-        <h2 class="hm-hm-rv">Step into <span class="hm-hl"><b>the Lab.</b></span></h2>
-        <p class="hm-lead hm-hm-rv d1">Free to join. Built for health and fitness professionals in India.</p>
-      </div>
-      <div class="hm-cta hm-hm-rv d2">
-        <button type="button" class="hm-btn go lg" data-auth="signup">Create my account</button>
-        <button type="button" class="hm-btn lg" data-auth="login">I already have one</button>
-      </div>
-    </div>
-  </section>
-
   <footer class="hm-foot">
-    <span>© <span id="yr"></span> The Fit Lab · Education ≠ medical practice</span>
+    <span class="fl"><img class="logo-d" src="assets/logo-600.png" alt=""><img class="logo-l" src="assets/logo-600-light.png" alt=""><span>© <span id="yr"></span> The Fit Lab · Education ≠ medical practice</span></span>
     <nav aria-label="Footer"><a href="jobs">Jobs</a><a href="company">Gyms, clinics &amp; studios</a><a href="hire">Hire a coach</a><a href="verify">Verify a certificate</a><a href="about">About</a><a href="contact">Contact</a><a href="pricing">Pricing</a><a href="refunds">Refunds</a><a href="terms">Terms</a><a href="privacy">Privacy</a></nav>
   </footer>
 </main>
@@ -298,14 +470,14 @@
   // look + day/night buttons in the header
   $('hmLookSlot').outerHTML = FL.lookButtonHtml() + FL.themeToggleHtml();
   const markLook = () => document.querySelectorAll('.lk[data-look-set]').forEach((b) => { const on = b.dataset.lookSet === FL.look.get(); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.querySelector('em').textContent = on ? 'In use' : 'Use this'; });
-  markLook(); document.addEventListener('fl:look', markLook);
+  // each look has its own page below the hero, so a new look starts from the top
+  markLook(); document.addEventListener('fl:look', () => { markLook(); if (window.scrollY > 400) window.scrollTo(0, 0); });
 
   // sections slide in as they scroll into view
   const rv = document.querySelectorAll('.hm-rv');
   if ('IntersectionObserver' in window) {
     const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
     rv.forEach((el) => io.observe(el));
-    window.__rvio = io;
   } else rv.forEach((el) => el.classList.add('in'));
 
   const forms = { login: $('formLogin'), signup: $('formSignup'), forgot: $('formForgot'), recover: $('formRecover') };
@@ -386,34 +558,16 @@
   // a link to a members' page brings people here first: open the log-in straight away
   if (new URLSearchParams(location.search).get('next') && sheet.hidden) show('login');
 
-  // Published courses (public)
+  // the published course fills the course spots in every look
   try {
-    const { data, error } = await sb.from('courses').select('title,subtitle,description,total_days,level').eq('is_published', true).order('sort_order');
-    if (error) throw error;
-    const { data: stats } = await sb.from('course_stats').select('*');
-    const statFor = (id) => (stats || []).find((s) => s.course_id === id) || {};
-    $('courseList').innerHTML = (data && data.length ? data : []).map((c) => {
-      const s = statFor(c.id);
-      return `
-      <article class="hm-course hm-hm-rv">
-        <div class="art30" aria-hidden="true">
-          <svg width="150" height="150" viewBox="0 0 150 150"><circle cx="75" cy="75" r="68" fill="none" stroke-width="8" style="stroke:var(--line)"/><circle class="rg" cx="75" cy="75" r="68" fill="none" stroke-width="8" stroke-linecap="round" stroke-dasharray="427" stroke-dashoffset="0" style="--len:427;stroke:var(--fill);animation:hmRing 2.2s cubic-bezier(.2,.8,.2,1) both"/></svg>
-          <div><b>${FL.esc(c.total_days)}</b><span>days</span></div>
-        </div>
-        <div class="tx">
-          <div class="hm-chips"><span>${FL.esc(c.level || '')}</span><span class="a">QR certificate</span></div>
-          <h3>${FL.esc(c.title)}</h3>
-          ${c.subtitle ? `<p class="sub">${FL.esc(c.subtitle)}</p>` : ''}
-          <p>${FL.esc(c.description || '')}</p>
-          <div class="acts"><button type="button" class="hm-btn go" data-auth="signup">Start learning</button>
-          ${s.enrolled_count != null ? `<span class="badge">${s.enrolled_count} enrolled</span><span class="badge ok">${s.completed_count} completed</span><span class="badge warn">${s.in_progress_count} in progress</span>` : ''}</div>
-        </div>
-      </article>`;
-    }).join('') || '<div class="box empty"><b>Courses are on the way</b>They\'ll appear here once published.</div>';
-    $('courseList').querySelectorAll('.hm-rv').forEach((el) => (window.__rvio ? window.__rvio.observe(el) : el.classList.add('in')));
-  } catch (e) {
-    $('courseList').innerHTML = '<div class="box empty"><b>Couldn\'t load courses</b>Please refresh the page.</div>';
-  }
+    const { data } = await sb.from('courses').select('title,subtitle,total_days,level').eq('is_published', true).order('sort_order').limit(1);
+    const c = data && data[0];
+    if (c) {
+      const parts = String(c.subtitle || c.level || '').split('·').map((s) => s.trim()).filter(Boolean);
+      const put = (k, v) => document.querySelectorAll(`[data-c="${k}"]`).forEach((el) => { if (v) el.textContent = v; else if (k.startsWith('chip')) el.remove(); });
+      put('title', c.title); put('days', String(c.total_days || '')); put('chip1', parts[0] || c.level || ''); put('chip2', parts[1] || '');
+    }
+  } catch (_) { /* keep the built-in course text */ }
 
   forms.login.onsubmit = async (e) => {
     e.preventDefault(); clear();

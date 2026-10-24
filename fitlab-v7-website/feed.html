@@ -16,6 +16,7 @@
 
     <section class="stack" id="center" aria-label="Feed">
       <div id="notice"></div>
+      <section id="today" aria-label="Today"></section>
       <div class="box composer" id="compose">
         <div class="row" id="cmpRow"><div class="avatar md skeleton"></div><button class="fake" id="btnCompose">Start a post</button></div>
         <div class="tools">
@@ -40,6 +41,7 @@
 <script src="config.js"></script>
 <script src="assets/app.js"></script>
 <script src="assets/posts.js"></script>
+<script src="assets/today.js"></script>
 <script>
 (async () => {
   const $ = (id) => document.getElementById(id);
@@ -52,6 +54,20 @@
   $('notice').innerHTML = FL.communityNotice(me);
   FL.push.nudge($('center')).catch(() => {});
   FL.lookNudge($('center'));
+
+  // what the top of home and the side columns need — asked once, shared by both
+  const once = (q) => Promise.resolve(q).catch((error) => ({ data: null, error }));
+  const qEnr = once(sb.from('enrollments').select('course_id, status, courses(title, slug, total_days)').eq('user_id', me.id));
+  const qCnt = once(sb.rpc('connection_count', { p_user: me.id }));
+  const qJobs = once(sb.rpc('recommended_jobs', { p_limit: 3 }));
+  const qProg = qEnr.then(({ data }) => (data || []).length ? once(sb.from('lesson_progress').select('course_id').eq('user_id', me.id)) : { data: [] });
+  const todayData = Promise.all([qEnr, qProg, qJobs, qCnt]).then(([{ data: enr }, { data: prog }, { data: jobs }, cnt]) => {
+    const list = (enr || []).filter((c) => c.courses).map((c) => {
+      const done = (prog || []).filter((p) => p.course_id === c.course_id).length, total = c.courses.total_days || 1;
+      return { id: c.course_id, title: c.courses.title, slug: c.courses.slug, done: Math.min(done, total), total, pct: Math.round(Math.min(done, total) / total * 100) };
+    });
+    return { course: list.find((c) => c.done < c.total) || list[0] || null, jobs: jobs || [], cnt: (cnt && cnt.data) || 0 };
+  });
 
   const feed = $('feed');
   let oldest = null, loading = false, done = false, scope = 'all';
@@ -89,6 +105,8 @@
     })();
   }
   document.querySelector('[data-bb="post"]')?.addEventListener('click', (e) => { e.preventDefault(); openComposer(); });
+
+  if (!FL.param('post') && !tag) FLToday.mount($('today'), me, todayData); else $('today').hidden = true;
 
   FLPosts.mount(document.getElementById('center'), { me });
   FLPosts.trackViews(document.getElementById('center'));
@@ -136,14 +154,11 @@
   }
 
   // ---- left: mini profile + learning ----
-  const [{ data: enr }, cnt] = await Promise.all([
-    sb.from('enrollments').select('course_id, status, courses(title, slug, total_days)').eq('user_id', me.id),
-    sb.rpc('connection_count', { p_user: me.id }),
-  ]);
-  const courses = enr || [];
+  const [{ data: enr }, cnt] = await Promise.all([qEnr, qCnt]);
+  const courses = (enr || []).filter((c) => c.courses);
   let learn = '';
   if (courses.length) {
-    const { data: prog } = await sb.from('lesson_progress').select('course_id').eq('user_id', me.id);
+    const { data: prog } = await qProg;
     learn = `<div class="box"><div class="box-head" style="padding-bottom:8px"><h3 style="font-size:15px">Your learning</h3></div>
       ${courses.map((c) => { const done = (prog || []).filter((p) => p.course_id === c.course_id).length, tot = c.courses.total_days, pct = Math.round(done / tot * 100);
         return `<a class="ent" href="courses?c=${encodeURIComponent(c.courses.slug)}" style="padding:10px 16px;color:var(--bone)"><span class="sq">${FL.icon('courses', 20)}</span>
@@ -156,7 +171,7 @@
   const [{ data: sugg }, { data: pgs }, { data: jobs }, { data: trend }] = await Promise.all([
     sb.rpc('suggest_people', { p_limit: 3, p_offset: 0 }),
     sb.rpc('suggested_pages', { p_limit: 3 }),
-    sb.rpc('recommended_jobs', { p_limit: 3 }),
+    qJobs,
     sb.rpc('trending_tags', { p_days: 14, p_limit: 8 })]);
   $('right').innerHTML = `
     <div class="box"><div class="box-head" style="padding-bottom:4px"><h3 style="font-size:16px">Grow your network</h3></div>

@@ -1420,3 +1420,132 @@ div.avatar[data-h="3"]{background:#ffb86b} div.avatar[data-h="4"]{background:#7c
 .look-nudge > .icon-btn{position:absolute;right:10px;top:10px;margin:0}
 :root[data-style="neon"] .mini .cov,:root[data-style="neon"] .pcard .cov{background-size:220% 100%,100% 100%;animation:neonCov 9s ease-in-out infinite alternate}
 @keyframes neonCov{from{background-position:0% 0,0 0}to{background-position:100% 0,0 0}}
+
+/* =====================================================================
+   v11c — APP HOME "TODAY" (assets/today.js) — the top of the feed, drawn per look
+   ===================================================================== */
+#today:empty{display:none}
+.td{display:flex;flex-direction:column;gap:0;animation:flUp .6s cubic-bezier(.2,.8,.2,1) both}
+.td a{text-decoration:none;color:inherit}
+.td .box{margin:0}
+.td-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.td-eye{font:500 11px var(--mono);letter-spacing:.16em;color:var(--lime);text-transform:uppercase}
+@keyframes tdSpin{to{transform:rotate(360deg)}}
+@keyframes tdSheen{0%{transform:translateX(-120%)}60%,100%{transform:translateX(320%)}}
+@keyframes tdRing{from{stroke-dashoffset:var(--len)}}
+@keyframes tdTwk{0%,100%{transform:scale(.75) rotate(0)}50%{transform:scale(1.1) rotate(45deg)}}
+
+/* ---- Neon Lab ---- */
+.td-n{padding:4px 2px 0}
+.td-n .td-hi small{display:block;font-size:15px;color:var(--ash)}
+.td-n .td-hi b{display:block;font:800 30px/1.12 var(--display);letter-spacing:-.02em;margin-top:2px;color:var(--bone)}
+.td-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.td-chips span{padding:6px 12px;border-radius:999px;background:color-mix(in srgb,var(--bone) 7%,transparent);font-size:13px;font-weight:700;color:var(--bone)}
+.td-chips span.id{background:none;border:1px solid color-mix(in srgb,var(--lime) 45%,transparent);color:var(--lime);font:500 12px var(--mono)}
+.td-qa{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:22px 0 18px}
+.td-qa a{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--bone)}
+.td-qa .ic{position:relative;width:66px;height:66px;border-radius:22px;display:grid;place-items:center;overflow:hidden;color:var(--bone);
+  background:color-mix(in srgb,var(--bone) 5%,transparent);border:1px solid var(--line-2);transition:box-shadow .2s,border-color .2s,transform .2s}
+.td-qa a:hover .ic,.td-qa a:focus-visible .ic{border-color:var(--lime);color:var(--lime);transform:translateY(-2px);box-shadow:0 0 26px color-mix(in srgb,var(--fill) 30%,transparent)}
+.td-qa .ic svg{position:relative;z-index:1}
+.td-qa .ic.ai{border:0;color:var(--lime)}
+.td-qa .ic.ai::before{content:"";position:absolute;inset:-40%;background:conic-gradient(from 0deg,var(--fill),var(--acc2),transparent 40%,var(--fill));animation:tdSpin 3.5s linear infinite}
+.td-qa .ic.ai::after{content:"";position:absolute;inset:2px;border-radius:20px;background:var(--panel)}
+.td-n .td-job,.td-n .td-course{display:block;padding:18px;border-radius:26px;transition:border-color .2s,transform .2s}
+.td-n .td-course{margin-top:12px;padding:16px 18px;border-radius:22px}
+.td-n .td-job:hover,.td-n .td-course:hover{border-color:color-mix(in srgb,var(--lime) 50%,transparent);transform:translateY(-2px)}
+.td-why{font-size:12px;color:var(--ash);text-align:right}
+.td-jt{display:block;font:700 19px/1.25 var(--display);letter-spacing:-.01em;margin-top:10px;color:var(--bone)}
+.td-js{display:block;font-size:14px;color:var(--ash);margin-top:2px}
+.td-pay{font:600 15px var(--mono);color:var(--bone)}
+.td-go{padding:11px 20px;border-radius:999px;background:var(--fill);color:var(--on-fill);font-weight:800;font-size:14px;box-shadow:0 0 24px color-mix(in srgb,var(--fill) 35%,transparent);flex:none}
+.td-course .td-row b{font-weight:800;font-size:15px;line-height:1.3;color:var(--bone)}
+.td-n2{font:500 12px var(--mono);color:var(--lime);flex:none}
+.td-bar{display:block;position:relative;height:8px;border-radius:99px;background:color-mix(in srgb,var(--bone) 9%,transparent);margin-top:12px;overflow:hidden}
+.td-bar i{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:var(--fill);box-shadow:0 0 12px var(--fill);overflow:hidden;transform-origin:left;animation:fldGrow 1.6s cubic-bezier(.2,.8,.2,1) .2s both}
+.td-bar em{position:absolute;top:0;bottom:0;width:40%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.75),transparent);animation:tdSheen 2.8s ease-in-out infinite}
+.td-next{display:block;font-size:13px;color:var(--ash);margin-top:8px}
+:root[data-mode="light"] .td-bar i{box-shadow:none}
+
+/* ---- Notebook Pop ---- */
+.td-p{padding:6px 2px 4px}
+.td-hey{display:flex;align-items:center;gap:8px;font:800 38px/1 var(--display);letter-spacing:-.04em;color:var(--bone)}
+.td-spk{fill:var(--fill);stroke:var(--edge);stroke-width:1.5;flex:none;transform-box:fill-box;transform-origin:center;animation:tdTwk 2.2s ease-in-out infinite}
+.td-what{margin:8px 0 0;font-size:17px;color:var(--ash)}
+.td-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:20px 0 14px}
+.td-tiles .tl{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:16px;border:2px solid var(--edge);border-radius:22px;box-shadow:4px 4px 0 var(--edge);
+  color:#111210;transition:transform .15s,box-shadow .15s;animation:flUp .55s cubic-bezier(.2,.9,.3,1.2) both}
+.td-tiles .tl:nth-child(2){animation-delay:.06s}.td-tiles .tl:nth-child(3){animation-delay:.12s}.td-tiles .tl:nth-child(4){animation-delay:.18s}
+.td-tiles .tl:hover,.td-tiles .tl:focus-visible{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--edge)}
+.td-tiles .tl b{font:800 19px/1.15 var(--display);letter-spacing:-.02em}
+.td-tiles .tl > span{font:400 12px var(--mono)}
+.td-tiles .lime{background:var(--fill)}
+.td-tiles .violet{background:#8e7cff}
+.td-tiles .white{background:var(--panel);color:var(--bone)}
+.td-tiles .ink{background:var(--bone);color:var(--ink);box-shadow:4px 4px 0 var(--fill)}
+.td-tiles .ink:hover{box-shadow:6px 6px 0 var(--fill)}
+.td-tiles .ink .k{font:500 12px var(--mono);color:var(--ink);opacity:.75}
+.td-tiles .rs{width:30px;height:30px;border:2px solid currentColor;border-radius:9px;display:grid;place-items:center;font-style:normal;font-weight:800;font-size:17px}
+.td-tiles .bar{display:block;width:100%;height:10px;border:1.5px solid currentColor;border-radius:99px;overflow:hidden}
+.td-tiles .bar i{display:block;height:100%;background:var(--fill);transform-origin:left;animation:fldGrow 1.4s cubic-bezier(.2,.8,.2,1) .3s both}
+:root[data-style="pop"][data-mode="dark"] .td-tiles .ink{border-color:var(--fill)}
+
+/* ---- Performance OS ---- */
+.td-c{padding:2px 0 4px}
+.td-hd .td-eye{display:block;color:var(--ash);letter-spacing:.18em}
+.td-hd b{display:block;font-weight:700;font-size:26px;letter-spacing:-.04em;line-height:1.15;margin-top:4px;color:var(--bone)}
+.td-rings{display:flex;align-items:center;gap:18px;padding:18px;margin-top:16px !important;border-radius:20px}
+.td-rings svg{flex:none}
+.td-rg{animation:tdRing 1.8s cubic-bezier(.2,.8,.2,1) both}
+.td-rings ul{list-style:none;margin:0;padding:0;flex:1;display:flex;flex-direction:column;gap:6px;font-size:13px}
+.td-rings li a{display:flex;justify-content:space-between;align-items:center;padding:3px 0}
+.td-rings li a > span{display:flex;align-items:center;gap:8px;color:var(--ash)}
+.td-rings li i{width:8px;height:8px;border-radius:2px;display:block}
+.td-rings li b{font:500 13px var(--mono);color:var(--bone)}
+.td-rings li a:hover > span{color:var(--bone)}
+.td-sec{margin-top:22px}
+.td-sh{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.td-sh h2{margin:0;font-weight:600;font-size:17px;letter-spacing:-.02em}
+.td-sh a{font-size:13px;color:var(--lime)}
+.td-list{margin-top:12px !important;border-radius:18px;overflow:hidden;padding:0}
+.td-li{display:flex;align-items:center;gap:12px;padding:14px 16px;border-top:1px solid var(--line)}
+.td-li:first-child{border-top:0}
+.td-li:hover{background:color-mix(in srgb,var(--bone) 4%,transparent)}
+.td-li .sq{width:38px;height:38px;border-radius:10px;background:var(--panel-2);display:grid;place-items:center;font-size:13px;font-weight:600;flex:none}
+.td-li .m{flex:1;min-width:0}
+.td-li .m b{display:block;font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.td-li .m span{display:block;font-size:12px;color:var(--ash);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.td-li .v{text-align:right;flex:none}
+.td-li .v b{display:block;font:500 14px var(--mono)}
+.td-li .v span{display:block;font:400 11px var(--mono);color:var(--ash)}
+.td-ai{position:relative;display:flex;align-items:center;gap:14px;margin-top:16px;padding:16px;border-radius:18px;background:var(--fill);color:var(--on-fill) !important;overflow:hidden;transition:transform .2s}
+.td-ai:hover{transform:translateY(-2px)}
+.td-ai::before{content:"";position:absolute;top:0;bottom:0;left:0;width:30%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:tdSheen 3s ease-in-out infinite}
+.td-ai .ic{position:relative;width:40px;height:40px;border-radius:12px;background:var(--on-fill);color:var(--fill);display:grid;place-items:center;flex:none}
+.td-ai .m{position:relative;flex:1;min-width:0}
+.td-ai .m b{display:block;font-weight:700;font-size:16px}
+.td-ai .m span{display:block;font-size:13px;opacity:.8}
+.td-ai > svg{position:relative;flex:none}
+
+/* the panel sits above the composer: give it room on phones, keep it compact beside the side columns */
+@media (min-width:1024px){
+  .td-n .td-hi b{font-size:28px}
+  .td-hey{font-size:34px}
+}
+@media (max-width:420px){
+  .td-qa .ic{width:60px;height:60px;border-radius:20px}
+  .td-qa .ic.ai::after{border-radius:18px}
+  .td-tiles{gap:12px}
+}
+@media (prefers-reduced-motion:reduce){.td,.td *,.td *::before{animation:none !important}}
+/* the jobs list is already in the right-hand column on wide screens */
+@media (min-width:992px){.td .td-dup{display:none}}
+/* phones: the feed boxes run edge to edge, the "today" panel keeps the side margins of the phone designs */
+@media (max-width:767px){
+  #today{padding:6px 16px 8px}
+  .page #today .box{border:1px solid var(--line)}
+  :root[data-style="neon"] .page #today .box{border-color:var(--line-2)}
+  :root[data-style="pop"] .page #today .box{border:2px solid var(--edge);box-shadow:var(--hard)}
+  .page #today .td-job{border-radius:26px} .page #today .td-course{border-radius:22px}
+  .page #today .td-rings{border-radius:20px} .page #today .td-list{border-radius:18px}
+}
