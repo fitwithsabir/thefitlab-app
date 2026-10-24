@@ -96,6 +96,7 @@
     activity: '<path d="M3 12h4l3-7 4 14 3-7h4"/>',
     users: '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3 2.8-5 5.5-5s4.9 2 5.5 5"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.2c2.4.3 4.2 2.1 4.7 4.8"/>',
     hash: '<path d="M9 3 7 21M17 3l-2 18M4 8.5h17M3 15.5h17"/>',
+    palette: '<path d="M12 3a9 9 0 1 0 0 18c1.2 0 1.7-1 1.2-1.9-.6-1.1 0-2.4 1.3-2.4H17a4 4 0 0 0 4-4c0-5.4-4-9.7-9-9.7z"/><circle cx="7.5" cy="11.5" r="1.3" fill="currentColor"/><circle cx="10" cy="7.3" r="1.3" fill="currentColor"/><circle cx="14.8" cy="7.3" r="1.3" fill="currentColor"/>',
   };
   const icon = (name, size = 22, extra = '') =>
     `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}>${P[name] || ''}</svg>`;
@@ -137,6 +138,15 @@
       this._me = data;
       // theme follows the account across devices unless this device chose one
       try { if (data.theme && !localStorage.getItem('fl:theme') && data.theme !== 'system') this.theme.apply(data.theme, false); } catch (_) {}
+      // the look: a choice made before signing in goes to the account; otherwise the account's latest choice wins
+      try {
+        if (localStorage.getItem('fl:style-pending')) {
+          localStorage.removeItem('fl:style-pending');
+          const mine = this.look.get();
+          if (data.ui_style !== mine) sb.from('profiles').update({ ui_style: mine }).eq('id', s.user.id).then(() => {}, () => {});
+          data.ui_style = mine;
+        } else if (data.ui_style && data.ui_style !== this.look.get()) this.look.apply(data.ui_style, true);
+      } catch (_) {}
       return data;
     },
 
@@ -200,7 +210,9 @@
 
     avatarHtml(profile, cls = 'avatar') {
       if (profile && profile.photo_url) return `<img class="${cls}" src="${esc(profile.photo_url)}" alt="" loading="lazy">`;
-      return `<div class="${cls}">${esc(this.initials(profile && (profile.full_name || profile.username)))}</div>`;
+      const nm = String((profile && (profile.full_name || profile.username)) || '?');
+      let h = 0; for (let i = 0; i < nm.length; i++) h = (h * 31 + nm.charCodeAt(i)) >>> 0;
+      return `<div class="${cls}" data-h="${h % 6}">${esc(this.initials(nm))}</div>`;
     },
 
     // escape, keep line breaks (CSS pre-line) and turn web links into links
@@ -228,6 +240,9 @@
       apply(t, remember = true) {
         if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
         else document.documentElement.removeAttribute('data-theme');
+        const L = window.FL_LOOK;
+        document.documentElement.setAttribute('data-mode', L ? L.modeOf() : (t === 'light' ? 'light' : 'dark'));
+        if (L) L.paintBar();
         if (remember) { try { if (t === 'system') localStorage.removeItem('fl:theme'); else localStorage.setItem('fl:theme', t); } catch (_) {} }
         document.querySelectorAll('[data-theme-set]').forEach((b) => b.classList.toggle('on', b.dataset.themeSet === t));
         FL.syncThemeToggles();
@@ -240,6 +255,67 @@
           if (FL._me) FL._me.theme = t;
         } catch (_) {}
       },
+    },
+    // ---- look: Neon Lab · Lab Notebook Pop · Performance OS ----
+    LOOKS: [['neon', 'Neon Lab'], ['pop', 'Notebook Pop'], ['pro', 'Performance OS']],
+    look: {
+      get() { const s = document.documentElement.getAttribute('data-style'); return ['neon', 'pop', 'pro'].includes(s) ? s : 'neon'; },
+      apply(s, remember = true) {
+        if (!['neon', 'pop', 'pro'].includes(s)) s = 'neon';
+        const d = document.documentElement, L = window.FL_LOOK;
+        d.setAttribute('data-style', s);
+        if (L) { const f = document.getElementById('fl-fonts'); if (f) f.href = 'https://fonts.googleapis.com/css2?' + L.FONTS[s] + '&display=swap'; L.paintBar(); }
+        if (remember) { try { localStorage.setItem('fl:style', s); } catch (_) {} }
+        document.querySelectorAll('[data-look-set]').forEach((b) => { const on = b.dataset.lookSet === s; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+        document.dispatchEvent(new CustomEvent('fl:look', { detail: { style: s } }));
+      },
+      async set(s) {
+        const go = () => this.apply(s, true);
+        let still = false; try { still = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (_) {}
+        if (document.startViewTransition && !still) document.startViewTransition(go); else go();
+        try { localStorage.setItem('fl:looknudge', 'done'); } catch (_) {}
+        try {
+          const sess = await FL.session();
+          if (sess) { await sb.from('profiles').update({ ui_style: s }).eq('id', sess.user.id); if (FL._me) FL._me.ui_style = s; }
+          else localStorage.setItem('fl:style-pending', '1');
+        } catch (_) {}
+      },
+    },
+    looksHtml() {
+      const cur = this.look.get();
+      return `<div class="looks" role="group" aria-label="Look">${this.LOOKS.map(([k, n]) => `<button type="button" data-look-set="${k}" class="${cur === k ? 'on' : ''}" aria-pressed="${cur === k}"><span class="lk-pv lk-${k}" aria-hidden="true"><i></i><i></i><i></i></span><span>${n}</span></button>`).join('')}</div>`;
+    },
+    lookButtonHtml() {
+      return `<button type="button" class="look-btn" data-look-open aria-haspopup="true" aria-label="Change the look" title="Change the look">${icon('palette', 18)}</button>`;
+    },
+    openLooks(btn) {
+      let pop = document.querySelector('.look-pop');
+      if (pop) { pop.remove(); return; }
+      pop = document.createElement('div');
+      pop.className = 'look-pop'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-label', 'Choose a look');
+      pop.innerHTML = `<h6>Choose your look</h6>${this.looksHtml()}${this.themeSwitchHtml()}`;
+      document.body.appendChild(pop);
+      const r = btn.getBoundingClientRect();
+      pop.style.top = Math.round(r.bottom + 8) + 'px';
+      pop.style.right = Math.max(12, Math.round(innerWidth - r.right)) + 'px';
+      this.wireCommon(pop);
+      const off = (e) => { if (!pop.contains(e.target) && !btn.contains(e.target)) { pop.remove(); document.removeEventListener('click', off, true); } };
+      setTimeout(() => document.addEventListener('click', off, true), 0);
+      document.addEventListener('keydown', function esc(e) { if (e.key === 'Escape') { pop.remove(); document.removeEventListener('keydown', esc); } });
+    },
+    // one card on the feed until a look is picked or it's waved away
+    lookNudge(host) {
+      if (!host) return;
+      let st = ''; try { st = localStorage.getItem('fl:looknudge') || ''; } catch (_) {}
+      if (st === 'done' || (st && Date.now() < +st)) return;
+      const el = document.createElement('div');
+      el.className = 'box look-nudge';
+      el.innerHTML = `<div class="ln-tx"><b>Pick your look</b><span>Three styles for The Fit Lab — change it any time from the Me menu.</span></div>${this.looksHtml()}
+        <button type="button" class="icon-btn" data-ln-x aria-label="Hide">${icon('close', 18)}</button>`;
+      host.prepend(el);
+      this.wireCommon(el);
+      el.querySelectorAll('[data-look-set]').forEach((b) => b.addEventListener('click', () => setTimeout(() => el.remove(), 900)));
+      el.querySelector('[data-ln-x]').onclick = () => { try { localStorage.setItem('fl:looknudge', String(Date.now() + 30 * 86400000)); } catch (_) {} el.remove(); };
     },
     // small day/night button for pages people see before signing in
     themeToggleHtml() {
@@ -848,7 +924,7 @@
             <a class="txt-btn" href="tools" title="Free tools" aria-label="Free tools">${icon('calc', 18)}<span class="lbl">Free tools</span></a>
             <a class="txt-btn" href="hire" title="Hire a coach" aria-label="Hire a coach">${icon('hire', 18)}<span class="lbl">Hire a coach</span></a>
             <a class="txt-btn" href="verify" title="Verify a certificate" aria-label="Verify a certificate">${icon('award', 18)}<span class="lbl">Verify</span></a>
-            ${this.themeToggleHtml()}
+            ${this.lookButtonHtml()}${this.themeToggleHtml()}
             ${/\/(index(\.html)?)?$/.test(location.pathname) ? '' : '<a class="pill solid sm" href="/">Sign in</a>'}
           </nav></div>`;
       }
@@ -887,7 +963,7 @@
           <a href="hiring">${icon('userplus', 18)}Hiring &amp; job posts</a>
           <div id="meMyPages"></div>
           <a href="company?new=1">${icon('building', 18)}Create a page</a></div>
-        <div class="me-sec"><h6>Appearance</h6>${this.themeSwitchHtml()}</div>
+        <div class="me-sec"><h6>Look</h6>${this.looksHtml()}${this.themeSwitchHtml()}</div>
         <div class="me-sec"><h6>Account</h6>
           <a href="settings">${icon('settings', 18)}Settings &amp; privacy</a>
           <a href="settings#notifications">${icon('bell', 18)}Pop-up notifications</a>
@@ -940,6 +1016,7 @@
     // theme buttons + guidelines links anywhere on the page
     wireCommon(root) {
       root.querySelectorAll('[data-theme-set]').forEach((b) => { b.onclick = () => this.theme.set(b.dataset.themeSet); });
+      root.querySelectorAll('[data-look-set]').forEach((b) => { b.onclick = () => this.look.set(b.dataset.lookSet); });
       root.querySelectorAll('[data-guidelines]').forEach((b) => { b.onclick = (e) => { e.preventDefault(); this.guidelines(true); }; });
     },
 
@@ -1173,10 +1250,14 @@
   document.addEventListener('click', (e) => {
     const b = e.target && e.target.closest && e.target.closest('[data-theme-toggle]');
     if (b) FL.theme.set(FL.theme.isDark() ? 'light' : 'dark');
+    const lb = e.target && e.target.closest && e.target.closest('[data-look-open]');
+    if (lb) { e.preventDefault(); FL.openLooks(lb); }
+    const ls = e.target && e.target.closest && e.target.closest('[data-look-set]');
+    if (ls && !ls.onclick) FL.look.set(ls.dataset.lookSet);
   });
   const addLandingToggle = () => {
     const nav = document.querySelector('.lp-top nav');
-    if (nav && !nav.querySelector('[data-theme-toggle]')) nav.insertAdjacentHTML('afterbegin', FL.themeToggleHtml());
+    if (nav && !nav.querySelector('[data-theme-toggle]')) nav.insertAdjacentHTML('afterbegin', FL.lookButtonHtml() + FL.themeToggleHtml());
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', addLandingToggle); else addLandingToggle();
   try { matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => FL.syncThemeToggles()); } catch (_) {}

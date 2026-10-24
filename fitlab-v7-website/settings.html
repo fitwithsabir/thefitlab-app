@@ -7,7 +7,6 @@
 <script src="assets/theme.js"></script>
 <link rel="icon" href="assets/favicon.png">
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
 <style>
   .set-nav a{display:flex;gap:10px;align-items:center;padding:11px 18px;color:var(--ash);font-weight:600;font-size:14px}
@@ -20,7 +19,7 @@
   .switch input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:1}
   .switch span{position:absolute;inset:0;border-radius:99px;background:var(--line-2);transition:.2s}
   .switch span::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
-  .switch input:checked + span{background:var(--lime)}
+  .switch input:checked + span{background:var(--fill)}
   .switch input:checked + span::after{transform:translateX(20px)}
   .theme-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:4px 20px 18px}
   .theme-cards button{border:2px solid var(--line);border-radius:12px;padding:12px;background:var(--panel);cursor:pointer;text-align:left;color:var(--bone);font:600 14px var(--body)}
@@ -28,6 +27,13 @@
   .theme-cards .pv{height:54px;border-radius:8px;margin-bottom:8px;border:1px solid var(--line);display:flex;gap:4px;padding:6px}
   .theme-cards .pv i{flex:1;border-radius:4px}
   @media (max-width:520px){ .theme-cards{grid-template-columns:1fr} .theme-cards .pv{height:40px} }
+  .set-sub{padding:10px 20px 8px;font-weight:700;font-size:14px}
+  .looks.big{margin:0 20px 14px;gap:12px}
+  .looks.big button{padding:8px;font-size:14px;border-radius:16px}
+  .looks.big .lk-pv{height:92px;border-radius:11px}
+  .looks.big .lk-pv i{transform:scale(1.5);transform-origin:top left}
+  .looks.big .lk-pro i:nth-child(1),.looks.big .lk-neon i:nth-child(3),.looks.big .lk-pop i:nth-child(3){transform-origin:bottom right}
+  @media (max-width:520px){ .looks.big{grid-template-columns:1fr} .looks.big .lk-pv{height:70px} }
 </style>
 </head>
 <body data-page="me">
@@ -58,7 +64,10 @@
 
   const t = FL.theme.get();
   $('main').innerHTML = `
-    <div class="box" id="appearance"><div class="box-head"><div><h2>Appearance</h2><div class="sub">Choose how The Fit Lab looks on this device. “Auto” follows your phone or computer setting.</div></div></div>
+    <div class="box" id="appearance"><div class="box-head"><div><h2>Appearance</h2><div class="sub">Pick the look you like — it's saved to your account, so it follows you to every device. Change it any time.</div></div></div>
+      <div class="set-sub">Look</div>
+      ${FL.looksHtml().replace('class="looks"', 'class="looks big"')}
+      <div class="set-sub">Day or night <span class="muted t-sm">· “Auto” follows your phone or computer</span></div>
       <div class="theme-cards">
         <button data-theme-set="system" class="${t === 'system' ? 'on' : ''}"><div class="pv" style="background:linear-gradient(90deg,#f3f2ee 50%,#050605 50%)"><i style="background:#fff"></i><i style="background:#131613"></i></div>${I('monitor', 16)} Auto (device)</button>
         <button data-theme-set="light" class="${t === 'light' ? 'on' : ''}"><div class="pv" style="background:#f3f2ee"><i style="background:#fff"></i><i style="background:#3f7d0f"></i></div>${I('sun', 16)} Light</button>

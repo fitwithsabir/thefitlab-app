@@ -4,94 +4,285 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>The Fit Lab — Jobs, Network &amp; Academy for Health and Fitness</title>
-<meta name="description" content="The professional network for health and fitness: jobs with pay always shown, verified trainers, physios, doctors and dietitians, gym and clinic pages, and QR-certified courses.">
+<meta name="description" content="The professional network for health and fitness: jobs with pay always shown, verified trainers, physios, doctors and dietitians, gym and clinic pages, QR-certified courses and free coach tools.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="icon" href="assets/favicon.png">
-<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#06070a"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
 <script src="assets/theme.js"></script>
 <link rel="stylesheet" href="assets/styles.css">
-<style>
-  .hero{padding:56px 0 30px}
-  .hero p.lead{font-size:18px;color:var(--ash);max-width:520px;margin:18px 0 26px}
-  .flow{display:flex;flex-wrap:wrap;gap:8px 4px;align-items:center;font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--ash);text-transform:uppercase}
-  .flow b{color:var(--lime);font-weight:700}
-  .flow i{color:var(--line-2);font-style:normal;margin:0 6px}
-  .auth{max-width:440px;margin:0 auto}
-  .courses{margin-top:56px}
-  .course{display:grid;gap:8px}
-  .course .meta{display:flex;gap:8px;flex-wrap:wrap}
-</style>
+<link rel="stylesheet" href="assets/home.css">
 </head>
-<body>
-<div class="wrap">
-  <div id="nav"></div>
+<body class="home">
+<div id="nav"></div>
+<div class="hm-wrap">
+  <header class="hm-nav">
+    <a class="hm-logo" href="/" aria-label="The Fit Lab — home"><img class="logo-d" src="assets/logo-600.png" alt="The Fit Lab"><img class="logo-l" src="assets/logo-600-light.png" alt="" aria-hidden="true"></a>
+    <nav class="hm-links" aria-label="Main">
+      <a href="jobs">Jobs</a><a href="tools">Coach tools</a><a href="hire">Hire a coach</a><a href="company">Gyms &amp; clinics</a><a href="verify">Verify</a>
+    </nav>
+    <div class="hm-acts">
+      <span id="hmLookSlot"></span>
+      <button type="button" class="hm-btn hm-login" data-auth="login">Log in</button>
+      <button type="button" class="hm-btn go" data-auth="signup">Join free</button>
+    </div>
+  </header>
 
-  <section class="hero grid grid-hero">
+  <section class="hm-hero" id="top">
     <div>
-      <div class="eyebrow">The professional network for health &amp; fitness</div>
-      <h1 class="display" style="margin-top:14px">Don't just know<br>exercises.<br><span class="lime">Make coaching<br>decisions.</span></h1>
-      <p class="lead">For trainers, coaches, physios, doctors, dietitians, gyms and clinics. Find jobs with the pay always shown, hire the right people, get the verified tick, and learn with QR-certified courses — all in one place.</p>
-      <div class="flow">
-        <b>Assess</b><i>→</i><b>Identify</b><i>→</i><b>Plan</b><i>→</i><b>Coach</b><i>→</i><b>Monitor</b><i>→</i><b>Progress</b><i>→</i><b>Modify</b><i>→</i><b>Refer</b>
+      <div class="hm-tag hm-in"><i></i>The professional network for health &amp; fitness</div>
+      <h1 class="hm-h1 hm-in d1">Don't just know exercises. <span class="hm-hl">Make coaching <b>decisions.</b></span></h1>
+      <p class="hm-lead hm-in d2">For trainers, coaches, physios, doctors, dietitians, gyms and clinics. Jobs with the pay always shown, the verified tick, QR-certified courses and free coach tools — all in one lab.</p>
+      <div class="hm-cta hm-in d3">
+        <button type="button" class="hm-btn go lg" data-auth="signup">Join The Fit Lab — free <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></button>
+        <a class="hm-btn lg" href="tools">Try the free coach tools</a>
       </div>
+      <div class="hm-trust hm-in d4"><span><i></i>Pay always shown</span><span><i></i>Verified tick</span><span><i></i>QR certificates</span></div>
     </div>
 
-    <div class="auth">
-      <div class="card glow hud"><span class="c1"></span><span class="c2"></span>
-        <div class="tabs" id="tabs">
-          <button class="active" data-tab="login">Log in</button>
-          <button data-tab="signup">Create account</button>
+    <div class="hm-art hm-in d2" aria-hidden="true">
+      <!-- Neon Lab: the lab orb -->
+      <div class="art art-neon">
+        <svg class="orb" viewBox="0 0 560 560">
+          <defs><radialGradient id="orbCore" cx="50%" cy="50%" r="50%"><stop offset="0%" style="stop-color:var(--fill);stop-opacity:.42"/><stop offset="55%" style="stop-color:var(--fill);stop-opacity:.06"/><stop offset="100%" style="stop-color:var(--fill);stop-opacity:0"/></radialGradient></defs>
+          <circle cx="280" cy="280" r="260" fill="url(#orbCore)"/>
+          <g class="r1"><circle cx="280" cy="280" r="250" fill="none" stroke-width="1.2" stroke-dasharray="2 9" style="stroke:var(--lime);opacity:.55"/><circle cx="280" cy="30" r="7" style="fill:var(--lime)"/><circle cx="103" cy="457" r="4" style="fill:var(--bone)"/></g>
+          <g class="r2"><circle cx="280" cy="280" r="196" fill="none" stroke-width="1.5" stroke-dasharray="70 16" style="stroke:var(--acc2);opacity:.5"/><circle cx="476" cy="280" r="6" style="fill:var(--acc2)"/></g>
+          <g class="r3"><circle cx="280" cy="280" r="142" fill="none" stroke-width="1" stroke-dasharray="3 7" style="stroke:var(--lime);opacity:.8"/><circle cx="280" cy="138" r="4" style="fill:var(--bone)"/></g>
+          <path class="ecg" d="M8 300 H70 L86 276 L102 332 L118 230 L136 356 L152 292 H210 M350 300 H410 L422 284 L436 318 L448 300 H552" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--lime);filter:drop-shadow(0 0 6px var(--lime))"/>
+          <circle cx="280" cy="280" r="88" stroke-width="2" style="fill:var(--panel);stroke:var(--lime)"/>
+          <circle cx="280" cy="280" r="70" fill="none" stroke-width="1" style="stroke:var(--line-2)"/>
+          <path class="bolt" d="M294 214 L246 290 H276 L264 348 L318 264 H288 Z" stroke-width="2" stroke-linejoin="round" style="fill:var(--fill);stroke:var(--lime);filter:drop-shadow(0 0 14px var(--fill))"/>
+        </svg>
+        <div class="chipx c1"><small>BMR · Mifflin–St Jeor</small><b>1,742 <em>kcal</em></b></div>
+        <div class="chipx c2"><small style="text-transform:none;letter-spacing:0;font-family:var(--body);font-size:13px">Strength coach · Kakinada</small><span style="display:flex;align-items:center;gap:10px;margin-top:6px"><b style="margin:0;font-size:18px">₹25k–35k</b><span class="tag">PAY SHOWN</span></span></div>
+        <div class="chipx row c3"><span class="ok"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span><b style="font:800 15px var(--body);margin:0">Verified physio</b><small style="letter-spacing:.04em">TFL-2026-00042</small></span></div>
+        <div class="chipx row c4"><span class="qr"><svg width="34" height="34" viewBox="0 0 7 7"><path d="M0 0h3v3H0z M4 0h3v3H4z M0 4h3v3H0z M4 4h1v1H4z M6 4h1v1H6z M5 5h1v1H5z M4 6h1v1H4z M6 6h1v1H6z" fill="#06070a"/><path d="M1 1h1v1H1z M5 1h1v1H5z M1 5h1v1H1z" fill="#f2f5ee"/></svg><span class="scanline"></span></span><span><b style="font:800 15px var(--body);margin:0">Certificate</b><small style="text-transform:none;letter-spacing:0;font-family:var(--body);font-size:12px">Scan to verify</small></span></div>
+      </div>
+
+      <!-- Lab Notebook Pop: the collage -->
+      <div class="art art-pop">
+        <div class="stk s1"><small>JOB · KAKINADA</small><b>Strength coach</b><span class="pay">₹25,000–35,000/mo</span><span class="sticker">PAY SHOWN!</span></div>
+        <div class="stk s2"><small>TDEE · ×1.55 ACTIVE</small><b>2,310</b><span style="font-weight:700;font-size:15px">kcal a day</span><small style="margin-top:10px;font-size:11px">Mifflin–St Jeor, 1990</small></div>
+        <div class="stk s3"><svg width="64" height="64" viewBox="0 0 7 7"><path d="M0 0h3v3H0z M4 0h3v3H4z M0 4h3v3H0z M4 4h1v1H4z M6 4h1v1H6z M5 5h1v1H5z M4 6h1v1H4z M6 6h1v1H6z" fill="#111210"/><path d="M1 1h1v1H1z M5 1h1v1H5z M1 5h1v1H1z" fill="#fff"/></svg><div><b>Certified!</b><span>Scan the QR to verify any Fit Lab certificate.</span></div></div>
+        <svg class="flask" viewBox="0 0 200 240">
+          <path d="M100 4 L88 26 H98 L92 42 L112 18 H102 Z" stroke="#111210" stroke-width="3" stroke-linejoin="round" style="fill:var(--fill)"/>
+          <rect x="78" y="44" width="44" height="18" rx="6" fill="#fff" stroke="#111210" stroke-width="5"/>
+          <path d="M84 62 H116 V104 L164 178 A30 30 0 0 1 138 224 H62 A30 30 0 0 1 36 178 L84 104 Z" fill="#fff" stroke="#111210" stroke-width="5" stroke-linejoin="round"/>
+          <path d="M60 148 Q100 136 140 148 L164 182 A28 28 0 0 1 138 220 H62 A28 28 0 0 1 36 182 Z" style="fill:var(--fill)"/>
+          <path d="M84 62 H116 V104 L164 178 A30 30 0 0 1 138 224 H62 A30 30 0 0 1 36 178 L84 104 Z" fill="none" stroke="#111210" stroke-width="5" stroke-linejoin="round"/>
+          <path d="M92 76 h10 M92 88 h14" stroke="#111210" stroke-width="3" stroke-linecap="round"/>
+          <circle class="bub" cx="92" cy="170" r="6" fill="#fff" stroke="#111210" stroke-width="2.5"/>
+          <circle class="bub" cx="110" cy="176" r="4" fill="#fff" stroke="#111210" stroke-width="2.5" style="animation-delay:-1s"/>
+          <circle class="bub" cx="100" cy="166" r="3" fill="#fff" stroke="#111210" stroke-width="2" style="animation-delay:-1.9s"/>
+          <ellipse class="eye" cx="86" cy="190" rx="5" ry="7" fill="#111210"/><ellipse class="eye" cx="114" cy="190" rx="5" ry="7" fill="#111210"/>
+          <path d="M90 204 Q100 214 110 204" fill="none" stroke="#111210" stroke-width="4" stroke-linecap="round"/>
+        </svg>
+        <svg class="badge-rot" viewBox="0 0 200 200">
+          <circle cx="100" cy="100" r="96" fill="#111210"/>
+          <g class="spin"><defs><path id="popRing" d="M100 100 m-70 0 a70 70 0 1 1 140 0 a70 70 0 1 1 -140 0"/></defs><text style="fill:var(--fill);font-family:var(--mono);font-size:17px;font-weight:500;letter-spacing:3px"><textPath href="#popRing">PAY SHOWN ✱ VERIFIED ✱ CERTIFIED ✱ FREE TOOLS ✱</textPath></text></g>
+          <path d="M106 62 L82 104 H98 L92 138 L120 94 H104 Z" style="fill:var(--fill)"/>
+        </svg>
+        <svg class="twk" width="34" height="34" viewBox="0 0 24 24" style="left:44%;top:14px"><path d="M12 0 L14.5 9.5 L24 12 L14.5 14.5 L12 24 L9.5 14.5 L0 12 L9.5 9.5 Z" style="fill:var(--bone)"/></svg>
+        <svg class="twk" width="22" height="22" viewBox="0 0 24 24" style="right:18px;top:270px;animation-delay:-1.2s"><path d="M12 0 L14.5 9.5 L24 12 L14.5 14.5 L12 24 L9.5 14.5 L0 12 L9.5 9.5 Z" fill="#8e7cff" stroke="#111210" stroke-width="1.5"/></svg>
+      </div>
+
+      <!-- Performance OS: the live dashboard -->
+      <div class="art art-pro">
+        <div class="dash">
+          <div class="dash-top"><span>Client · Priya, 34 · 160 cm · 68.9 kg · Fat loss</span><span class="live">LIVE</span></div>
+          <div class="dash-grid">
+            <div>
+              <div class="dash-l">Energy · kcal/day</div>
+              <div class="dbar"><div><span>BMR · Mifflin–St Jeor</span><b>1,358</b></div><span><i style="width:64.5%;background:var(--line-2);animation-delay:.9s"></i></span></div>
+              <div class="dbar"><div><span>TDEE · ×1.55</span><b>2,105</b></div><span><i style="width:100%;background:var(--acc2);animation-delay:1.05s"></i></span></div>
+              <div class="dbar"><div><span>Target · −20%</span><b style="color:var(--lime)">1,684</b></div><span><i style="width:80%;background:var(--fill);animation-delay:1.2s"></i></span></div>
+            </div>
+            <div>
+              <div class="dash-l">Macros · g/day</div>
+              <div class="rings">
+                <svg width="96" height="96" viewBox="0 0 120 120">
+                  <circle cx="60" cy="60" r="52" fill="none" stroke-width="10" style="stroke:var(--line)"/><circle class="rg" cx="60" cy="60" r="52" fill="none" stroke-width="10" stroke-linecap="round" stroke-dasharray="327" stroke-dashoffset="65" style="--len:327;stroke:var(--fill);animation-delay:1s"/>
+                  <circle cx="60" cy="60" r="37" fill="none" stroke-width="10" style="stroke:var(--line)"/><circle class="rg" cx="60" cy="60" r="37" fill="none" stroke-width="10" stroke-linecap="round" stroke-dasharray="232" stroke-dashoffset="70" style="--len:232;stroke:var(--acc2);animation-delay:1.2s"/>
+                  <circle cx="60" cy="60" r="22" fill="none" stroke-width="10" style="stroke:var(--line)"/><circle class="rg" cx="60" cy="60" r="22" fill="none" stroke-width="10" stroke-linecap="round" stroke-dasharray="138" stroke-dashoffset="62" style="--len:138;stroke:var(--bone);animation-delay:1.4s"/>
+                </svg>
+                <ul><li><i style="background:var(--fill)"></i>Protein<b>138</b></li><li><i style="background:var(--acc2)"></i>Carbs<b>177</b></li><li><i style="background:var(--bone)"></i>Fat<b>47</b></li></ul>
+              </div>
+            </div>
+            <div class="wide">
+              <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="dash-l">Weight · 8 weeks</span><span class="hm-mono" style="font-size:12.5px"><span style="color:var(--lime)">−3.5 kg</span><span style="color:var(--ash)"> · 72.4 → 68.9</span></span></div>
+              <svg class="dline" viewBox="0 0 600 100" preserveAspectRatio="none">
+                <path d="M0 25 H600 M0 60 H600 M0 95 H600" stroke-width="1" style="stroke:var(--line)"/>
+                <path class="ln" d="M0 16 L75 24 L150 20 L225 40 L300 47 L375 60 L450 72 L525 79 L600 89" fill="none" stroke-width="2.5" stroke-linejoin="round" style="stroke:var(--lime)"/>
+                <circle cx="600" cy="89" r="5" style="fill:var(--lime)"/><circle class="ping" cx="600" cy="89" r="5" style="fill:var(--lime)"/>
+              </svg>
+            </div>
+            <div>
+              <div class="dash-l">HR zones · max 184</div>
+              <div style="display:flex;align-items:flex-end;gap:8px;height:74px;margin-top:12px">
+                <i style="flex:1;height:38%;border-radius:6px 6px 2px 2px;background:var(--line-2);transform-origin:bottom;animation:hmCol 1.2s 1.1s both"></i>
+                <i style="flex:1;height:54%;border-radius:6px 6px 2px 2px;background:var(--line-2);transform-origin:bottom;animation:hmCol 1.2s 1.2s both"></i>
+                <i style="flex:1;height:70%;border-radius:6px 6px 2px 2px;background:var(--acc2);transform-origin:bottom;animation:hmCol 1.2s 1.3s both"></i>
+                <i style="flex:1;height:86%;border-radius:6px 6px 2px 2px;background:color-mix(in srgb,var(--fill) 65%,var(--panel));transform-origin:bottom;animation:hmCol 1.2s 1.4s both"></i>
+                <i style="flex:1;height:100%;border-radius:6px 6px 2px 2px;background:var(--fill);transform-origin:bottom;animation:hmCol 1.2s 1.5s both"></i>
+              </div>
+            </div>
+            <div>
+              <div class="dash-l" style="display:flex;align-items:center;gap:8px"><svg class="spin-ai" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" style="stroke:var(--lime)"><path d="M12 3a9 9 0 1 0 9 9"/></svg>Coach AI</div>
+              <ol class="steps-ai">
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--lime)"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Blood report read</li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--lime)"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Foods from IFCT 2017</li>
+                <li class="wait"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke-width="2" style="stroke:var(--ash)"><circle cx="12" cy="12" r="8" stroke-dasharray="3 3"/></svg>PDF with your name</li>
+              </ol>
+            </div>
+          </div>
         </div>
+      </div>
+    </div>
+  </section>
+</div>
 
-        <form id="formLogin" novalidate>
-          <div class="field"><label for="liEmail">Email or username</label><input id="liEmail" type="text" autocomplete="username" required placeholder="you@example.com or your username"></div>
-          <div class="field"><label for="liPass">Password</label><input id="liPass" type="password" autocomplete="current-password" required placeholder="••••••••"></div>
-          <button class="btn btn-primary btn-block" type="submit">Enter the Academy</button>
-          <p class="help" style="margin:12px 0 0;text-align:center"><a href="#" id="linkForgot">Forgot password?</a></p>
-        </form>
+<div class="hm-ticks" aria-hidden="true">
+  <div class="hm-tick two"><div class="hm-track"><span>TRAINERS ✱ COACHES ✱ PHYSIOS ✱ DOCTORS ✱ DIETITIANS ✱ YOGA TEACHERS ✱ GYMS ✱ CLINICS ✱ STUDIOS ✱</span><span>TRAINERS ✱ COACHES ✱ PHYSIOS ✱ DOCTORS ✱ DIETITIANS ✱ YOGA TEACHERS ✱ GYMS ✱ CLINICS ✱ STUDIOS ✱</span></div></div>
+  <div class="hm-tick one"><div class="hm-track">
+    <span>Personal trainers</span><em>✱</em><span class="o">Strength coaches</span><em>✱</em><span>Physiotherapists</span><em>✱</em><span class="o">Dietitians</span><em>✱</em><span>Doctors</span><em>✱</em><span class="o">Yoga teachers</span><em>✱</em><span>Gyms</span><em>✱</em><span class="o">Clinics &amp; studios</span><em>✱</em>
+    <span>Personal trainers</span><em>✱</em><span class="o">Strength coaches</span><em>✱</em><span>Physiotherapists</span><em>✱</em><span class="o">Dietitians</span><em>✱</em><span>Doctors</span><em>✱</em><span class="o">Yoga teachers</span><em>✱</em><span>Gyms</span><em>✱</em><span class="o">Clinics &amp; studios</span><em>✱</em>
+  </div></div>
+</div>
 
-        <form id="formSignup" class="hidden" novalidate>
-          <div class="field"><label for="suName">Full name</label><input id="suName" autocomplete="name" required placeholder="As it should appear on your certificate"></div>
-          <div class="field"><label for="suEmail">Email</label><input id="suEmail" type="email" autocomplete="email" required placeholder="you@example.com"></div>
-          <div class="field"><label for="suPass">Password</label><input id="suPass" type="password" autocomplete="new-password" required minlength="8" placeholder="At least 8 characters"></div>
-          <button class="btn btn-primary btn-block" type="submit">Create my account</button>
-          <p class="help" style="margin:12px 0 0">Joining The Fit Lab is free. After signup you'll complete your member profile and receive your Fit Lab Unique ID.</p>
-        </form>
+<main class="hm-wrap">
+  <section class="hm-sec" id="inside">
+    <div class="hm-eyebrow hm-hm-rv">Inside the lab</div>
+    <h2 class="hm-h2 hm-hm-rv d1">One login. Your whole fitness career.</h2>
+    <div class="hm-bento">
+      <article class="bx w4 k-jobs hm-hm-rv">
+        <div><h3>Jobs with the pay always shown</h3><p>Every listing shows the salary range up front — no "DM for details". Apply in a tap and track every application.</p></div>
+        <div aria-hidden="true">
+          <div class="jrow"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11"/></svg></span><span class="t"><b>Strength coach</b><span>Kakinada · Full-time</span></span><span class="pay">₹25,000–35,000/mo</span><span class="ap">Apply</span></div>
+          <div class="jrow"><span class="ic b"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.6-7 10-7 10z"/></svg></span><span class="t"><b>Physiotherapist</b><span>Visakhapatnam · Clinic</span></span><span class="pay b">₹40,000–55,000/mo</span><span class="done"><i><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></i>Applied</span></div>
+        </div>
+        <a class="hm-btn" href="jobs" style="align-self:flex-start">Browse jobs →</a>
+      </article>
+      <article class="bx k-tick hm-hm-rv d1">
+        <div class="vseal" aria-hidden="true">
+          <svg viewBox="0 0 560 560"><defs><path id="sealRing" d="M280 280 m-210 0 a210 210 0 1 1 420 0 a210 210 0 1 1 -420 0"/></defs><text style="fill:var(--lime);font-family:var(--mono);font-size:46px;letter-spacing:9px;font-weight:600"><textPath href="#sealRing">VERIFIED · PROFESSIONAL · VERIFIED · PROFESSIONAL ·</textPath></text></svg>
+          <i><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></i>
+        </div>
+        <div><h3>The verified tick</h3><p>Trainers, physios, doctors and dietitians — checked, then ticked. Clients know who's real.</p></div>
+      </article>
+      <article class="bx hm-hm-rv">
+        <div class="cert" aria-hidden="true"><small>CERTIFICATE OF COMPLETION</small><b>30-Day Fitness Coaching Mastery</b>
+          <div class="row"><span>Fit Lab ID<br><strong>TFL-2026-00005</strong></span><span class="qrbox"><svg width="56" height="56" viewBox="0 0 7 7"><path d="M0 0h3v3H0z M4 0h3v3H4z M0 4h3v3H0z M4 4h1v1H4z M6 4h1v1H6z M5 5h1v1H5z M4 6h1v1H4z M6 6h1v1H6z" fill="#06070a"/><path d="M1 1h1v1H1z M5 1h1v1H5z M1 5h1v1H1z" fill="#f2f5ee"/></svg><span class="scanline"></span></span></div></div>
+        <div><h3>QR-certified courses</h3><p>Learn a lesson a day, pass the exam, and get a certificate anyone can scan to verify.</p></div>
+      </article>
+      <article class="bx k-tools hm-hm-rv d1">
+        <div class="macro" aria-hidden="true">
+          <svg width="116" height="116" viewBox="0 0 120 120"><circle cx="60" cy="60" r="46" fill="none" stroke-width="14" style="stroke:color-mix(in srgb,currentColor 12%,transparent)"/><circle class="arc" cx="60" cy="60" r="46" fill="none" stroke-width="14" stroke-dasharray="87 289" style="stroke:var(--fill)"/><circle class="arc" cx="60" cy="60" r="46" fill="none" stroke-width="14" stroke-dasharray="130 289" stroke-dashoffset="-89" style="stroke:var(--acc2);animation-delay:.3s"/><circle class="arc" cx="60" cy="60" r="46" fill="none" stroke-width="14" stroke-dasharray="66 289" stroke-dashoffset="-221" style="stroke:currentColor;animation-delay:.6s"/></svg>
+          <ul><li><i style="background:var(--fill)"></i>Protein 142 g</li><li><i style="background:var(--acc2)"></i>Carbs 214 g</li><li><i style="background:currentColor"></i>Fat 62 g</li></ul>
+        </div>
+        <div><h3>Free coach tools</h3><p>BMI, BMR, TDEE, macros, 1RM and heart-rate zones — every formula referenced. Branded PDFs for your clients.</p></div>
+        <a class="hm-btn" href="tools" style="align-self:flex-start">Open the tools →</a>
+      </article>
+      <article class="bx k-ai hm-hm-rv d2">
+        <div class="chat" aria-hidden="true"><div class="q"><small>BLOOD REPORT</small>HbA1c 6.1% · Vitamin D 18</div><div class="a">Low-GI plan · 5 meals · 142 g protein<i></i></div></div>
+        <div><h3>Coach AI <span class="pro-pill">PLANS</span></h3><p>Diet and workout plans from your client's goals and blood reports, built on Indian food tables — ready to edit and send.</p></div>
+      </article>
+    </div>
+  </section>
 
-        <form id="formForgot" class="hidden" novalidate>
-          <p class="small ash" style="margin:0 0 14px">Enter your email and we'll send a reset link.</p>
-          <div class="field"><label for="fgEmail">Email</label><input id="fgEmail" type="email" required placeholder="you@example.com"></div>
-          <button class="btn btn-primary btn-block" type="submit">Send reset link</button>
-          <p class="help" style="margin:12px 0 0;text-align:center"><a href="#" id="linkBack">Back to log in</a></p>
-        </form>
+  <section class="hm-sec">
+    <div class="hm-eyebrow hm-hm-rv">The method</div>
+    <h2 class="hm-h2 hm-hm-rv d1">Assess. Plan. Coach. Repeat.</h2>
+    <div class="hm-method hm-hm-rv d2">
+      <ol>
+        <li><span>01</span>Assess</li><li><span>02</span>Identify</li><li><span>03</span>Plan</li><li><span>04</span>Coach</li>
+        <li><span>05</span>Monitor</li><li><span>06</span>Progress</li><li><span>07</span>Modify</li><li><span>08</span>Refer</li>
+      </ol>
+    </div>
+  </section>
 
-        <form id="formRecover" class="hidden" novalidate>
-          <div class="eyebrow" style="margin-bottom:10px">Set a new password</div>
-          <div class="field"><label for="rcPass">New password</label><input id="rcPass" type="password" autocomplete="new-password" required minlength="8"></div>
-          <button class="btn btn-primary btn-block" type="submit">Save password</button>
-        </form>
+  <section class="hm-sec" id="courses">
+    <div class="hm-eyebrow hm-hm-rv">Courses</div>
+    <h2 class="hm-h2 hm-hm-rv d1">What you can study</h2>
+    <div class="hm-courses" id="courseList"><div class="skeleton" style="height:180px;border-radius:30px"></div></div>
+  </section>
 
-        <div id="msg" class="hidden" style="margin-top:14px"></div>
+  <section class="hm-sec" id="looks">
+    <div class="hm-eyebrow hm-hm-rv">Make it yours</div>
+    <h2 class="hm-h2 hm-hm-rv d1">Three looks. Pick the one that feels like you.</h2>
+    <div class="hm-looks">
+      <button type="button" class="lk hm-hm-rv" data-look-set="neon" aria-pressed="false">
+        <span class="shot shot-neon" aria-hidden="true"><span class="t1">Make coaching<br><i>decisions.</i></span><span class="o"></span><span class="p">Join free</span></span>
+        <span class="meta"><span><b>Neon Lab</b><span>Dark, glowing, futuristic</span></span><em>Use this</em></span>
+      </button>
+      <button type="button" class="lk hm-hm-rv d1" data-look-set="pop" aria-pressed="false">
+        <span class="shot shot-pop" aria-hidden="true"><span class="t1">Make coaching<br><i>decisions.</i></span><span class="s">2,310 kcal</span><span class="p">Join free →</span></span>
+        <span class="meta"><span><b>Notebook Pop</b><span>Bright, playful, bold</span></span><em>Use this</em></span>
+      </button>
+      <button type="button" class="lk hm-hm-rv d2" data-look-set="pro" aria-pressed="false">
+        <span class="shot shot-pro" aria-hidden="true"><span class="t1">Make coaching<br><i>decisions.</i></span><span class="bars"><i style="height:38%"></i><i style="height:54%"></i><i style="height:70%"></i><i style="height:86%"></i><i style="height:100%"></i></span><span class="p">Get started</span></span>
+        <span class="meta"><span><b>Performance OS</b><span>Premium sports-tech</span></span><em>Use this</em></span>
+      </button>
+    </div>
+  </section>
+
+  <section class="hm-final" id="join">
+    <div class="card-pop">
+      <div>
+        <h2 class="hm-hm-rv">Step into <span class="hm-hl"><b>the Lab.</b></span></h2>
+        <p class="hm-lead hm-hm-rv d1">Free to join. Built for health and fitness professionals in India.</p>
+      </div>
+      <div class="hm-cta hm-hm-rv d2">
+        <button type="button" class="hm-btn go lg" data-auth="signup">Create my account</button>
+        <button type="button" class="hm-btn lg" data-auth="login">I already have one</button>
       </div>
     </div>
   </section>
 
-  <section class="courses">
-    <div class="eyebrow">Courses</div>
-    <h2 class="display">What you can study</h2>
-    <div class="grid grid-2" id="courseList"><div class="skeleton" style="height:120px"></div></div>
-  </section>
+  <footer class="hm-foot">
+    <span>© <span id="yr"></span> The Fit Lab · Education ≠ medical practice</span>
+    <nav aria-label="Footer"><a href="jobs">Jobs</a><a href="company">Gyms, clinics &amp; studios</a><a href="hire">Hire a coach</a><a href="verify">Verify a certificate</a><a href="about">About</a><a href="contact">Contact</a><a href="pricing">Pricing</a><a href="refunds">Refunds</a><a href="terms">Terms</a><a href="privacy">Privacy</a></nav>
+  </footer>
+</main>
 
-  <section style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap">
-    <a class="btn" href="jobs">Browse jobs — pay always shown →</a>
-    <a class="btn" href="company">Gyms, clinics &amp; studios →</a>
-    <a class="btn" href="hire">Hiring? Browse certified coaches →</a>
-  </section>
+<div class="auth-sheet" id="authSheet" hidden>
+  <div class="auth-card" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+    <button type="button" class="icon-btn x" id="authClose" aria-label="Close"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    <h2 id="authTitle">Welcome to the Lab</h2>
+    <p class="hello" id="authHello">Log in or create your free account.</p>
+    <div class="tabs" id="tabs">
+      <button class="active" data-tab="login">Log in</button>
+      <button data-tab="signup">Create account</button>
+    </div>
 
-  <div class="footer">
-    <div class="pillars" style="justify-content:center;margin-bottom:18px"><span>Human body</span><span>Training science</span><span>Programming</span><span>Conditioning</span><span>Special populations</span><span>Coaching</span></div>
-    © <span id="yr"></span> The Fit Lab · Education ≠ medical practice · <a href="about">About</a> · <a href="contact">Contact</a> · <a href="pricing">Pricing</a> · <a href="refunds">Refunds</a> · <a href="terms">Terms</a> · <a href="privacy">Privacy</a>
+    <form id="formLogin" novalidate>
+      <div class="field"><label for="liEmail">Email or username</label><input id="liEmail" type="text" autocomplete="username" required placeholder="you@example.com or your username"></div>
+      <div class="field"><label for="liPass">Password</label><input id="liPass" type="password" autocomplete="current-password" required placeholder="••••••••"></div>
+      <button class="btn btn-primary btn-block" type="submit">Log in</button>
+      <p class="help" style="margin:12px 0 0;text-align:center"><a href="#" id="linkForgot">Forgot password?</a></p>
+    </form>
+
+    <form id="formSignup" class="hidden" novalidate>
+      <div class="field"><label for="suName">Full name</label><input id="suName" autocomplete="name" required placeholder="As it should appear on your certificate"></div>
+      <div class="field"><label for="suEmail">Email</label><input id="suEmail" type="email" autocomplete="email" required placeholder="you@example.com"></div>
+      <div class="field"><label for="suPass">Password</label><input id="suPass" type="password" autocomplete="new-password" required minlength="8" placeholder="At least 8 characters"></div>
+      <button class="btn btn-primary btn-block" type="submit">Create my account</button>
+      <p class="help" style="margin:12px 0 0">Joining The Fit Lab is free. After signup you'll complete your member profile and receive your Fit Lab Unique ID.</p>
+    </form>
+
+    <form id="formForgot" class="hidden" novalidate>
+      <p class="small ash" style="margin:0 0 14px">Enter your email and we'll send a reset link.</p>
+      <div class="field"><label for="fgEmail">Email</label><input id="fgEmail" type="email" required placeholder="you@example.com"></div>
+      <button class="btn btn-primary btn-block" type="submit">Send reset link</button>
+      <p class="help" style="margin:12px 0 0;text-align:center"><a href="#" id="linkBack">Back to log in</a></p>
+    </form>
+
+    <form id="formRecover" class="hidden" novalidate>
+      <div class="eyebrow" style="margin-bottom:10px">Set a new password</div>
+      <div class="field"><label for="rcPass">New password</label><input id="rcPass" type="password" autocomplete="new-password" required minlength="8"></div>
+      <button class="btn btn-primary btn-block" type="submit">Save password</button>
+    </form>
+
+    <div id="msg" class="hidden" style="margin-top:14px"></div>
   </div>
 </div>
 
@@ -102,18 +293,51 @@
 <script>
 (async function () {
   document.getElementById('yr').textContent = new Date().getFullYear();
-  FL.renderHeader(null);
-
   const $ = (id) => document.getElementById(id);
+
+  // look + day/night buttons in the header
+  $('hmLookSlot').outerHTML = FL.lookButtonHtml() + FL.themeToggleHtml();
+  const markLook = () => document.querySelectorAll('.lk[data-look-set]').forEach((b) => { const on = b.dataset.lookSet === FL.look.get(); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.querySelector('em').textContent = on ? 'In use' : 'Use this'; });
+  markLook(); document.addEventListener('fl:look', markLook);
+
+  // sections slide in as they scroll into view
+  const rv = document.querySelectorAll('.hm-rv');
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+    rv.forEach((el) => io.observe(el));
+    window.__rvio = io;
+  } else rv.forEach((el) => el.classList.add('in'));
+
   const forms = { login: $('formLogin'), signup: $('formSignup'), forgot: $('formForgot'), recover: $('formRecover') };
+  const sheet = $('authSheet');
   const msg = $('msg');
-  const say = (html, ok) => { msg.className = 'banner'; msg.style.borderColor = ok ? 'rgba(163,230,53,.5)' : ''; msg.style.color = ok ? 'var(--bone)' : ''; msg.style.background = ok ? 'rgba(163,230,53,.06)' : ''; msg.innerHTML = html; };
+  const say = (html, ok) => { msg.className = 'banner'; msg.style.borderColor = ok ? 'color-mix(in srgb,var(--lime) 50%,transparent)' : ''; msg.style.color = ok ? 'var(--bone)' : ''; msg.style.background = ok ? 'color-mix(in srgb,var(--lime) 6%,transparent)' : ''; msg.innerHTML = html; };
   const clear = () => { msg.className = 'hidden'; msg.innerHTML = ''; };
-  const show = (name) => { Object.entries(forms).forEach(([k, f]) => f.classList.toggle('hidden', k !== name)); $('tabs').classList.toggle('hidden', name === 'recover'); clear(); };
+  const TITLES = { login: ['Welcome back', 'Log in to your Fit Lab account.'], signup: ['Join the Lab', 'Free for health and fitness professionals.'], forgot: ['Reset your password', 'We\'ll email you a link.'], recover: ['Almost back in', 'Choose a new password.'] };
+  let lastFocus = null;
+  const openSheet = () => {
+    if (sheet.hidden) { lastFocus = document.activeElement; sheet.hidden = false; document.body.style.overflow = 'hidden'; }
+  };
+  const closeSheet = () => { sheet.hidden = true; document.body.style.overflow = ''; if (lastFocus && lastFocus.focus) lastFocus.focus(); };
+  const show = (name) => {
+    Object.entries(forms).forEach(([k, f]) => f.classList.toggle('hidden', k !== name));
+    $('tabs').classList.toggle('hidden', name === 'recover');
+    document.querySelectorAll('#tabs button').forEach((x) => x.classList.toggle('active', x.dataset.tab === name));
+    $('authTitle').textContent = TITLES[name][0]; $('authHello').textContent = TITLES[name][1];
+    clear(); openSheet();
+    const first = forms[name].querySelector('input'); if (first) setTimeout(() => { try { first.focus({ preventScroll: true }); } catch (_) {} }, 60);
+  };
+
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest && e.target.closest('[data-auth]');
+    if (b) { e.preventDefault(); show(b.dataset.auth); }
+  });
+  $('authClose').onclick = closeSheet;
+  sheet.addEventListener('click', (e) => { if (e.target === sheet) closeSheet(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !sheet.hidden) closeSheet(); });
 
   $('tabs').addEventListener('click', (e) => {
     const b = e.target.closest('button[data-tab]'); if (!b) return;
-    document.querySelectorAll('#tabs button').forEach((x) => x.classList.toggle('active', x === b));
     show(b.dataset.tab);
   });
   $('linkForgot').onclick = (e) => { e.preventDefault(); show('forgot'); };
@@ -159,8 +383,10 @@
   const session = await FL.session();
   if (recovering) show('recover');
   if (session && !recovering) { await goInside(); return; }
+  // a link to a members' page brings people here first: open the log-in straight away
+  if (new URLSearchParams(location.search).get('next') && sheet.hidden) show('login');
 
-  // Published courses strip (public)
+  // Published courses (public)
   try {
     const { data, error } = await sb.from('courses').select('title,subtitle,description,total_days,level').eq('is_published', true).order('sort_order');
     if (error) throw error;
@@ -169,16 +395,24 @@
     $('courseList').innerHTML = (data && data.length ? data : []).map((c) => {
       const s = statFor(c.id);
       return `
-      <div class="card course hud"><span class="c1"></span><span class="c2"></span>
-        <div class="meta"><span class="badge ok">${c.total_days} days</span><span class="badge">${FL.esc(c.level || '')}</span></div>
-        <h3 class="display" style="font-size:30px;margin:6px 0 0">${FL.esc(c.title)}</h3>
-        <div class="ash small">${FL.esc(c.subtitle || '')}</div>
-        <p class="small" style="margin:6px 0 0">${FL.esc(c.description || '')}</p>
-        ${s.enrolled_count != null ? `<div class="btn-row" style="margin-top:12px"><span class="badge">${s.enrolled_count} enrolled</span><span class="badge ok">${s.completed_count} completed</span><span class="badge warn">${s.in_progress_count} in progress</span></div>` : ''}
-      </div>`;
-    }).join('') || '<div class="card ash">Courses will appear here once published.</div>';
+      <article class="hm-course hm-hm-rv">
+        <div class="art30" aria-hidden="true">
+          <svg width="150" height="150" viewBox="0 0 150 150"><circle cx="75" cy="75" r="68" fill="none" stroke-width="8" style="stroke:var(--line)"/><circle class="rg" cx="75" cy="75" r="68" fill="none" stroke-width="8" stroke-linecap="round" stroke-dasharray="427" stroke-dashoffset="0" style="--len:427;stroke:var(--fill);animation:hmRing 2.2s cubic-bezier(.2,.8,.2,1) both"/></svg>
+          <div><b>${FL.esc(c.total_days)}</b><span>days</span></div>
+        </div>
+        <div class="tx">
+          <div class="hm-chips"><span>${FL.esc(c.level || '')}</span><span class="a">QR certificate</span></div>
+          <h3>${FL.esc(c.title)}</h3>
+          ${c.subtitle ? `<p class="sub">${FL.esc(c.subtitle)}</p>` : ''}
+          <p>${FL.esc(c.description || '')}</p>
+          <div class="acts"><button type="button" class="hm-btn go" data-auth="signup">Start learning</button>
+          ${s.enrolled_count != null ? `<span class="badge">${s.enrolled_count} enrolled</span><span class="badge ok">${s.completed_count} completed</span><span class="badge warn">${s.in_progress_count} in progress</span>` : ''}</div>
+        </div>
+      </article>`;
+    }).join('') || '<div class="box empty"><b>Courses are on the way</b>They\'ll appear here once published.</div>';
+    $('courseList').querySelectorAll('.hm-rv').forEach((el) => (window.__rvio ? window.__rvio.observe(el) : el.classList.add('in')));
   } catch (e) {
-    $('courseList').innerHTML = '<div class="card ash">Could not load courses yet. Check config.js.</div>';
+    $('courseList').innerHTML = '<div class="box empty"><b>Couldn\'t load courses</b>Please refresh the page.</div>';
   }
 
   forms.login.onsubmit = async (e) => {
@@ -211,8 +445,8 @@
     FL.busy(btn, false);
     if (error) return say(FL.friendly(error));
     if (data.session) return goInside();
+    show('login');
     say(`<strong>Almost there.</strong> We sent a confirmation link to <b>${FL.esc(email)}</b>. Open it, then log in here to complete your member profile.`, true);
-    document.querySelector('#tabs button[data-tab="login"]').click();
     $('liEmail').value = email;
   };
 
