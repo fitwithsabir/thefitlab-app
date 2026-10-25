@@ -16,7 +16,7 @@
   --accent-soft:color-mix(in srgb,var(--lime) 11%,transparent); --accent-line:color-mix(in srgb,var(--lime) 45%,transparent);
   --hover:rgba(255,255,255,.05); --grid-line:rgba(255,255,255,.028); --glow:color-mix(in srgb,var(--lime) 13%,transparent);
   --shadow:0 1px 2px rgba(0,0,0,.5); --shadow-lg:0 24px 70px rgba(0,0,0,.55); --overlay:rgba(2,3,2,.74);
-  --display:'Unbounded','Manrope',system-ui,sans-serif; --body:'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace;
+  --display:'Unbounded','Manrope',var(--sf,system-ui),system-ui,sans-serif; --body:'Manrope',var(--sf,system-ui),system-ui,-apple-system,'Segoe UI',sans-serif; --mono:'JetBrains Mono',var(--sf,ui-monospace),ui-monospace,monospace;
   --dz:.58; --dw:700; --dlh:1.06; --dtrack:-.02em; --dcase:none;
   --r:22px; --r-box:20px; --r-btn:999px; --r-in:14px; --bw:1px;
   --topbar:62px; --bottombar:64px; --glass:rgba(10,12,9,.72);
@@ -40,7 +40,7 @@
   --accent-soft:color-mix(in srgb,var(--lime) 13%,transparent); --accent-line:color-mix(in srgb,var(--lime) 55%,transparent);
   --hover:rgba(255,255,255,.06); --grid-line:rgba(255,255,255,.05); --glow:transparent;
   --shadow:none; --shadow-lg:6px 6px 0 #000; --overlay:rgba(10,10,9,.6);
-  --display:'Bricolage Grotesque',system-ui,sans-serif; --body:'Bricolage Grotesque',system-ui,-apple-system,'Segoe UI',sans-serif; --mono:'DM Mono',ui-monospace,monospace;
+  --display:'Bricolage Grotesque',var(--sf,system-ui),system-ui,sans-serif; --body:'Bricolage Grotesque',var(--sf,system-ui),system-ui,-apple-system,'Segoe UI',sans-serif; --mono:'DM Mono',var(--sf,ui-monospace),ui-monospace,monospace;
   --dz:.74; --dw:800; --dlh:1; --dtrack:-.035em; --dcase:none;
   --r:20px; --r-box:20px; --r-btn:14px; --r-in:12px; --bw:2px; --glass:#1b1d19;
   color-scheme:dark;
@@ -62,7 +62,7 @@
   --accent-soft:color-mix(in srgb,var(--lime) 9%,transparent); --accent-line:color-mix(in srgb,var(--lime) 40%,transparent);
   --hover:rgba(255,255,255,.04); --grid-line:transparent; --glow:color-mix(in srgb,var(--lime) 7%,transparent);
   --shadow:0 1px 2px rgba(0,0,0,.4); --shadow-lg:0 30px 80px rgba(0,0,0,.6); --overlay:rgba(5,6,8,.7);
-  --display:'Geist',system-ui,sans-serif; --body:'Geist',system-ui,-apple-system,'Segoe UI',sans-serif; --mono:'Geist Mono',ui-monospace,monospace;
+  --display:'Geist',var(--sf,system-ui),system-ui,sans-serif; --body:'Geist',var(--sf,system-ui),system-ui,-apple-system,'Segoe UI',sans-serif; --mono:'Geist Mono',var(--sf,ui-monospace),ui-monospace,monospace;
   --dz:.72; --dw:700; --dlh:1; --dtrack:-.045em; --dcase:none;
   --r:16px; --r-box:16px; --r-btn:10px; --r-in:10px; --bw:1px; --glass:rgba(10,11,13,.8);
   color-scheme:dark;
@@ -1549,3 +1549,12 @@ div.avatar[data-h="3"]{background:#ffb86b} div.avatar[data-h="4"]{background:#7c
   .page #today .td-job{border-radius:26px} .page #today .td-course{border-radius:22px}
   .page #today .td-rings{border-radius:20px} .page #today .td-list{border-radius:18px}
 }
+
+/* ---------------------------------------------------------------- languages (assets/i18n.js)
+   Scripts other than Latin: no letter-spacing (it breaks Arabic joining and Indic conjuncts),
+   no forced capitals, and a little more line height for tall scripts. */
+:root:not([data-lang=en]):not([data-lang=fr]):not([data-lang=de]):not([data-lang=es]) *{letter-spacing:0!important}
+:root[data-lang=ur]{--lh-boost:1.25}
+:root[data-lang=ur] body{line-height:1.9}
+:root[data-lang=ur] h1,:root[data-lang=ur] h2,:root[data-lang=ur] h3{line-height:1.6}
+:root[dir=rtl] .ico-flip,:root[dir=rtl] [data-flip]{transform:scaleX(-1)}

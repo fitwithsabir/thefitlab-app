@@ -7,6 +7,7 @@
 <link rel="icon" href="assets/favicon.png">
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
 <script src="assets/theme.js"></script>
+<script src="assets/i18n.js"></script>
 <link rel="stylesheet" href="assets/styles.css">
 <style>
   .exwrap{max-width:760px;margin:0 auto}
@@ -102,7 +103,7 @@
         <div class="wm" id="wm" aria-hidden="true"></div>
         <div class="qtime" id="qTime"><span id="qTimeBar" style="width:100%"></span></div>
         <div class="eyebrow" id="qNum">Question 1</div>
-        <h2 style="margin:12px 0 20px;font-size:20px;line-height:1.45" id="qText">—</h2>
+        <h2 style="margin:12px 0 20px;font-size:20px;line-height:1.45" id="qText" data-i18n="no">—</h2>
         <div id="qOpts"></div>
       </div>
       <div class="btn-row" style="margin-top:16px;justify-content:flex-end">
@@ -209,7 +210,7 @@
     $('qCount').textContent = `${q.n} / ${paper.total}`;
     $('qBar').style.width = ((q.n - 1) / paper.total * 100) + '%';
     $('qOpts').innerHTML = q.options.map((o, i) => `
-      <label class="opt" data-i="${i}"><input type="radio" name="opt"><span>${FL.esc(o)}</span></label>`).join('');
+      <label class="opt" data-i="${i}"><input type="radio" name="opt"><span data-i18n="no">${FL.esc(o)}</span></label>`).join('');
     $('btnNext').disabled = true;
     $('btnNext').textContent = q.n === paper.total ? 'Answer & finish' : 'Answer & next →';
     qEndsAt = Date.now() + secs * 1000;
@@ -329,7 +330,7 @@
     const btn = $('btnStart'); FL.busy(btn, true, 'Preparing your paper…');
     $('iErr').classList.add('hidden');
     await enterFull();
-    const { data, error } = await sb.rpc('start_exam', { p_course_id: course.id });
+    const { data, error } = await sb.rpc('start_exam', { p_course_id: course.id, p_lang: window.FLI18N ? FLI18N.lang : null });
     FL.busy(btn, false);
     if (error) { exitFull(); $('iErr').textContent = FL.friendly(error); $('iErr').classList.remove('hidden'); return; }
     paper = data; q = data.question; live = true;

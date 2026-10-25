@@ -21,6 +21,8 @@
   );
 
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // a person's or a page's name inside a sentence: never translated, and kept in its own direction in Arabic / Urdu
+  const nameHtml = (s) => `<bdi translate="no">${esc(s)}</bdi>`;
 
   // ---------------------------------------------------------------- icons
   const P = {
@@ -111,6 +113,7 @@
   const FL = {
     cfg,
     esc,
+    nameHtml,
     icon,
     REACTIONS,
     _me: null,
@@ -136,6 +139,8 @@
       const { data, error } = await sb.from('profiles').select('*').eq('id', s.user.id).single();
       if (error) throw error;
       this._me = data;
+      // language: the account's choice follows the person to every device
+      try { if (window.FLI18N) FLI18N.fromAccount(data.lang, (code) => sb.from('profiles').update({ lang: code }).eq('id', s.user.id).then(() => {}, () => {})); } catch (_) {}
       // theme follows the account across devices unless this device chose one
       try { if (data.theme && !localStorage.getItem('fl:theme') && data.theme !== 'system') this.theme.apply(data.theme, false); } catch (_) {}
       // the look: a choice made before signing in goes to the account; otherwise the account's latest choice wins
@@ -179,11 +184,11 @@
 
     fmtDate(d) {
       if (!d) return '—';
-      return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+      return new Date(d).toLocaleDateString((window.FLI18N && FLI18N.locale) || 'en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
     },
     fmtMonth(d) {
       if (!d) return 'Present';
-      return new Date(String(d).length <= 10 ? d + 'T00:00:00' : d).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+      return new Date(String(d).length <= 10 ? d + 'T00:00:00' : d).toLocaleDateString((window.FLI18N && FLI18N.locale) || 'en-IN', { month: 'short', year: 'numeric' });
     },
     timeAgo(d) {
       const s = Math.max(0, (Date.now() - new Date(d).getTime()) / 1000);
@@ -284,6 +289,10 @@
     looksHtml() {
       const cur = this.look.get();
       return `<div class="looks" role="group" aria-label="Look">${this.LOOKS.map(([k, n]) => `<button type="button" data-look-set="${k}" class="${cur === k ? 'on' : ''}" aria-pressed="${cur === k}"><span class="lk-pv lk-${k}" aria-hidden="true"><i></i><i></i><i></i></span><span>${n}</span></button>`).join('')}</div>`;
+    },
+    langButtonHtml() {
+      const L = window.FLI18N, n = L ? L.names(L.lang) : { native: 'English' };
+      return `<button type="button" class="look-btn lang-btn" data-lang-open aria-haspopup="dialog" aria-label="Language" title="Language">${icon('globe', 18)}<span class="lang-cur" translate="no">${(L && L.lang !== 'en' ? L.lang : 'EN').toUpperCase().slice(0, 3)}</span></button>`;
     },
     lookButtonHtml() {
       return `<button type="button" class="look-btn" data-look-open aria-haspopup="true" aria-label="Change the look" title="Change the look">${icon('palette', 18)}</button>`;
@@ -463,12 +472,12 @@
     },
 
     // ---------------------------------------------------------------- modals
-    modal({ title = '', body = '', foot = '', wide = false, onClose } = {}) {
+    modal({ title = '', titleHtml = null, body = '', foot = '', wide = false, onClose } = {}) {
       const el = document.createElement('div');
       el.className = 'mdl';
       el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true');
       el.innerHTML = `<div class="mdl-card${wide ? ' wide' : ''}">
-        <div class="mdl-head"><h3>${esc(title)}</h3><button class="icon-btn" data-x aria-label="Close">${icon('close', 20)}</button></div>
+        <div class="mdl-head"><h3>${titleHtml != null ? titleHtml : esc(title)}</h3><button class="icon-btn" data-x aria-label="Close">${icon('close', 20)}</button></div>
         <div class="mdl-body">${body}</div>${foot ? `<div class="mdl-foot">${foot}</div>` : ''}</div>`;
       // the page stays locked while any dialog is still open (a confirm inside a form, say)
       const close = () => { el.remove(); document.removeEventListener('keydown', onKey); FL.lockScroll(); if (onClose) onClose(); };
@@ -638,7 +647,7 @@
         <p class="t-sm muted" style="margin:0 0 12px">Reports are private. The Academy team reviews every one. Content reported by several members is hidden straight away.</p>
         <div class="radio-list">${reasons.map(([v, l], i) => `<label><input type="radio" name="rr" value="${v}" ${i === 0 ? 'checked' : ''}>${l}</label>`).join('')}</div>
         <div class="field" style="margin-top:12px"><label for="rrD">Anything else we should know? (optional)</label><textarea id="rrD" maxlength="1000" style="min-height:70px"></textarea></div>
-        ${opts.userId ? `<label class="check" style="color:var(--bone)"><input type="checkbox" id="rrB"><span>Also block ${esc(opts.name || 'this member')} — they won't be able to message you, connect or see your posts.</span></label>` : ''}`,
+        ${opts.userId ? `<label class="check" style="color:var(--bone)"><input type="checkbox" id="rrB"><span>${opts.name ? `Also block ${nameHtml(opts.name)} — they won't be able to message you, connect or see your posts.` : `Also block this member — they won't be able to message you, connect or see your posts.`}</span></label>` : ''}`,
         foot: `<button class="pill ghost" data-no>Cancel</button><button class="pill solid" data-ok>Send report</button>` });
       m.q('[data-no]').onclick = m.close;
       m.q('[data-ok]').onclick = async (e) => {
@@ -663,8 +672,8 @@
     connect(username, name) {
       return new Promise((resolve) => {
         let done = false;
-        const m = this.modal({ title: `Invite ${name || '@' + username} to connect`, body: `
-          <div class="field" style="margin-bottom:12px"><label for="cnTag">How do you know ${esc(name || 'them')}?</label>
+        const m = this.modal({ titleHtml: `Invite ${nameHtml(name || '@' + username)} to connect`, body: `
+          <div class="field" style="margin-bottom:12px"><label for="cnTag">${name ? `How do you know ${nameHtml(name)}?` : 'How do you know them?'}</label>
             <select id="cnTag">${this.tagOptions()}</select>
             <div class="t-xs muted" style="margin-top:4px">Only you see this — it helps you sort your network.</div></div>
           <p class="t-sm" style="margin:0 0 10px;line-height:1.55">A short note about why you'd like to connect makes people more likely to accept.</p>
@@ -690,7 +699,7 @@
     // pick or change the private category of a connection
     async tagConnection(userId, name, current) {
       return new Promise((resolve) => {
-        const m = this.modal({ title: `How do you know ${name || 'this member'}?`, body: `
+        const m = this.modal({ titleHtml: name ? `How do you know ${nameHtml(name)}?` : 'How do you know this member?', body: `
           <div class="radio-list">${this.CONN_TAGS.map(([k, l]) => `<label><input type="radio" name="ct" value="${k}" ${k === current ? 'checked' : ''}>${esc(l)}</label>`).join('')}</div>
           <p class="t-xs muted" style="margin:10px 0 0">Only you see this.</p>`,
           foot: `${current ? '<button class="pill ghost" data-clear>Remove</button>' : ''}<button class="pill solid" data-ok>Save</button>`,
@@ -924,7 +933,7 @@
             <a class="txt-btn" href="tools" title="Free tools" aria-label="Free tools">${icon('calc', 18)}<span class="lbl">Free tools</span></a>
             <a class="txt-btn" href="hire" title="Hire a coach" aria-label="Hire a coach">${icon('hire', 18)}<span class="lbl">Hire a coach</span></a>
             <a class="txt-btn" href="verify" title="Verify a certificate" aria-label="Verify a certificate">${icon('award', 18)}<span class="lbl">Verify</span></a>
-            ${this.lookButtonHtml()}${this.themeToggleHtml()}
+            ${this.langButtonHtml()}${this.lookButtonHtml()}${this.themeToggleHtml()}
             ${/\/(index(\.html)?)?$/.test(location.pathname) ? '' : '<a class="pill solid sm" href="/">Sign in</a>'}
           </nav></div>`;
       }
@@ -963,6 +972,7 @@
           <a href="hiring">${icon('userplus', 18)}Hiring &amp; job posts</a>
           <div id="meMyPages"></div>
           <a href="company?new=1">${icon('building', 18)}Create a page</a></div>
+        <div class="me-sec"><h6>Language</h6><button class="lnk" type="button" data-lang-open>${icon('globe', 18)}<span translate="no">${window.FLI18N ? esc(FLI18N.names(FLI18N.lang).native) : 'English'}</span></button></div>
         <div class="me-sec"><h6>Look</h6>${this.looksHtml()}${this.themeSwitchHtml()}</div>
         <div class="me-sec"><h6>Account</h6>
           <a href="settings">${icon('settings', 18)}Settings &amp; privacy</a>
@@ -1257,7 +1267,7 @@
   });
   const addLandingToggle = () => {
     const nav = document.querySelector('.lp-top nav');
-    if (nav && !nav.querySelector('[data-theme-toggle]')) nav.insertAdjacentHTML('afterbegin', FL.lookButtonHtml() + FL.themeToggleHtml());
+    if (nav && !nav.querySelector('[data-theme-toggle]')) nav.insertAdjacentHTML('afterbegin', FL.langButtonHtml() + FL.lookButtonHtml() + FL.themeToggleHtml());
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', addLandingToggle); else addLandingToggle();
   try { matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => FL.syncThemeToggles()); } catch (_) {}

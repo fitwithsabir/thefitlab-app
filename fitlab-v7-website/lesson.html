@@ -8,6 +8,7 @@
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <script src="assets/theme.js"></script>
+<script src="assets/i18n.js"></script>
 <link rel="stylesheet" href="assets/styles.css">
 </head>
 <body>
@@ -68,6 +69,15 @@
       return;
     }
     return stop(`Day ${day} isn't published yet`, `It will open here as soon as it's released. You can continue from your dashboard.`);
+  }
+  // the lesson in the member's language, when it has been translated (same cards, same answers)
+  if (window.FLI18N && FLI18N.lang !== 'en') {
+    const { data: tr } = await sb.from('lesson_i18n').select('title, summary, recap, preview, objectives, sections').eq('lesson_id', lesson.id).eq('lang', FLI18N.lang).maybeSingle();
+    if (tr && Array.isArray(tr.sections) && Array.isArray(lesson.sections) && tr.sections.length === lesson.sections.length) {
+      for (const f of ['title', 'summary', 'recap', 'preview']) if (tr[f]) lesson[f] = tr[f];
+      if (Array.isArray(tr.objectives)) lesson.objectives = tr.objectives;
+      lesson.sections = lesson.sections.map((c, i) => ({ ...c, ...tr.sections[i], type: c.type, correct_index: c.correct_index, review_card: c.review_card, diagram: c.diagram, min_chars: c.min_chars }));
+    }
   }
   document.title = `Day ${day}: ${lesson.title} — The Fit Lab Academy`;
 
@@ -140,11 +150,11 @@
     const resume = st.idx === 0 && st.unlocked > 1 && !noGates;
     return `<div class="lcard">
       <div class="lab"><span class="eyebrow">Day ${day} of ${course.total_days} · ${esc(course.title)}</span>${completed ? '<span class="badge ok">Completed</span>' : ''}</div>
-      <h2 style="font-size:clamp(36px,6vw,58px)">${esc(lesson.title)}</h2>
-      ${lesson.summary ? `<p class="prose" style="font-size:17px;color:var(--ash);margin:0">${esc(lesson.summary)}</p>` : ''}
+      <h2 data-i18n="no" style="font-size:clamp(36px,6vw,58px)">${esc(lesson.title)}</h2>
+      ${lesson.summary ? `<p class="prose" data-i18n="no" style="font-size:17px;color:var(--ash);margin:0">${esc(lesson.summary)}</p>` : ''}
       <div class="intro-meta"><span class="badge">${lesson.estimated_minutes || 25} min</span><span class="badge">${sections.filter((s) => s.type !== 'check').length} cards</span>${nChecks ? `<span class="badge">${nChecks} knowledge check${nChecks > 1 ? 's' : ''}</span>` : ''}${hasAssignment ? '<span class="badge">1 assignment</span>' : ''}</div>
-      ${lesson.recap ? `<div class="recap"><b style="color:var(--lime);font-family:var(--mono);font-size:11px;letter-spacing:.16em">YESTERDAY</b><br>${esc(lesson.recap)}</div>` : ''}
-      ${objs.length ? `<div class="eyebrow" style="margin-top:22px">By the end of today you will be able to</div><ul class="intro-obj">${objs.map((o) => `<li>${esc(o)}</li>`).join('')}</ul>` : ''}
+      ${lesson.recap ? `<div class="recap"><b style="color:var(--lime);font-family:var(--mono);font-size:11px;letter-spacing:.16em">YESTERDAY</b><br><span data-i18n="no">${esc(lesson.recap)}</span></div>` : ''}
+      ${objs.length ? `<div class="eyebrow" style="margin-top:22px">By the end of today you will be able to</div><ul class="intro-obj">${objs.map((o) => `<li data-i18n="no">${esc(o)}</li>`).join('')}</ul>` : ''}
       <div class="cardnav"><span class="help">${completed ? 'You can revisit any card freely.' : 'Each card has a short reading timer — Continue opens when it ends. Pass the checks, save the assignment and tap “Complete Day ' + day + '” to open the next day.'}</span>
         <button class="btn btn-primary" data-nav="${resume ? Math.min(st.unlocked, N - 1) : 1}" id="btnNext">${resume ? `Resume at card ${st.unlocked + 1} →` : completed ? 'Review lesson →' : 'Begin lesson →'}</button></div>
     </div>`;
@@ -160,11 +170,11 @@
          <button class="btn btn-primary" id="btnNext" data-nav="${i + 1}" disabled>Continue →</button>`
       : (st.returnTo != null ? `<button class="btn" data-nav="${i + 1}">Continue →</button><button class="btn btn-primary" data-nav="${st.returnTo}">Back to the question →</button>` : nextBtn(i));
     return `<div class="lcard">
-      <div class="lab"><span class="eyebrow">${esc(card.label || 'Lesson')}</span>
+      <div class="lab"><span class="eyebrow">${card.label ? `<span data-i18n="no">${esc(card.label)}</span>` : 'Lesson'}</span>
         <button class="narrate" id="btnSpeak" title="Listen to this card"><span class="eq"><i></i><i></i><i></i></span>Listen</button></div>
-      <h2>${esc(card.title || '')}</h2>
+      <h2 data-i18n="no">${esc(card.title || '')}</h2>
       ${media}
-      <div class="prose">${FL.md(card.body)}</div>
+      <div class="prose" data-i18n="no">${FL.md(card.body)}</div>
       ${card.audio_url ? `<audio controls preload="none" src="${esc(card.audio_url)}" style="width:100%;margin-top:14px"></audio>` : ''}
       <div class="cardnav">${backBtn(i)}<span class="btn-row">${nav}</span></div>
     </div>`;
@@ -178,9 +188,9 @@
     const letters = 'ABCD';
     return `<div class="lcard">
       <div class="lab"><span class="eyebrow">Knowledge check${nChecks > 1 ? ` · ${sections.filter((x, k) => x.type === 'check' && k < i - 1).length + 1} of ${nChecks}` : ''}</span><span class="badge">${s.passed ? 'Passed' : s.attempts ? `Attempt ${s.attempts + 1}` : 'Required'}</span></div>
-      <h2 style="font-size:clamp(22px,3.4vw,30px);font-family:var(--body);font-weight:600;letter-spacing:0;line-height:1.35;text-transform:none">${esc(card.question)}</h2>
-      <div id="opts">${card.options.map((o, k) => `<button class="opt ${s.passed && k === card.correct_index ? 'right' : ''}" data-opt="${k}" ${s.passed ? 'disabled' : ''}><i>${letters[k]}</i><span>${esc(o)}</span></button>`).join('')}</div>
-      <div id="verdict">${s.passed ? `<div class="verdict ok"><b>${s0.passed ? 'Correct' : 'Answer'}</b>${esc(card.explanation || '')}</div>` : ''}</div>
+      <h2 style="font-size:clamp(22px,3.4vw,30px);font-family:var(--body);font-weight:600;letter-spacing:0;line-height:1.35;text-transform:none" data-i18n="no">${esc(card.question)}</h2>
+      <div id="opts">${card.options.map((o, k) => `<button class="opt ${s.passed && k === card.correct_index ? 'right' : ''}" data-opt="${k}" ${s.passed ? 'disabled' : ''}><i>${letters[k]}</i><span data-i18n="no">${esc(o)}</span></button>`).join('')}</div>
+      <div id="verdict">${s.passed ? `<div class="verdict ok"><b>${s0.passed ? 'Correct' : 'Answer'}</b><span data-i18n="no">${esc(card.explanation || '')}</span></div>` : ''}</div>
       <div class="cardnav">${backBtn(i)}<span class="btn-row" id="checkNav">${s.passed ? nextBtn(i) : `<button class="btn btn-primary" id="btnCheck" disabled>Check answer</button>`}</span></div>
     </div>`;
   }
@@ -190,9 +200,9 @@
     const val = existingSub || '';
     return `<div class="lcard assign">
       <div class="lab"><span class="eyebrow">Daily assignment · proof of work</span>${st.asgSaved || existingSub ? '<span class="badge ok">Saved</span>' : '<span class="badge">Required</span>'}</div>
-      <h2>${esc(card.title || 'Assignment')}</h2>
-      <div class="prose" style="margin-bottom:16px">${FL.md(card.prompt)}</div>
-      <textarea id="asg" placeholder="${esc(card.placeholder || 'Write your answer here…')}">${esc(val)}</textarea>
+      <h2${card.title ? ' data-i18n="no"' : ''}>${esc(card.title || 'Assignment')}</h2>
+      <div class="prose" data-i18n="no" style="margin-bottom:16px">${FL.md(card.prompt)}</div>
+      <textarea id="asg"${card.placeholder ? ' data-i18n="no"' : ''} placeholder="${esc(card.placeholder || 'Write your answer here…')}">${esc(val)}</textarea>
       <div class="charcount" id="cc"></div>
       <div class="cardnav">${backBtn(i)}<span class="btn-row">
         <button class="btn" id="btnSaveAsg">${existingSub ? 'Update assignment' : 'Save assignment'}</button>
@@ -211,7 +221,7 @@
         <div class="big" style="margin:8px 0 6px">${completed ? 'Day complete' : 'Almost there'}</div>
         <p class="ash" style="margin:0 auto 18px;max-width:520px">${completed ? `Recorded against ${esc(profile.unique_id || 'your ID')} · about ${mins} min active${nChecks ? ` · ${nChecks}/${nChecks} checks passed` : ''}.` : 'Finish the assignment card to record today in your progress.'}</p>
       </div>
-      ${lesson.preview ? `<div class="recap" style="margin:0 0 20px"><b style="color:var(--lime);font-family:var(--mono);font-size:11px;letter-spacing:.16em">TOMORROW</b><br>${esc(lesson.preview)}</div>` : ''}
+      ${lesson.preview ? `<div class="recap" style="margin:0 0 20px"><b style="color:var(--lime);font-family:var(--mono);font-size:11px;letter-spacing:.16em">TOMORROW</b><br><span data-i18n="no">${esc(lesson.preview)}</span></div>` : ''}
       <div class="btn-row" style="justify-content:center">
         ${completed && !isLast && nextExists ? `<a class="btn btn-primary" href="lesson?course=${course.slug}&day=${day + 1}">Continue to Day ${day + 1} →</a>` : ''}
         ${completed && !isLast && !nextExists ? `<span class="badge warn">Day ${day + 1} is being published</span>` : ''}
@@ -275,13 +285,13 @@
         const v = host.querySelector('#verdict'), nav = host.querySelector('#checkNav');
         if (right) {
           s.passed = true; unlockTo(i + 1); save();
-          v.innerHTML = `<div class="verdict ok"><b>Correct</b>${esc(card.explanation || '')}</div>`;
+          v.innerHTML = `<div class="verdict ok"><b>Correct</b><span data-i18n="no">${esc(card.explanation || '')}</span></div>`;
           nav.innerHTML = nextBtn(i);
           nav.querySelector('[data-nav]').addEventListener('click', () => go(i + 1));
         } else {
           save();
           const rc = Number.isInteger(card.review_card) ? card.review_card + 1 : null; // +1 for intro offset
-          v.innerHTML = `<div class="verdict no"><b>Not yet</b>${esc(card.explanation || '')}${rc ? ` <br><span class="ash">Go back to the card that covers this, then try again.</span>` : ''}</div>`;
+          v.innerHTML = `<div class="verdict no"><b>Not yet</b><span data-i18n="no">${esc(card.explanation || '')}</span>${rc ? ` <br><span class="ash">Go back to the card that covers this, then try again.</span>` : ''}</div>`;
           nav.innerHTML = rc ? `<button class="btn btn-primary" id="btnReview">Review the card →</button>` : `<button class="btn btn-primary" id="btnRetry">Try again</button>`;
           const rb = nav.querySelector('#btnReview'); if (rb) rb.addEventListener('click', () => { st.returnTo = i; go(rc); });
           const tb = nav.querySelector('#btnRetry'); if (tb) tb.addEventListener('click', render);

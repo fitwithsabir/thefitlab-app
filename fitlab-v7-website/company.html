@@ -6,6 +6,7 @@
 <title>Pages — The Fit Lab</title>
 <meta name="description" content="Gyms, studios, clinics, hospitals, academies and brands on The Fit Lab — follow them, see their jobs and the people who work there.">
 <script src="assets/theme.js"></script>
+<script src="assets/i18n.js"></script>
 <link rel="icon" href="assets/favicon.png">
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
 <link rel="stylesheet" href="assets/styles.css">
@@ -258,7 +259,7 @@
         return;
       }
       if (tab === 'people') {
-        el.innerHTML = `<div class="box"><div class="box-head"><div><h2>People</h2><div class="sub">Members who list ${esc(pg.name)} as their current workplace</div></div></div><div id="pl"><div class="skeleton" style="height:120px;margin:14px"></div></div></div>`;
+        el.innerHTML = `<div class="box"><div class="box-head"><div><h2>People</h2><div class="sub">Members who list ${FL.nameHtml(pg.name)} as their current workplace</div></div></div><div id="pl"><div class="skeleton" style="height:120px;margin:14px"></div></div></div>`;
         const { data } = await sb.rpc('page_people', { p_page: pg.page_id, p_limit: 60 });
         $('pl').innerHTML = (data || []).length ? `<div class="pgrid">${data.map(personCard).join('')}</div>`
           : `<div class="empty"><b>No one listed yet</b>${isTeam() ? 'Ask your team to add ' + esc(pg.name) + ' to the Experience section of their profile and pick this page.' : 'Members appear here when they add this page to their experience.'}</div>`;
@@ -298,7 +299,7 @@
     }
 
     function composerBox() {
-      return `<div class="box composer"><div class="row">${FL.pageLogo(pg, 'co-logo sm')}<button class="fake" data-a="post">Start a post as ${esc(pg.name)}</button></div></div>`;
+      return `<div class="box composer"><div class="row">${FL.pageLogo(pg, 'co-logo sm')}<button class="fake" data-a="post">Start a post as ${FL.nameHtml(pg.name)}</button></div></div>`;
     }
     async function loadFeed(reset) {
       const { data, error } = await sb.rpc('get_page_feed', { p_page: pg.page_id, p_before: feedOldest, p_limit: 10 });
@@ -353,7 +354,7 @@
         ${owner ? `<div class="box-head" style="padding-top:8px"><h3 style="font-size:15px">Add someone</h3></div>
           <div class="adm-row"><input id="aU" placeholder="@username" aria-label="Username"><select id="aR" aria-label="Role"><option value="admin">Admin</option><option value="recruiter">Recruiter</option></select>
           <button class="pill solid" id="aAdd">Add</button></div>
-          <p class="t-xs muted" style="padding:0 20px 16px;margin:0">Only add people who work for ${esc(pg.name)}. They'll be notified.</p>` : ''}</div>`;
+          <p class="t-xs muted" style="padding:0 20px 16px;margin:0">Only add people who work for ${FL.nameHtml(pg.name)}. They'll be notified.</p>` : ''}</div>`;
       if (!owner) return;
       $('aAdd').onclick = async (e) => {
         const u = $('aU').value.trim(); if (!u) return;

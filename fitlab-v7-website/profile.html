@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Profile — The Fit Lab</title>
 <script src="assets/theme.js"></script>
+<script src="assets/i18n.js"></script>
 <link rel="icon" href="assets/favicon.png">
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
 <link rel="stylesheet" href="assets/styles.css">
@@ -581,7 +582,7 @@
   function requestService(id) {
     const x = (p.services || []).find((e) => e.id === id); if (!x) return;
     const m = FL.modal({ title: `Request: ${x.title}`, body: `
-      <p class="t-sm muted" style="margin:0 0 12px;line-height:1.5">${esc(p.full_name.split(' ')[0])} gets your request on The Fit Lab. If they accept, you can message each other to plan the details.</p>
+      <p class="t-sm muted" style="margin:0 0 12px;line-height:1.5">${FL.nameHtml(p.full_name.split(' ')[0])} gets your request on The Fit Lab. If they accept, you can message each other to plan the details.</p>
       <div class="field"><label for="rqG" class="req">What are you looking for?</label><textarea id="rqG" maxlength="600" style="min-height:110px" placeholder="e.g. I'm 34, want to lose 8 kg and fix my knee pain. I can train 3 mornings a week."></textarea></div>
       <div class="field"><label for="rqP">Preferred days or times</label><input id="rqP" maxlength="120" placeholder="e.g. Weekday mornings"></div>`,
       foot: `<button class="pill ghost" data-no>Cancel</button><button class="pill solid" data-ok>Send request</button>` });
