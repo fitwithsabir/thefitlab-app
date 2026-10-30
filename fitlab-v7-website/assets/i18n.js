@@ -548,7 +548,8 @@
       var dbx = dbLangs && dbLangs[code];
       var state = on ? '<span class="lang-st on">Current</span>'
         : (code === 'en' || BUILT.indexOf(code) >= 0 || downloaded().indexOf(code) >= 0 || (dbx && dbx.status === 'ready')) ? ''
-        : dbx && (dbx.status === 'working' || dbx.status === 'queued') ? '<span class="lang-st">Being translated</span>'
+        : dbx && dbx.status === 'working' ? '<span class="lang-st">Being translated</span>'
+        : dbx && dbx.status === 'queued' ? '<span class="lang-st">Requested</span>'
         : '<span class="lang-st dl">Download</span>';
       return '<button type="button" class="lang-it' + (on ? ' on' : '') + '" data-code="' + esc(code) + '" lang="' + esc(code) + '" dir="' + (RTL.indexOf(code) >= 0 ? 'rtl' : 'ltr') + '">' +
         '<span class="lang-nm" translate="no">' + esc(n.native) + '</span>' + (n.english !== n.native ? '<span class="lang-en" translate="no">' + esc(n.english) + '</span>' : '') + state + '</button>';
@@ -599,6 +600,11 @@
         var msg = r.data && r.data.message ? r.data.message : 'The download could not start. Please try again.';
         if (r.status === 401 || (r.data && r.data.code === 'signin')) msg = 'Sign in to download a new language.';
         show('<span class="lang-err">' + esc(msg) + '</span>');
+        return;
+      }
+      if (r.data.manual && r.data.status !== 'ready') {
+        show('<span><b translate="no">' + esc(n.native) + '</b> is on the list. It will appear here as soon as it has been translated and checked.</span>');
+        if (dbLangs) dbLangs[code] = { lang: code, status: 'queued' };
         return;
       }
       poll(code, show);
