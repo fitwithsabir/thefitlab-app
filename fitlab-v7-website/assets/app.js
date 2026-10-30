@@ -317,6 +317,73 @@
       el.querySelectorAll('[data-look-set]').forEach((b) => b.addEventListener('click', () => setTimeout(() => el.remove(), 900)));
       el.querySelector('[data-ln-x]').onclick = () => { try { localStorage.setItem('fl:looknudge', String(Date.now() + 30 * 86400000)); } catch (_) {} el.remove(); };
     },
+    // a pop-up for signed-in members who have no profile photo yet ("Later" hides it for 3 days).
+    // ?add=photo (the reminder email's button) opens it straight away.
+    photoPrompt(profile, force = false) {
+      if (!profile || !profile.id || !profile.profile_completed || profile.photo_url) return;
+      const file = (location.pathname.split('/').pop() || 'index').replace('.html', '');
+      if (['register', 'admin', 'exam', 'lesson', 'verify', 'certificate', 'chat'].includes(file)) return;
+      const snooze = (days) => { try { localStorage.setItem('fl:photoprompt', String(Date.now() + days * 86400000)); } catch (_) {} };
+      if (!force) {
+        let until = 0; try { until = +localStorage.getItem('fl:photoprompt') || 0; } catch (_) {}
+        if (Date.now() < until || document.querySelector('.mdl')) return;
+      }
+      let done = false;
+      const m = this.modal({ title: 'Add your profile photo',
+        body: `<div class="photo-ask">
+            <div class="pa-av">${this.avatarHtml(profile, 'avatar lg')}<span class="pa-cam">${icon('camera', 18)}</span></div>
+            <p>People connect, reply and hire faster when they can see who you are. Your photo also goes on your Fit Lab certificate.</p>
+            <ul class="pa-tips"><li>Your face, clearly visible</li><li>Good light and a plain background</li><li>Just you, with no logos or group photos</li></ul>
+          </div>`,
+        foot: `<button class="pill ghost" type="button" data-later>Later</button><button class="pill solid" type="button" data-add>${icon('camera', 16)}Choose a photo</button>`,
+        onClose: () => { if (!done) snooze(1); } });
+      m.q('[data-later]').onclick = () => { snooze(3); done = true; m.close(); };
+      const add = m.q('[data-add]');
+      add.onclick = () => {
+        const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/jpeg,image/png,image/webp';
+        inp.onchange = async () => {
+          const f = inp.files[0]; if (!f) return;
+          this.busy(add, true, 'Uploading…');
+          try {
+            const url = await this.uploadImage(f, { bucket: 'avatars', path: `${profile.id}/avatar.jpg`, square: true, max: 800, format: 'jpeg' });
+            const { error } = await sb.from('profiles').update({ photo_url: url }).eq('id', profile.id);
+            if (error) throw error;
+            done = true; m.close();
+            const fresh = await this.getProfile(true);
+            this.renderHeader(fresh || { ...profile, photo_url: url });
+            window.dispatchEvent(new CustomEvent('fl:photo', { detail: { url } }));
+            this.toast('Your profile photo is on', 'ok');
+          } catch (e) { this.busy(add, false); this.toast(this.friendly(e), 'err'); }
+        };
+        this.photoCheck.warm(); inp.click();
+      };
+    },
+    // "Ask The Fit Lab" — the round button at the bottom right (the panel itself is assets/ask.js, loaded on first tap)
+    askFab(profile) {
+      document.querySelectorAll('.ask-fab').forEach((e) => e.remove());
+      if (!profile || !profile.id || !profile.profile_completed) return;
+      const file = (location.pathname.split('/').pop() || 'index').replace('.html', '');
+      if (['register', 'admin', 'exam', 'lesson', 'messaging', 'chat', 'verify', 'certificate'].includes(file)) return;
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'ask-fab'; b.title = 'Ask The Fit Lab'; b.setAttribute('aria-label', 'Ask The Fit Lab');
+      b.innerHTML = `${icon('sparkles', 22)}<span class="ask-fab-tx">Ask</span>`;
+      b.onclick = () => this.openAsk();
+      document.body.appendChild(b);
+      // on phones the feed's own "post" button sits in the same corner: go above it
+      const post = document.querySelector('.fab');
+      if (post && getComputedStyle(post).display !== 'none') b.classList.add('ask-up');
+      if (new URLSearchParams(location.search).get('ask') === '1') setTimeout(() => this.openAsk(), 300);
+    },
+    openAsk() {
+      if (window.FLAsk) return window.FLAsk.open();
+      if (this._askLoading) return;
+      this._askLoading = true;
+      const s = document.createElement('script');
+      s.src = 'assets/ask.js';
+      s.onload = () => { this._askLoading = false; if (window.FLAsk) window.FLAsk.open(); };
+      s.onerror = () => { this._askLoading = false; s.remove(); this.toast('Couldn\'t open the chat. Check your connection and try again.', 'err'); };
+      document.head.appendChild(s);
+    },
     // small day/night button for pages people see before signing in
     themeToggleHtml() {
       const dark = this.theme.isDark();
@@ -409,7 +476,7 @@
     },
     pageLogo(pg, cls = 'co-logo') {
       if (pg && pg.logo_url) return `<img class="${cls}" src="${esc(pg.logo_url)}" alt="" loading="lazy">`;
-      return `<span class="${cls}">${icon('building', cls === 'co-logo' ? 22 : 30)}</span>`;
+      return `<span class="${cls}">${icon('building', / mi\b/.test(cls) ? 13 : cls === 'co-logo' ? 22 : 30)}</span>`;
     },
     // Premium upsell — shown whenever a Premium feature is tapped
     upsell(title, text, plan = 'pro') {
@@ -970,6 +1037,7 @@
           <button class="lnk" type="button" id="meInstall" hidden>${icon('phone', 18)}Install the app</button>
           <a href="courses">${icon('award', 18)}Courses &amp; certificates</a>
           <button class="lnk" type="button" data-guidelines>${icon('shield', 18)}Community guidelines</button>
+          <button class="lnk" type="button" data-ask>${icon('sparkles', 18)}Ask The Fit Lab</button>
           <a href="mailto:${esc(cfg.SUPPORT_EMAIL || '')}">${icon('help', 18)}Help</a></div>
         <div class="me-sec"><h6>For gyms &amp; studios</h6><a href="hire">${icon('hire', 18)}Hire a coach</a>
           ${(profile.is_admin || profile.is_owner) ? `<a href="admin">${icon('shield', 18)}Admin control room</a>` : ''}</div>
@@ -998,7 +1066,7 @@
       }).catch(() => {});
       sb.rpc('my_pages').then(({ data }) => {
         const el = document.getElementById('meMyPages');
-        if (el && data && data.length) el.innerHTML = data.slice(0, 3).map((p) => `<a href="company?p=${encodeURIComponent(p.slug)}">${icon('building', 18)}${esc(p.name)}</a>`).join('');
+        if (el && data && data.length) el.innerHTML = data.slice(0, 3).map((p) => `<a href="company?p=${encodeURIComponent(p.slug)}">${this.pageLogo(p, 'co-logo mi')}<span translate="no">${esc(p.name)}</span></a>`).join('');
       }).catch(() => {});
       this.wireCommon(document);
       this.refreshCounts();
@@ -1010,6 +1078,12 @@
       window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); this._installEvt = e; const a = document.getElementById('meInstall'); if (a) a.hidden = false; });
       if (!this.isStandalone() && this.isIOS()) { const a = document.getElementById('meInstall'); if (a) a.hidden = false; }
       if (profile.id) this.dailyTick(profile.id);
+      this.askFab(profile);
+      if (profile.id && !profile.photo_url && !this._photoAsked) {
+        this._photoAsked = true;
+        const force = new URLSearchParams(location.search).get('add') === 'photo';
+        setTimeout(() => this.photoPrompt(profile, force), force ? 400 : 2500);
+      }
       document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') this.refreshCounts(); });
     },
 
@@ -1018,6 +1092,7 @@
       root.querySelectorAll('[data-theme-set]').forEach((b) => { b.onclick = () => this.theme.set(b.dataset.themeSet); });
       root.querySelectorAll('[data-look-set]').forEach((b) => { b.onclick = () => this.look.set(b.dataset.lookSet); });
       root.querySelectorAll('[data-guidelines]').forEach((b) => { b.onclick = (e) => { e.preventDefault(); this.guidelines(true); }; });
+      root.querySelectorAll('[data-ask]').forEach((b) => { b.onclick = (e) => { e.preventDefault(); this.openAsk(); }; });
     },
 
     async refreshCounts() {

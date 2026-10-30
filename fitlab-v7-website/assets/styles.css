@@ -902,6 +902,7 @@ body.app .footer{margin-top:40px}
 .co-logo{width:48px;height:48px;border-radius:8px;object-fit:cover;background:var(--panel-2);border:1px solid var(--line);display:grid;place-items:center;color:var(--ash);flex:none}
 .co-logo.sm{width:40px;height:40px}
 .co-logo.xs{width:28px;height:28px;border-radius:6px}
+.co-logo.mi{width:20px;height:20px;border-radius:5px}
 .co-logo-lg{width:clamp(84px,14vw,120px);height:clamp(84px,14vw,120px);border-radius:12px;border:4px solid var(--panel);margin-top:calc(clamp(84px,14vw,120px) / -2);
   object-fit:cover;background:var(--panel-2);display:grid;place-items:center;color:var(--ash);position:relative}
 
@@ -986,6 +987,74 @@ body.app .footer{margin-top:40px}
 .checklist li .pts{margin-left:auto;font:700 12px var(--mono);color:var(--lime)}
 .checklist li.neg .pts{color:var(--danger-text)}
 .codebox{font:700 15px var(--mono);background:var(--panel-2);border:1px dashed var(--line-2);border-radius:10px;padding:12px 14px;word-break:break-all;user-select:all}
+
+/* "Ask The Fit Lab" button + chat panel (fix-38) */
+.ask-fab{position:fixed;right:max(16px,calc((100vw - 1180px) / 2 + 16px));bottom:22px;z-index:56;display:flex;align-items:center;gap:8px;height:50px;padding:0 20px 0 16px;
+  border-radius:999px;border:0;cursor:pointer;background:var(--fill);color:var(--on-fill);font:700 15px var(--body);box-shadow:var(--shadow-lg);-webkit-tap-highlight-color:transparent}
+.ask-fab:active{transform:scale(.97)}
+body.ask-open .ask-fab{display:none}
+@media (max-width:767px){
+  .ask-fab{right:16px;bottom:calc(var(--bottombar) + 16px + env(safe-area-inset-bottom));width:48px;height:48px;padding:0;justify-content:center;
+    background:var(--panel);color:var(--lime);border:1px solid var(--line-2)}
+  .ask-fab.ask-up{bottom:calc(var(--bottombar) + 82px + env(safe-area-inset-bottom))}
+  .ask-fab-tx{display:none}
+}
+.ask-panel{position:fixed;right:max(16px,calc((100vw - 1180px) / 2 + 16px));bottom:22px;z-index:85;width:min(390px,calc(100vw - 32px));height:min(600px,calc(100dvh - var(--topbar) - 40px));
+  display:none;flex-direction:column;background:var(--panel);border:1px solid var(--line-2);border-radius:var(--r-box,16px);box-shadow:var(--shadow-lg);overflow:hidden}
+.ask-panel.on{display:flex;animation:flRise .16s ease-out}
+@media (max-width:767px){
+  .ask-panel{left:0;right:0;bottom:0;width:100%;height:min(88dvh,calc(100dvh - 40px));border-radius:18px 18px 0 0;border-bottom:0;padding-bottom:env(safe-area-inset-bottom)}
+}
+.ask-dim{display:none}
+@media (max-width:767px){.ask-dim.on{display:block;position:fixed;inset:0;z-index:84;background:var(--overlay);animation:flFade .15s ease-out}}
+.ask-head{display:flex;align-items:center;gap:10px;padding:12px 10px 12px 16px;border-bottom:1px solid var(--line)}
+.ask-ic{flex:none;width:36px;height:36px;border-radius:11px;display:grid;place-items:center;background:color-mix(in srgb,var(--lime) 15%,transparent);color:var(--lime)}
+.ask-ttl{flex:1;min-width:0;display:flex;flex-direction:column}
+.ask-ttl b{font-size:16px;color:var(--bone)}
+.ask-ttl span{font-size:12.5px;color:var(--ash)}
+.ask-body{flex:1;overflow-y:auto;padding:14px 14px 6px;display:flex;flex-direction:column;gap:10px;overscroll-behavior:contain}
+.ask-load{margin:auto;color:var(--ash);animation:flFade 1s ease-in-out infinite alternate}
+.ask-intro{margin:auto 0;text-align:center;padding:8px 6px}
+.ask-intro-ic{display:inline-grid;place-items:center;width:52px;height:52px;border-radius:16px;background:color-mix(in srgb,var(--lime) 14%,transparent);color:var(--lime);margin-bottom:10px}
+.ask-intro b{display:block;font-size:17px;color:var(--bone);line-height:1.35}
+.ask-intro p{margin:6px auto 14px;font-size:13.5px;color:var(--ash);line-height:1.5;max-width:300px}
+.ask-chips{display:flex;flex-direction:column;gap:8px;align-items:stretch}
+.ask-chips button{display:flex;align-items:center;gap:9px;padding:10px 14px;border-radius:12px;border:1px solid var(--line-2);background:var(--panel-2);color:var(--bone);
+  font:600 14px var(--body);cursor:pointer;text-align:left}
+.ask-chips button svg{color:var(--lime);flex:none}
+.ask-chips button:hover{border-color:var(--lime)}
+.ask-ideas{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--panel-2)}
+.ask-ideas h6{margin:0 0 6px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--ash)}
+.ask-idea{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:4px 0;font-size:13.5px;color:var(--bone)}
+.ask-idea span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ask-st{flex:none;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:color-mix(in srgb,var(--ash) 16%,transparent);color:var(--ash)}
+.ask-st.st-planned,.ask-st.st-building{background:color-mix(in srgb,var(--lime) 16%,transparent);color:var(--lime)}
+.ask-st.st-done{background:var(--fill);color:var(--on-fill)}
+.ask-msg{display:flex;flex-direction:column;align-items:flex-start;max-width:86%}
+.ask-msg.me{align-self:flex-end;align-items:flex-end}
+.ask-who{display:flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:var(--ash);margin:0 4px 3px}
+.ask-who svg{color:var(--lime)}
+.ask-bub{padding:9px 13px;border-radius:16px;font-size:14.5px;line-height:1.5;color:var(--bone);background:var(--panel-2);border:1px solid var(--line);word-break:break-word}
+.ask-bub a{color:var(--lime);text-decoration:underline}
+.ask-msg.me .ask-bub{background:var(--fill);color:var(--on-fill);border-color:transparent;border-bottom-right-radius:6px}
+.ask-msg.me .ask-bub a{color:inherit}
+.ask-msg.ai .ask-bub,.ask-msg.team .ask-bub{border-bottom-left-radius:6px}
+.ask-msg.team .ask-bub{border-color:color-mix(in srgb,var(--lime) 45%,var(--line))}
+.ask-msg.note{align-self:center;max-width:94%}
+.ask-msg.note .ask-bub{background:transparent;border:1px dashed var(--line-2);color:var(--ash);font-size:13px;text-align:center}
+.ask-msg time{font-size:11px;color:var(--ash);margin:3px 6px 0}
+.ask-msg.typing .ask-bub{display:flex;gap:4px;padding:13px 14px}
+.ask-msg.typing i{width:7px;height:7px;border-radius:50%;background:var(--ash);animation:askDot 1.1s infinite ease-in-out}
+.ask-msg.typing i:nth-child(2){animation-delay:.15s}.ask-msg.typing i:nth-child(3){animation-delay:.3s}
+@keyframes askDot{0%,80%,100%{opacity:.3;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+.ask-foot{display:flex;align-items:flex-end;gap:8px;padding:10px 12px 6px;border-top:1px solid var(--line)}
+.ask-foot textarea{flex:1;resize:none;min-height:42px;max-height:140px;padding:10px 14px;border-radius:21px;border:1px solid var(--line-2);background:var(--field);color:var(--bone);
+  font:15px/1.4 var(--body);outline:none}
+.ask-foot textarea:focus{border-color:var(--lime)}
+.ask-send{flex:none;width:42px;height:42px;border-radius:50%;border:0;display:grid;place-items:center;background:var(--fill);color:var(--on-fill);cursor:pointer}
+.ask-send:disabled{opacity:.5;cursor:default}
+.ask-fine{font-size:11px;color:var(--ash);text-align:center;padding:0 12px 9px}
+@media (prefers-reduced-motion:reduce){.ask-panel.on{animation:none}.ask-msg.typing i{animation:none}}
 
 /* floating "post" button on phones (feed) */
 .fab{display:none}
@@ -1158,6 +1227,14 @@ a.bkrow:hover{background:var(--hover);text-decoration:none}
 .theme-tgl svg{display:block}
 
 /* ask to turn on pop-up notifications (fix-28) */
+.photo-ask{text-align:center}
+.photo-ask .pa-av{position:relative;width:120px;margin:6px auto 16px}
+.photo-ask .pa-av .avatar.lg{margin:0 auto}
+.photo-ask .pa-cam{position:absolute;right:2px;bottom:2px;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--fill,var(--lime));color:var(--on-fill,var(--on-lime));border:3px solid var(--panel)}
+.photo-ask p{margin:0 auto 12px;max-width:380px;line-height:1.55;color:var(--bone)}
+.photo-ask .pa-tips{list-style:none;margin:0 auto;padding:0;max-width:300px;text-align:left;display:grid;gap:6px}
+.photo-ask .pa-tips li{position:relative;padding-left:22px;font-size:13.5px;color:var(--ash)}
+.photo-ask .pa-tips li::before{content:"";position:absolute;left:4px;top:.45em;width:8px;height:8px;border-radius:50%;background:var(--lime)}
 .push-nudge{display:flex;gap:14px;align-items:center;padding:14px 16px;border-color:color-mix(in srgb,var(--lime) 40%,var(--line))}
 .push-nudge .pn-ic{flex:none;width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--lime) 14%,transparent);color:var(--lime)}
 .push-nudge .pn-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}

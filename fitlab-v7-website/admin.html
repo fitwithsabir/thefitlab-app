@@ -84,6 +84,23 @@
   .cr-tools input,.cr-tools select{height:40px;padding-top:0;padding-bottom:0;font-size:14px;flex:1;min-width:200px}
   .cr-tools select{flex:0 1 260px}
   .lrow{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:13px 20px;border-top:1px solid var(--line)}
+  /* ideas & feedback (fix-38) */
+  .st-new{background:color-mix(in srgb,var(--warn) 14%,transparent);color:var(--warn)}
+  .st-planned,.st-building{background:color-mix(in srgb,#3b82f6 14%,transparent);color:#4f8ff7}
+  .st-done{background:var(--accent-soft);color:var(--lime)}
+  .st-declined{background:var(--panel-2);color:var(--ash)}
+  .id-row{cursor:pointer}
+  .id-row:hover{background:color-mix(in srgb,var(--bone) 3%,transparent)}
+  .id-last{font-size:13.5px;color:var(--ash);margin-top:3px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .id-unread{font-weight:700;color:var(--bone)}
+  .id-chat{display:flex;flex-direction:column;gap:10px;max-height:46vh;overflow-y:auto;padding:4px 2px 8px}
+  .id-m{max-width:88%;align-self:flex-start}
+  .id-m.member{align-self:flex-end}
+  .id-m .bub{padding:9px 12px;border-radius:14px;background:var(--panel-2);border:1px solid var(--line);font-size:14px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+  .id-m.member .bub{background:var(--accent-soft);border-color:var(--accent-line)}
+  .id-m .meta{font-size:11.5px;color:var(--ash);margin:3px 4px 0}
+  .id-m.member .meta{text-align:right}
+  .id-links{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 2px}
   .lrow .who{display:flex;gap:12px;align-items:center;min-width:0;flex:1 1 280px}
   .lrow .who > div{min-width:0}
   .acts{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
@@ -373,6 +390,7 @@
     { id: 'members', label: 'Members', icon: 'users', group: 'People', need: 'members' },
     { id: 'team', label: 'Admin team', icon: 'shield', group: 'People', need: 'team' },
     { id: 'activity', label: 'Activity log', icon: 'activity', group: 'People', need: 'team', short: 'Activity' },
+    { id: 'ideas', label: 'Ideas & feedback', icon: 'sparkles', group: 'People', need: 'members', cnt: 'ideas', short: 'Ideas' },
     { id: 'moderation', label: 'Reports', icon: 'flag', group: 'Trust & safety', need: 'moderation', cnt: 'reports' },
     { id: 'verify', label: 'Verification', icon: 'tick', group: 'Trust & safety', need: 'verification', cnt: 'verification' },
     { id: 'conduct', label: 'Settings & rules', icon: 'settings', group: 'Trust & safety', need: 'moderation', short: 'Rules' },
@@ -1603,6 +1621,128 @@
     await load();
   };
 
+  // ------------------------------------------------------------------ IDEAS & FEEDBACK (fix-38)
+  // Messages from the "Ask The Fit Lab" button. Nothing here changes the site by itself:
+  // the team replies, files needs as ideas, and decides what gets built.
+  const IDEA_ST = [['new', 'New'], ['planned', 'Planned'], ['building', 'Being built'], ['done', 'Live'], ['declined', 'Declined']];
+  const IDEA_CAT = [['feature', 'Feature'], ['problem', 'Something broken'], ['content', 'Content'], ['design', 'Design'], ['other', 'Other']];
+  const ideaSt = (s) => (IDEA_ST.find(([k]) => k === s) || [s, s])[1];
+  const refreshIdeaCount = () => sb.rpc('admin_idea_counts').then(({ data }) => { if (data) setCount('ideas', (data.unread || 0) + (data.new_ideas || 0)); }).catch(() => {});
+
+  function ideaModal(idea, opts = {}) {
+    return new Promise((resolve) => {
+      const it = idea || {};
+      let done = false;
+      const sel = (id, list, v) => `<select id="${id}">${list.map(([k, l]) => `<option value="${k}" ${k === v ? 'selected' : ''}>${E(l)}</option>`).join('')}</select>`;
+      const m = FL.modal({ title: it.id ? 'Edit idea' : 'New idea',
+        body: `<div class="field"><label for="iTitle" class="req">Title</label><input id="iTitle" maxlength="140" value="${E(it.title || '')}" placeholder="e.g. Meal plans in Telugu"><span class="help">What to build or fix, in a few words</span></div>
+          <div class="field"><label for="iSum">What members need</label><textarea id="iSum" maxlength="1200" placeholder="Who asked, what they need and why">${E(it.summary || '')}</textarea></div>
+          <div class="row2"><div class="field"><label for="iCat">Type</label>${sel('iCat', IDEA_CAT, it.category || 'feature')}</div>
+            <div class="field"><label for="iSt">Status</label>${sel('iSt', IDEA_ST, it.status || 'planned')}<span class="help">Marking it Live tells everyone who asked</span></div></div>
+          <div class="field" style="margin:0"><label for="iNote">Team note <span class="muted">(only the team sees this)</span></label><textarea id="iNote" maxlength="600">${E(it.team_note || '')}</textarea></div>`,
+        foot: `${it.id ? '<button class="pill red-o" data-del style="margin-right:auto">Delete</button>' : ''}<button class="pill ghost" data-no>Cancel</button><button class="pill solid" data-ok>Save</button>`,
+        onClose: () => { if (!done) resolve(null); } });
+      m.q('[data-no]').onclick = m.close;
+      if (it.id) m.q('[data-del]').onclick = async () => {
+        if (!(await FL.confirm('Delete this idea?', 'It disappears from the board and from the members\' "Your ideas" list.', 'Delete', true))) return;
+        if (await act('admin_idea_delete', { p_idea: it.id }, 'Idea deleted')) { done = true; m.close(); resolve('deleted'); }
+      };
+      m.q('[data-ok]').onclick = async (e) => {
+        const v = { id: it.id || '', title: m.q('#iTitle').value.trim(), summary: m.q('#iSum').value.trim(), category: m.q('#iCat').value,
+          status: m.q('#iSt').value, team_note: m.q('#iNote').value.trim(), chat_id: opts.chatId || '' };
+        if (v.title.length < 3) return FL.toast('Give the idea a short title', 'err');
+        if (v.status === 'done' && it.status !== 'done' && it.askers > 0
+            && !(await FL.confirm('Mark it Live?', `${plural(it.askers, 'member')} who asked for it will get a notification.`, 'Mark Live'))) return;
+        FL.busy(e.target, true, 'Saving…');
+        const r = await act('admin_idea_save', { p: v }, it.id ? 'Idea saved' : 'Idea added');
+        FL.busy(e.target, false);
+        if (r) { done = true; m.close(); resolve(r); }
+      };
+    });
+  }
+
+  VIEWS.ideas = async (alive, sub) => {
+    let f = ['inbox', ...IDEA_ST.map(([k]) => k)].includes(sub) ? sub : 'inbox', data = null;
+    $('view').innerHTML = `<div class="box"><div class="box-head"><div><h2>Ideas &amp; feedback</h2><div class="sub">Messages from the Ask button on every page. Reply, and file each need as an idea — members see its status and are told when it goes live.</div></div>
+        <button class="pill sm" type="button" id="idNew">${I('plus', 15)}New idea</button></div>
+      <div class="catbar" id="idF"></div><div id="idList">${spinner}</div></div>`;
+    const bar = () => {
+      const c = (k) => k === 'inbox' ? (data ? data.unread : 0) : (data ? data.ideas.filter((i) => i.status === k).length : 0);
+      $('idF').innerHTML = [['inbox', 'Inbox'], ...IDEA_ST].map(([k, l]) => `<button type="button" data-f="${k}" class="${k === f ? 'on' : ''}">${E(l)}${c(k) ? ` · ${n(c(k))}` : ''}</button>`).join('');
+      $('idF').querySelectorAll('[data-f]').forEach((b) => { b.onclick = () => { f = b.dataset.f; history.replaceState(null, '', '#ideas/' + f); bar(); list(); }; });
+    };
+    const list = () => {
+      const box = $('idList');
+      if (f === 'inbox') {
+        const rows = data.chats || [];
+        box.innerHTML = rows.length ? rows.map((c) => `<div class="lrow id-row" data-chat="${E(c.chat_id)}"><div class="who">${FL.avatarHtml(c.user, 'avatar sm')}<div>
+            <div class="nm"><b>${E(c.user.full_name || 'Member')}</b>${c.unread ? `<span class="st st-new">${plural(c.unread, 'new message')}</span>` : ''}${c.status === 'closed' ? '<span class="st">Closed</span>' : ''}</div>
+            <div class="id-last ${c.unread ? 'id-unread' : ''}">${c.last_role === 'team' ? 'You: ' : c.last_role === 'ai' ? 'AI: ' : ''}${E(c.last || '')}</div></div></div>
+          <div class="sub">${E(ago(c.last_at))} · ${plural(c.count, 'message')}</div></div>`).join('')
+          : '<div class="empty"><b>No messages yet</b>When members use the Ask button, their messages appear here.</div>';
+        box.querySelectorAll('[data-chat]').forEach((r) => { r.onclick = () => openChat(r.dataset.chat); });
+        return;
+      }
+      const rows = (data.ideas || []).filter((i) => i.status === f);
+      box.innerHTML = rows.length ? rows.map((i) => `<div class="lrow id-row" data-idea="${E(i.id)}"><div class="who"><div>
+          <div class="nm"><b>${E(i.title)}</b><span class="tg">${E((IDEA_CAT.find(([k]) => k === i.category) || ['', i.category])[1])}</span>${i.source === 'ai' ? '<span class="tg ok">Filed by AI</span>' : ''}</div>
+          ${i.summary ? `<div class="id-last">${E(i.summary)}</div>` : ''}${i.team_note ? `<div class="sub" style="margin-top:3px">Note: ${E(i.team_note)}</div>` : ''}</div></div>
+        <div class="sub">${i.askers ? plural(i.askers, 'member') + ' asked' : 'Added by the team'} · ${E(ago(i.updated_at))}</div></div>`).join('')
+        : `<div class="empty"><b>Nothing ${E(ideaSt(f).toLowerCase())}</b>${f === 'new' ? 'Ideas the AI files from members\' chats wait here for you.' : 'Change an idea\'s status to move it here.'}</div>`;
+      box.querySelectorAll('[data-idea]').forEach((r) => { r.onclick = async () => { const it = data.ideas.find((x) => x.id === r.dataset.idea); if (await ideaModal(it)) load(); }; });
+    };
+    async function openChat(id) {
+      const { data: c, error } = await sb.rpc('admin_idea_chat', { p_chat: id });
+      if (error || !c) return FL.toast(FL.friendly(error || 'Not found'), 'err');
+      const open = (data.ideas || []).filter((i) => !['done', 'declined'].includes(i.status));
+      const linked = new Set(c.linked || []);
+      const msgs = (c.messages || []).map((m) => `<div class="id-m ${m.role}"><div class="bub">${E(m.body)}</div>
+        <div class="meta">${m.role === 'member' ? E(first(c.user.full_name)) : m.role === 'ai' ? 'AI helper' : E(m.by || 'Team')} · ${E(ago(m.at))}${m.page && m.role === 'member' ? ` · on ${E(m.page)}` : ''}</div></div>`).join('');
+      const m = FL.modal({ wide: true, title: c.user.full_name || 'Member',
+        body: `<div class="sub" style="margin:-6px 0 10px">${c.user.headline ? E(c.user.headline) + ' · ' : ''}<a href="profile?u=${encodeURIComponent(c.user.username || '')}" target="_blank" rel="noopener">View profile</a></div>
+          <div class="id-chat" id="idChat">${msgs || '<div class="empty">No messages</div>'}</div>
+          <div class="id-links">${[...linked].map((x) => { const it = data.ideas.find((i) => i.id === x); return it ? `<span class="st st-${E(it.status)}">${E(it.title)}</span>` : ''; }).join('')}</div>
+          <div class="row2" style="align-items:end;margin-top:8px">
+            <div class="field" style="margin:0"><label for="idLink">Add to an idea</label><select id="idLink"><option value="">Choose an idea…</option>
+              ${open.filter((i) => !linked.has(i.id)).map((i) => `<option value="${E(i.id)}">${E(i.title)} (${E(ideaSt(i.status))})</option>`).join('')}</select></div>
+            <button class="pill" type="button" id="idFile">${I('plus', 15)}File as a new idea</button></div>
+          <div class="field" style="margin:14px 0 0"><label for="idReply">Reply to ${E(first(c.user.full_name))}</label>
+            <textarea id="idReply" maxlength="2000" placeholder="They see it in the chat and get a notification"></textarea></div>`,
+        foot: `<button class="pill ghost" data-no>Close</button><button class="pill solid" data-send>${I('send', 15)}Send reply</button>` });
+      const ch = m.q('#idChat'); ch.scrollTop = ch.scrollHeight;
+      m.q('[data-no]').onclick = m.close;
+      m.q('#idLink').onchange = async (e) => {
+        if (!e.target.value) return;
+        if (await act('admin_idea_link', { p_chat: id, p_idea: e.target.value, p_on: true }, 'Added to the idea')) { m.close(); await load(); openChat(id); }
+      };
+      m.q('#idFile').onclick = async () => {
+        const lastMember = [...(c.messages || [])].reverse().find((x) => x.role === 'member');
+        m.close();
+        if (await ideaModal({ status: 'planned', summary: lastMember ? lastMember.body.slice(0, 1200) : '' }, { chatId: id })) await load();
+      };
+      m.q('[data-send]').onclick = async (e) => {
+        const body = m.q('#idReply').value.trim();
+        if (!body) return FL.toast('Write a reply first', 'err');
+        FL.busy(e.target, true, 'Sending…');
+        const ok = await act('admin_idea_reply', { p_chat: id, p_body: body }, 'Reply sent');
+        FL.busy(e.target, false);
+        if (ok) { m.close(); await load(); }
+      };
+      refreshIdeaCount();
+    }
+    async function load() {
+      const r = await sb.rpc('admin_ideas_overview');
+      if (!alive()) return;
+      if (r.error) { $('idList').innerHTML = `<div class="empty">${E(FL.friendly(r.error))}</div>`; return; }
+      data = r.data || { chats: [], ideas: [] };
+      setCount('ideas', (data.unread || 0) + (data.new_ideas || 0));
+      bar(); list();
+    }
+    $('idNew').onclick = async () => { if (await ideaModal(null)) load(); };
+    reloadView = load;
+    await load();
+  };
+
   // ------------------------------------------------------------------ ANNOUNCEMENTS
   VIEWS.broadcast = async () => {
     const KIND = { info: ['Announcement', 'bell'], launch: ['Course launch', 'courses'], motivation: ['Motivation', 'zap'] };
@@ -1641,6 +1781,7 @@
   // ------------------------------------------------------------------ start
   go();
   if (current !== 'overview') sb.rpc('admin_overview').then(({ data }) => { if (data) applyCounts(data.attention); });
+  if (can('members')) refreshIdeaCount();
 })();
 </script>
 </body>
