@@ -611,6 +611,8 @@
     const asb = $('allSkills'); if (asb) asb.onclick = () => { $('skills').outerHTML = skills(true); };
   }
 
+  // the site-wide "add your photo" pop-up finished — show the new photo here too
+  window.addEventListener('fl:photo', async () => { me = await FL.getProfile(true); await reload(); });
   async function reload() {
     const uname = (FL.param('u') || me.username).replace(/^@/, '');
     let { data, error } = await sb.rpc('get_profile_v10', { p_username: uname });
