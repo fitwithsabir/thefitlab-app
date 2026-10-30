@@ -1322,6 +1322,54 @@
   };
 
   window.FL = FL;
+
+  // Pop-up menus ("…" on posts, More, Add profile section) are added next to their button, but
+  // cards hide anything that spills past their edge, so long menus were cut off inside the card.
+  // Each menu is lifted out: it opens in the same spot but is drawn above everything, opens
+  // upwards when there's no room below, and stays inside the screen. It stays where it is in the
+  // page, so each page's own click handling keeps working.
+  (function liftMenus() {
+    let lastBtn = null;
+    document.addEventListener('pointerdown', (e) => { lastBtn = e.target && e.target.closest ? e.target.closest('button,a,[role="button"]') : null; }, true);
+    const lifted = new Set();
+    const place = (pop) => {
+      if (pop.dataset.lifted || !pop.isConnected) return;
+      pop.dataset.lifted = '1';
+      pop.style.animation = 'none';                       // measure where it would sit, without the opening animation
+      const r = pop.getBoundingClientRect();
+      if (!r.width || !r.height) { pop.style.animation = ''; return; }
+      const m = 8, W = document.documentElement.clientWidth;
+      const bar = document.querySelector('.bottombar');                    // phones: stay clear of the bottom navigation
+      const bb = bar && getComputedStyle(bar).display !== 'none' ? bar.getBoundingClientRect().top : 0;
+      const H = bb > 0 ? Math.min(window.innerHeight, bb) : window.innerHeight;
+      let top = r.top, left = Math.min(Math.max(m, r.left), Math.max(m, W - r.width - m));
+      if (top + r.height > H - m) {
+        const b = lastBtn && lastBtn.isConnected ? lastBtn.getBoundingClientRect() : null;
+        if (b && b.top - r.height - 6 >= m) top = b.top - r.height - 6;          // open above the button
+        else top = Math.max(m, H - r.height - m);                                // or as low as fits
+      }
+      Object.assign(pop.style, { position: 'fixed', top: top + 'px', left: left + 'px', right: 'auto', bottom: 'auto',
+        width: Math.ceil(r.width) + 'px', zIndex: '75', maxHeight: (H - 2 * m) + 'px', overflowY: 'auto' });
+      pop.dataset.y = String(window.scrollY); pop.dataset.top = String(top);
+      void pop.offsetWidth; pop.style.animation = '';
+      lifted.add(pop);
+    };
+    // the page scrolls under a lifted menu: move it with the page
+    window.addEventListener('scroll', () => {
+      lifted.forEach((pop) => {
+        if (!pop.isConnected) { lifted.delete(pop); return; }
+        pop.style.top = (+pop.dataset.top - (window.scrollY - +pop.dataset.y)) + 'px';
+      });
+    }, { passive: true });
+    const scan = (n) => {
+      if (n.nodeType !== 1) return;
+      if (n.classList.contains('menu-pop')) place(n);
+      else if (n.querySelectorAll) n.querySelectorAll('.menu-pop').forEach(place);
+    };
+    const start = () => new MutationObserver((list) => list.forEach((mu) => mu.addedNodes.forEach(scan)))
+      .observe(document.body, { childList: true, subtree: true });
+    if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
+  })();
   document.addEventListener('click', (e) => {
     const b = e.target && e.target.closest && e.target.closest('[data-theme-toggle]');
     if (b) FL.theme.set(FL.theme.isDark() ? 'light' : 'dark');
