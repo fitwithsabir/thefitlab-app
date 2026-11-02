@@ -995,6 +995,16 @@ body.app .footer{margin-top:40px}
 .checklist li.neg .pts{color:var(--danger-text)}
 .codebox{font:700 15px var(--mono);background:var(--panel-2);border:1px dashed var(--line-2);border-radius:10px;padding:12px 14px;word-break:break-all;user-select:all}
 
+/* access rule banner under the top bar (fix-41) */
+.acc-bar{background:color-mix(in srgb,var(--lime) 10%,var(--panel));border-bottom:1px solid color-mix(in srgb,var(--lime) 30%,var(--line))}
+.acc-bar.urgent{background:color-mix(in srgb,var(--warn,#e0a100) 14%,var(--panel));border-bottom-color:color-mix(in srgb,var(--warn,#e0a100) 40%,var(--line))}
+.acc-in{max-width:1180px;margin:0 auto;padding:9px 16px;display:flex;align-items:center;gap:10px;font-size:13.5px;line-height:1.45;color:var(--bone)}
+.acc-in > svg{flex:none;color:var(--lime)}
+.acc-bar.urgent .acc-in > svg{color:var(--warn,#e0a100)}
+.acc-in span{flex:1;min-width:0}
+.acc-in .pill{flex:none}
+@media (max-width:600px){ .acc-in{font-size:12.5px;padding:8px 12px} }
+
 /* "Ask The Fit Lab" button + chat panel (fix-38) */
 .ask-fab{position:fixed;right:max(16px,calc((100vw - 1180px) / 2 + 16px));bottom:22px;z-index:56;display:flex;align-items:center;gap:8px;height:50px;padding:0 20px 0 16px;
   border-radius:999px;border:0;cursor:pointer;background:var(--fill);color:var(--on-fill);font:700 15px var(--body);box-shadow:var(--shadow-lg);-webkit-tap-highlight-color:transparent}

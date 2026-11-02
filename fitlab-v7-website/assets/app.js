@@ -365,6 +365,51 @@
         this.photoCheck.warm(); inp.click();
       };
     },
+    // ---- who may use the network (fix-41): a licence/certificate, business proof, or a course
+    ACCESS_OPEN: ['access', 'register', 'settings', 'courses', 'academy', 'dashboard', 'lesson', 'exam', 'verify', 'certificate', 'notifications',
+      'tools', 'tools-ai', 'tools-diet', 'tools-workout', 'privacy', 'terms', 'refunds', 'about', 'contact', 'pricing', 'index', 'admin', 'offline'],
+    async myAccess(fresh) {
+      if (!fresh) { try { const c = JSON.parse(sessionStorage.getItem('fl:access') || 'null'); if (c && Date.now() - c.t < 120000) return c.v; } catch (_) {} }
+      const { data } = await sb.rpc('my_access');
+      try { sessionStorage.setItem('fl:access', JSON.stringify({ t: Date.now(), v: data })); } catch (_) {}
+      return data;
+    },
+    async accessCheck(profile) {
+      if (!profile || !profile.profile_completed || profile.is_admin || profile.is_owner) return;
+      const file = (location.pathname.split('/').pop() || 'index').replace('.html', '');
+      let a; try { a = await this.myAccess(file === 'access'); } catch (_) { return; }
+      if (!a || !a.rule_on || a.state === 'approved') return;
+      const own = file === 'profile' && (!this.param('u') || this.param('u') === profile.username);
+      if (a.state === 'locked' && !this.ACCESS_OPEN.includes(file) && !own) { location.replace('access'); return; }
+      if (file === 'access') return;
+      const doc = a.doc || {};
+      let html = '';
+      if (a.state === 'pending' || a.pending) html = `${icon('clock', 17)}<span><b>We're checking your document.</b> ${a.state === 'pending' ? 'You can look around; posting, messaging and connecting open once it\'s approved.' : 'You keep full access meanwhile.'}</span>`;
+      else if (a.state === 'grace') {
+        const d = Math.max(0, Math.ceil((new Date(a.deadline).getTime() - Date.now()) / 864e5));
+        html = `${icon('shield', 17)}<span><b>${doc.status === 'rejected' ? 'Your document wasn\'t approved.' : 'Verified professionals only.'}</b> ${this.accessAsk(a.need)} within ${d} day${d === 1 ? '' : 's'} to keep your access.</span><a class="pill solid sm" href="access">Do it now</a>`;
+      } else if (a.state === 'locked') html = `${icon('shield', 17)}<span><b>Join the network.</b> ${this.accessAsk(a.need)} to post, message and connect.</span><a class="pill solid sm" href="access">Get verified</a>`;
+      if (!html) return;
+      document.querySelectorAll('.acc-bar').forEach((e) => e.remove());
+      const bar = document.createElement('div');
+      bar.className = 'acc-bar' + (a.state === 'grace' && Math.ceil((new Date(a.deadline).getTime() - Date.now()) / 864e5) <= 3 ? ' urgent' : '');
+      bar.innerHTML = `<div class="acc-in">${html}</div>`;
+      const top = document.querySelector('.topbar');
+      if (top) top.after(bar); else document.body.prepend(bar);
+    },
+    accessAsk(need) {
+      return need === 'business' ? 'Upload business proof or enrol in a course'
+        : need === 'course' ? 'Enrol in a course or take the direct certification'
+        : 'Upload your licence or certificate, or enrol in a course';
+    },
+    accessNotice(data) {
+      const pending = data && data.state === 'pending';
+      const m = this.modal({ title: pending ? 'Waiting for approval' : 'Verified professionals only',
+        body: `<p style="margin:0;line-height:1.6">${esc(data && data.message || '')}</p>`,
+        foot: `<button class="pill ghost" data-no>Not now</button><a class="pill solid" href="access">${pending ? 'See status' : 'Get verified'}</a>` });
+      m.q('[data-no]').onclick = m.close;
+    },
+
     // "Ask The Fit Lab" — the round button at the bottom right (the panel itself is assets/ask.js, loaded on first tap)
     askFab(profile) {
       document.querySelectorAll('.ask-fab').forEach((e) => e.remove());
@@ -706,6 +751,7 @@
         }
         if (data.blocked) { this.notice(data.category === 'contact' ? 'Keep contact details off the network' : 'Not sent', data.message); return null; }
         if (data.code === 'suspended' || data.code === 'banned') { this.notice('Community access paused', data.message); return null; }
+        if (data.code === 'access') { this.accessNotice(data); return null; }
         if (data.code === 'premium') { this.upsell('Premium feature', data.message, /Recruiter/.test(data.message || '') ? 'recruiter' : 'pro'); return null; }
         if (!quiet) this.toast(data.message || 'That isn\'t allowed.', 'err');
         return null;
@@ -1098,6 +1144,7 @@
       if (!this.isStandalone() && this.isIOS()) { const a = document.getElementById('meInstall'); if (a) a.hidden = false; }
       if (profile.id) this.dailyTick(profile.id);
       this.askFab(profile);
+      this.accessCheck(profile);
       if (profile.id && !profile.photo_url && !this._photoAsked) {
         this._photoAsked = true;
         const force = new URLSearchParams(location.search).get('add') === 'photo';
