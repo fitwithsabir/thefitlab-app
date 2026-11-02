@@ -610,6 +610,7 @@
     form({ title, fields, values = {}, onSave, onDelete, wide = false, saveLabel = 'Save', note = '* Indicates required' }) {
       const fieldHtml = (f) => {
         if (f.html) return f.html;
+        if (f.type === 'place') return `<div class="geo-slot" id="f_${f.k}"></div>`;
         const v = values[f.k] ?? f.def ?? '';
         const lbl = `<label for="f_${f.k}" class="${f.req ? 'req' : ''}">${esc(f.label)}</label>`;
         let input;
@@ -625,7 +626,15 @@
       flush();
       const m = this.modal({ title, wide, body: `${note ? `<p class="t-xs muted" style="margin:0 0 12px">${esc(note)}</p>` : ''}${body}<div class="err hidden" id="fErr"></div>`,
         foot: `${onDelete ? `<button class="pill ghost left" data-del style="color:var(--danger-text);border-color:var(--line-2)">Delete</button>` : ''}<button class="pill solid" data-save>${esc(saveLabel)}</button>` });
-      const read = () => Object.fromEntries(fields.filter((f) => f.k).map((f) => { const el = m.q('#f_' + f.k); return [f.k, !el ? null : f.type === 'checkbox' ? el.checked : el.value.trim()]; }));
+      // location fields (assets/places.js): the value is { country, state, district, subdistrict, city }
+      const pickers = {};
+      fields.filter((f) => f.type === 'place').forEach((f) => {
+        this.loadScript('assets/places.js?v=6464b3dab4').then(() => window.FLPlaces.mount(m.q('#f_' + f.k), { value: values, levels: f.levels, country: f.country })).then((p) => { pickers[f.k] = p; })
+          .catch(() => { m.q('#f_' + f.k).innerHTML = `<div class="field"><label for="f_${f.k}_city">City</label><input id="f_${f.k}_city" maxlength="80" value="${esc(values.city || '')}"></div>`; });
+      });
+      const read = () => Object.fromEntries(fields.filter((f) => f.k).map((f) => {
+        if (f.type === 'place') { const fb = m.q('#f_' + f.k + '_city'); return [f.k, pickers[f.k] ? pickers[f.k].get() : { city: fb ? fb.value.trim() || null : null }]; }
+        const el = m.q('#f_' + f.k); return [f.k, !el ? null : f.type === 'checkbox' ? el.checked : el.value.trim()]; }));
       const err = m.q('#fErr');
       const showErr = (t) => { err.textContent = t; err.classList.remove('hidden'); err.scrollIntoView({ block: 'nearest' }); };
       m.q('[data-save]').onclick = async (e) => {

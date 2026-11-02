@@ -8,7 +8,7 @@
 <link rel="icon" href="assets/favicon.png">
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
 <script src="assets/theme.js?v=891b5cdc5d"></script>
-<link rel="stylesheet" href="assets/styles.css?v=9561985e78">
+<link rel="stylesheet" href="assets/styles.css?v=d92351a790">
 <style>
   .photo{display:grid;grid-template-columns:120px 1fr;gap:18px;align-items:center}
   .drop{border:1px dashed var(--line-2);border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:.15s;font-size:13px;color:var(--ash)}
@@ -57,15 +57,13 @@
             <select id="gender" required><option value="">Select</option><option value="male">Male</option><option value="female">Female</option></select>
             <span class="help" id="genderLocked" style="display:none">Gender is set — gyms can filter by it on the hire portal. Contact the Academy if it needs correcting.</span></div>
           <div class="field"><label for="dob">Date of birth</label><input id="dob" type="date"></div>
-          <div class="field"><label for="city">City</label><input id="city" placeholder="Kakinada"></div>
-          <div class="field"><label for="district">District</label><input id="district" placeholder="East Godavari"></div>
-          <div class="field"><label for="country">Country</label><input id="country" placeholder="India" value="India"></div>
+          <div id="placeSlot" style="grid-column:1/-1"></div>
           <div class="field"><label for="experience">Experience in health &amp; fitness</label>
             <select id="experience"><option value="">Select</option><option value="beginner">Beginner / aspiring coach</option><option value="1-3 years">1–3 years</option><option value="3+ years">3+ years</option></select></div>
         </div>
-        <div class="field"><label for="occupation">Current role</label><input id="occupation" placeholder="e.g. Trainer at ___ Gym · Freelance PT · Fitness enthusiast planning to coach"></div>
-        <div class="field"><label for="bio">Why do you want to become a better coach? <span class="ash" style="text-transform:none;letter-spacing:0;font-weight:500">(1–2 lines, shown on your portfolio)</span></label>
-          <textarea id="bio" maxlength="280" placeholder="e.g. I train 20+ clients a week and want to program with real understanding, not templates."></textarea></div>
+        <div class="field"><label for="occupation">Current role</label><input id="occupation" placeholder="e.g. Physiotherapist at ___ Clinic · Head Coach at ___ Gym · Freelance PT"></div>
+        <div class="field"><label for="bio">About you <span class="ash" style="text-transform:none;letter-spacing:0;font-weight:500">(1–2 lines, shown on your profile)</span></label>
+          <textarea id="bio" maxlength="280" placeholder="e.g. Sports physio for 6 years — knee and shoulder rehab for runners and lifters."></textarea></div>
 
         <label class="check"><input type="checkbox" id="consent" required>
           <span>I agree that my name, photo and course results may be shown to other members, on my public verification page, and on the Hire-a-Coach portal once I'm certified. I can change this in Settings.</span></label>
@@ -140,7 +138,7 @@
 
 <script src="config.js?v=e763b77801"></script>
 <script src="assets/vendor/supabase-2.118.0.js?v=8795eb1487"></script>
-<script src="assets/app.js?v=003d10932b"></script>
+<script src="assets/app.js?v=a67080c5c9"></script>
 <script src="assets/track.js?v=c458497b3e"></script>
 <script>
 (async function () {
@@ -156,10 +154,12 @@
 
   // Prefill
   $('full_name').value = profile.full_name || session.user.user_metadata?.full_name || '';
-  ['phone', 'gender', 'city', 'district', 'occupation', 'bio', 'username', 'headline'].forEach((k) => { if (profile[k]) $(k).value = profile[k]; });
+  ['phone', 'gender', 'occupation', 'bio', 'username', 'headline'].forEach((k) => { if (profile[k]) $(k).value = profile[k]; });
+  let place = null;
+  FL.loadScript('assets/places.js?v=6464b3dab4').then(() => FLPlaces.mount($('placeSlot'), { value: profile })).then((p) => { place = p; })
+    .catch(() => { $('placeSlot').innerHTML = '<div class="field"><label for="city">City, town or village</label><input id="city" maxlength="80"></div>'; if (profile.city) $('city').value = profile.city; });
   if (profile.guidelines_accepted_at) $('guide').checked = true;
   $('readGuide').onclick = (e) => { e.preventDefault(); FL.guidelines(true); };
-  if (profile.country) $('country').value = profile.country;
   if (profile.date_of_birth) $('dob').value = profile.date_of_birth;
   if (profile.experience_level) $('experience').value = profile.experience_level;
   FL.professions().then((list) => { $('profession').innerHTML = FL.professionOptions(list, profile.profession || '', 'Choose your profession'); });
@@ -280,9 +280,7 @@
         phone: $('phone').value.trim() || null,
         gender: $('gender').value || null,
         date_of_birth: $('dob').value || null,
-        city: $('city').value.trim() || null,
-        district: $('district').value.trim() || null,
-        country: $('country').value.trim() || null,
+        ...(place ? place.get() : { city: ($('city') && $('city').value.trim()) || null }),
         occupation: $('occupation').value.trim() || null,
         experience_level: $('experience').value || null,
         bio: $('bio').value.trim() || null,

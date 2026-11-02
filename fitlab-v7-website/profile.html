@@ -7,7 +7,7 @@
 <script src="assets/theme.js?v=891b5cdc5d"></script>
 <link rel="icon" href="assets/favicon.png">
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
-<link rel="stylesheet" href="assets/styles.css?v=9561985e78">
+<link rel="stylesheet" href="assets/styles.css?v=d92351a790">
 <style>
   .acts-menu{position:relative}
   .add-sec{position:relative}
@@ -38,7 +38,7 @@
 
 <script src="assets/vendor/supabase-2.118.0.js?v=8795eb1487"></script>
 <script src="config.js?v=e763b77801"></script>
-<script src="assets/app.js?v=003d10932b"></script>
+<script src="assets/app.js?v=a67080c5c9"></script>
 <script src="assets/bookings.js?v=8175031af9"></script>
 <script src="assets/posts.js?v=fb1d8743cc"></script>
 <script>
@@ -66,6 +66,7 @@
       const v = values[f.k] ?? f.def ?? '';
       const lbl = `<label for="f_${f.k}" class="${f.req ? 'req' : ''}">${esc(f.label)}</label>`;
       let input;
+      if (f.type === 'place') return `<div class="geo-slot" id="f_${f.k}" style="margin-bottom:2px"></div>`;
       if (f.type === 'textarea') input = `<textarea id="f_${f.k}" maxlength="${f.max || 2000}" placeholder="${esc(f.ph || '')}" style="min-height:${f.rows || 120}px">${esc(v)}</textarea>`;
       else if (f.type === 'select') input = `<select id="f_${f.k}">${f.optionsHtml || f.options.map(([ov, ol]) => `<option value="${esc(ov)}" ${String(v) === String(ov) ? 'selected' : ''}>${esc(ol)}</option>`).join('')}</select>`;
       else if (f.type === 'checkbox') return `<label class="check" style="margin-bottom:12px;color:var(--bone)"><input type="checkbox" id="f_${f.k}" ${v ? 'checked' : ''}><span>${esc(f.label)}</span></label>`;
@@ -78,7 +79,14 @@
     if (buf.length) body += `<div class="row2">${buf.join('')}</div>`;
     const m = FL.modal({ title, wide, body: `<p class="t-xs muted" style="margin:0 0 12px">* Indicates required</p>${body}<div class="err hidden" id="fErr"></div>`,
       foot: `${onDelete ? `<button class="pill ghost left" data-del style="color:var(--danger-text);border-color:var(--line-2)">Delete</button>` : ''}<button class="pill solid" data-save>Save</button>` });
-    const read = () => Object.fromEntries(fields.map((f) => { const el = m.q('#f_' + f.k); return [f.k, f.type === 'checkbox' ? el.checked : el.value.trim()]; }));
+    const pickers = {};
+    fields.filter((f) => f.type === 'place').forEach((f) => {
+      FL.loadScript('assets/places.js?v=6464b3dab4').then(() => FLPlaces.mount(m.q('#f_' + f.k), { value: values, levels: f.levels })).then((p) => { pickers[f.k] = p; })
+        .catch(() => { m.q('#f_' + f.k).innerHTML = `<div class="field"><label for="f_${f.k}_city">City, town or village</label><input id="f_${f.k}_city" maxlength="80" value="${esc(values.city || '')}"></div>`; });
+    });
+    const read = () => Object.fromEntries(fields.map((f) => {
+      if (f.type === 'place') { const fb = m.q('#f_' + f.k + '_city'); return [f.k, pickers[f.k] ? pickers[f.k].get() : fb ? { city: fb.value.trim() || null } : {}]; }
+      const el = m.q('#f_' + f.k); return [f.k, f.type === 'checkbox' ? el.checked : el.value.trim()]; }));
     m.q('[data-save]').onclick = async (e) => {
       const vals = read(); const err = m.q('#fErr');
       const missing = fields.find((f) => f.req && !vals[f.k]);
@@ -107,9 +115,8 @@
         { k: 'specialties', label: 'Specialties', max: 300, ph: 'e.g. PCOS, Post-natal, Sports rehab', help: 'Up to 10, separated by commas.', half: true },
         { k: 'username', label: 'Username', max: 30, help: 'Letters and numbers only. Used for your profile link, search and sign-in.', half: true },
         { k: 'occupation', label: 'Current position', max: 120, ph: 'e.g. Head Coach at Shaan Fitness', half: true },
-        { k: 'city', label: 'City', max: 60, half: true }, { k: 'district', label: 'District', max: 60, half: true },
-        { k: 'country', label: 'Country/Region', max: 60, half: true },
-        { k: 'experience_level', label: 'Coaching experience', type: 'select', options: [['', 'Select'], ['beginner', 'Beginner / aspiring coach'], ['1-3 years', '1–3 years'], ['3+ years', '3+ years']], half: true },
+        { k: 'place', label: 'Location', type: 'place' },
+        { k: 'experience_level', label: 'Experience in health & fitness', type: 'select', options: [['', 'Select'], ['beginner', 'Beginner / aspiring coach'], ['1-3 years', '1–3 years'], ['3+ years', '3+ years']], half: true },
         { k: 'date_of_birth', label: 'Date of birth (private)', type: 'date', half: true },
         { k: 'phone', label: 'Mobile (private — only the Academy sees it)', type: 'tel', max: 20, half: true },
         { k: 'open_to_work', label: 'Show #OpenToWork — I\'m looking for a role (green photo frame, and I appear in employers\' searches)', type: 'checkbox' },
@@ -121,7 +128,7 @@
           if (av && !av.ok) throw new Error('Username: ' + av.reason);
         }
         must(await sb.from('profiles').update({ full_name: v.full_name, headline: v.headline, username: un || undefined, occupation: v.occupation || null,
-          city: v.city || null, district: v.district || null, country: v.country || null, experience_level: v.experience_level || null,
+          ...v.place, experience_level: v.experience_level || null,
           date_of_birth: v.date_of_birth || null, phone: v.phone || null, open_to_work: v.open_to_work, hiring: v.hiring,
           profession: v.profession || null, specialties: [...new Set(v.specialties.split(',').map((x) => x.trim()).filter(Boolean).map((x) => x.slice(0, 40)))].slice(0, 10) }).eq('id', me.id));
         me = await FL.getProfile(true);
@@ -320,7 +327,7 @@
   // ------------------------------------------------------------ render
   function header() {
     const self = isSelf(), c = p.connection || {};
-    const loc = FL.place([p.city, p.district, p.country]);
+    const loc = FL.place([p.city, p.district, p.state, p.state && /^india$/i.test(p.country || '') ? '' : p.country]);
     let acts = '';
     if (self) {
       acts = `<div class="add-sec"><button class="pill solid" id="btnAddSec">Add profile section ${I('down', 14)}</button></div>

@@ -8,7 +8,7 @@
 <script src="assets/theme.js?v=891b5cdc5d"></script>
 <link rel="icon" href="assets/favicon.png">
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
-<link rel="stylesheet" href="assets/styles.css?v=9561985e78">
+<link rel="stylesheet" href="assets/styles.css?v=d92351a790">
 <style>
   .co-head .ph-body{padding-top:0}
   .co-logo-wrap{position:relative;display:inline-block}
@@ -46,7 +46,7 @@
 
 <script src="assets/vendor/supabase-2.118.0.js?v=8795eb1487"></script>
 <script src="config.js?v=e763b77801"></script>
-<script src="assets/app.js?v=003d10932b"></script>
+<script src="assets/app.js?v=a67080c5c9"></script>
 <script src="assets/posts.js?v=fb1d8743cc"></script>
 <script>
 (async () => {
@@ -85,8 +85,7 @@
         <div class="field"><label for="cTag">Tagline</label><input id="cTag" maxlength="160" placeholder="e.g. Boutique strength studio · Kakinada"></div>
         <div class="field"><label for="cWeb">Website</label><input id="cWeb" type="url" maxlength="200" placeholder="https://yourgym.in">
           <span class="help">Optional now, but needed for the verified tick: you'll prove you own it by adding a short code.</span></div>
-        <div class="row2"><div class="field"><label for="cCity">City</label><input id="cCity" maxlength="80" value="${esc(me.city || '')}"></div>
-          <div class="field"><label for="cState">State</label><input id="cState" maxlength="80"></div></div>
+        <div id="cPlace"></div>
         <div class="row2"><div class="field"><label for="cFounded">Year founded</label><input id="cFounded" type="number" inputmode="numeric" min="1900" max="${new Date().getFullYear()}"></div><div></div></div>
         <div class="field"><label for="cAbout">About</label><textarea id="cAbout" maxlength="3000" style="min-height:110px" placeholder="What you do, who you serve, what makes you different."></textarea></div>
         <label class="check" style="color:var(--bone);margin:4px 0 14px"><input type="checkbox" id="cAuth"><span>I'm an authorised representative of this organisation, and I can create and manage this page for it.</span></label>
@@ -104,9 +103,14 @@
     const pv = () => {
       $('pvName').textContent = $('cName').value.trim() || 'Organisation name';
       $('pvTag').textContent = $('cTag').value.trim() || 'Tagline';
-      $('pvKind').textContent = [FL.PAGE_KINDS[$('cKind').value], $('cCity').value.trim()].filter(Boolean).join(' · ') || 'Type · City';
+      const city = cPick ? (cPick.get().city || '') : '';
+      $('pvKind').textContent = [FL.PAGE_KINDS[$('cKind').value], city].filter(Boolean).join(' · ') || 'Type · City';
     };
-    ['cName', 'cTag', 'cKind', 'cCity'].forEach((id) => $(id).addEventListener('input', pv));
+    let cPick = null;
+    FL.loadScript('assets/places.js?v=6464b3dab4').then(() => FLPlaces.mount($('cPlace'), { value: { city: me.city, state: me.state, district: me.district, subdistrict: me.subdistrict }, levels: ['state', 'city'], country: 'India' }))
+      .then((p) => { cPick = p; p.el.addEventListener('focusout', () => setTimeout(pv, 200)); pv(); })
+      .catch(() => { $('cPlace').innerHTML = '<div class="field"><label for="cCity">City</label><input id="cCity" maxlength="80"></div>'; });
+    ['cName', 'cTag', 'cKind'].forEach((id) => $(id).addEventListener('input', pv));
     $('cf').onsubmit = async (e) => {
       e.preventDefault();
       const err = $('cErr'); const show = (t) => { err.textContent = t; err.classList.remove('hidden'); };
@@ -118,7 +122,7 @@
       err.classList.add('hidden');
       FL.busy($('cGo'), true, 'Creating…');
       const r = await FL.call('create_page', { p: { name: $('cName').value.trim(), kind: $('cKind').value, tagline: $('cTag').value.trim(),
-        website: web, city: $('cCity').value.trim(), state: $('cState').value.trim(), size: $('cSize').value,
+        website: web, city: cPick ? cPick.get().city || '' : ($('cCity') ? $('cCity').value.trim() : ''), state: cPick ? cPick.get().state || '' : '', size: $('cSize').value,
         founded: $('cFounded').value.trim(), about: $('cAbout').value.trim() } });
       FL.busy($('cGo'), false);
       if (r) location.href = 'company?p=' + encodeURIComponent(r.slug) + '&welcome=1';
@@ -377,12 +381,13 @@
         { k: 'tagline', label: 'Tagline', max: 160 },
         { k: 'website', label: 'Website', type: 'url', max: 200, ph: 'https://', help: pg.website_verified ? 'Changing the website means proving ownership again.' : '' },
         { k: 'address', label: 'Address', max: 300, help: 'Shown on the page. No phone numbers.' },
-        { k: 'city', label: 'City', max: 80, half: true }, { k: 'state', label: 'State', max: 80, half: true },
+        { k: 'place', type: 'place', levels: ['state', 'city'], country: 'India' },
         { k: 'founded', label: 'Year founded', type: 'number', min: 1900, maxv: new Date().getFullYear(), half: true }, { html: '<div></div>', half: true },
         { k: 'about', label: 'About', type: 'textarea', max: 3000, rows: 160 }],
         onSave: async (v) => {
           if (v.website && !/^https?:\/\/[^\s/]+\.[^\s]+$/i.test(v.website)) throw new Error('Enter the website as a full link, like https://yourgym.in');
-          const r = await FL.call('update_page', { p_page: pg.page_id, p: v });
+          const { place, ...rest } = v;
+          const r = await FL.call('update_page', { p_page: pg.page_id, p: { ...rest, city: place.city || '', state: place.state || '' } });
           if (!r) return false;
           FL.toast('Page updated', 'ok'); await load(); render();
         } });

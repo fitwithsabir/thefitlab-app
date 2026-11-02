@@ -7,7 +7,7 @@
 <script src="assets/theme.js?v=891b5cdc5d"></script>
 <link rel="icon" href="assets/favicon.png">
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
-<link rel="stylesheet" href="assets/styles.css?v=9561985e78">
+<link rel="stylesheet" href="assets/styles.css?v=d92351a790">
 <style>
   .hjob{display:flex;gap:12px;padding:14px 20px;border-top:1px solid var(--line);align-items:flex-start}
   .hjob b.t{color:var(--bone);font-size:15px;display:block}
@@ -64,7 +64,7 @@
 
 <script src="assets/vendor/supabase-2.118.0.js?v=8795eb1487"></script>
 <script src="config.js?v=e763b77801"></script>
-<script src="assets/app.js?v=003d10932b"></script>
+<script src="assets/app.js?v=a67080c5c9"></script>
 <script>
 (async () => {
   const $ = (id) => document.getElementById(id);
@@ -215,8 +215,9 @@
         <div class="field"><label for="jProf">Profession</label><select id="jProf">${FL.professionOptions(profs, j ? j.profession : ({ trainer: 'personal_trainer', coach: 'sc_coach', nutritionist: 'nutritionist' })[FL.param('role')] || '', 'Choose — helps the right people find it')}</select></div>
         <div class="row2"><div class="field"><label for="jType" class="req">Job type</label><select id="jType">${opt([['', 'Choose']].concat(Object.entries(FL.JOB_TYPES)), j ? j.employment_type : '')}</select></div>
           <div class="field"><label for="jWork" class="req">Workplace</label><select id="jWork">${opt([['', 'Choose']].concat(Object.entries(FL.WORKPLACES)), j ? j.workplace : 'on_site')}</select></div></div>
-        <div class="row2"><div class="field"><label for="jCity" id="jCityL" class="req">City</label><input id="jCity" maxlength="80" value="${esc(j ? j.city || '' : (pages.find((p) => p.page_id === want) || pages[0]).city || '')}"></div>
-          <div class="field"><label for="jState">State</label><input id="jState" maxlength="80" value="${esc(j ? j.state || '' : '')}"></div></div>
+        <div id="jPlace"></div><span id="jCityL" hidden></span>
+        <input type="hidden" id="jCity" value="${esc(j ? j.city || '' : (pages.find((p) => p.page_id === want) || pages[0]).city || '')}">
+        <input type="hidden" id="jState" value="${esc(j ? j.state || '' : (pages.find((p) => p.page_id === want) || pages[0]).state || '')}">
 
         <h3>Pay ${I('rupee', 15)}</h3>
         <div class="payrow"><div class="field"><label for="jMin" class="req">Minimum (₹)</label><input id="jMin" type="number" inputmode="numeric" min="1" value="${j ? j.salary_min : ''}" placeholder="20000"></div>
@@ -299,7 +300,14 @@
     }, 450); };
     ['jProf', 'jPer'].forEach((id) => $(id).addEventListener('change', bench));
     ['jCity', 'jState', 'jMin', 'jMax'].forEach((id) => $(id).addEventListener('input', bench)); bench();
-    const cityReq = () => { $('jCityL').classList.toggle('req', $('jWork').value !== 'remote'); };
+    // where the job is: State → City, town or village (assets/places.js); the hidden fields carry the names
+    let jPick = null;
+    const syncPlace = () => { if (!jPick) return; const v = jPick.get(); const ch = v.city !== $('jCity').value || v.state !== $('jState').value;
+      $('jCity').value = v.city || ''; $('jState').value = v.state || ''; if (ch) $('jCity').dispatchEvent(new Event('input')); };
+    FL.loadScript('assets/places.js?v=6464b3dab4').then(() => FLPlaces.mount($('jPlace'), { value: { city: $('jCity').value, state: $('jState').value }, levels: ['state', 'city'], country: 'India' }))
+      .then((pk) => { jPick = pk; pk.el.addEventListener('focusout', () => setTimeout(syncPlace, 200)); cityReq(); })
+      .catch(() => { $('jPlace').innerHTML = '<div class="field"><label class="req">City</label><input maxlength="80" id="jCityTxt"></div>'; $('jCityTxt').value = $('jCity').value; $('jCityTxt').oninput = () => { $('jCity').value = $('jCityTxt').value; }; });
+    const cityReq = () => { const lb = $('jPlace').querySelector('[data-l="city"] label'); if (lb) lb.classList.toggle('req', $('jWork').value !== 'remote'); };
     $('jWork').onchange = cityReq; cityReq();
     const orgName = () => (($('jPage').selectedOptions[0] || {}).textContent || 'our team').replace(' ✓', '').trim();
     const BENEFITS = 'Add your benefits here — e.g. free gym access, uniform, certification support';
@@ -331,6 +339,7 @@
     if (!j && ROLE_TPL) useTpl(ROLE_TPL);
     const list = (v, n) => v.split(',').map((s) => s.trim()).filter(Boolean).slice(0, n);
     $('jf').onsubmit = async (e) => {
+      syncPlace();
       e.preventDefault();
       const err = $('jErr'); const show = (t) => { err.textContent = t; err.classList.remove('hidden'); err.scrollIntoView({ block: 'center' }); };
       const p = { title: $('jTitle').value.trim(), profession: $('jProf').value, employment_type: $('jType').value, workplace: $('jWork').value,
