@@ -83,6 +83,11 @@
   .cr-tools{display:flex;gap:10px;flex-wrap:wrap;padding:6px 20px 12px}
   .cr-tools input,.cr-tools select{height:40px;padding-top:0;padding-bottom:0;font-size:14px;flex:1;min-width:200px}
   .cr-tools select{flex:0 1 260px}
+  .cr-dates{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:0 20px 12px}
+  .cr-dates select,.cr-dates input{height:38px;padding-top:0;padding-bottom:0;font-size:14px;width:auto;flex:0 0 auto}
+  .cr-dates input[type=date]{min-width:150px}
+  .cr-dates .sep{color:var(--ash);font-size:13px}
+  .cr-dates .lnk{font-size:13.5px}
   .lrow{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:13px 20px;border-top:1px solid var(--line)}
   /* ideas & feedback (fix-38) */
   .st-new{background:color-mix(in srgb,var(--warn) 14%,transparent);color:var(--warn)}
@@ -292,7 +297,7 @@
 
 <script src="assets/vendor/supabase-2.118.0.js?v=8795eb1487"></script>
 <script src="config.js?v=e763b77801"></script>
-<script src="assets/app.js?v=ccd9a307d7"></script>
+<script src="assets/app.js?v=8a36eabae5"></script>
 <script>
 (async () => {
   const $ = (id) => document.getElementById(id);
@@ -397,6 +402,7 @@
     { id: 'pages', label: 'Pages', icon: 'building', group: 'Business', need: 'verification' },
     { id: 'premium', label: 'Premium', icon: 'crown', group: 'Business', need: 'premium' },
     { id: 'bookings', label: 'Bookings & payouts', icon: 'calendar', group: 'Business', need: 'premium', short: 'Bookings' },
+    { id: 'payments', label: 'Payments & receipts', icon: 'rupee', group: 'Business', need: 'premium', short: 'Payments' },
     { id: 'marketing', label: 'Marketing & ads', icon: 'chart', group: 'Business', need: 'premium', short: 'Marketing' },
     { id: 'emails', label: 'Emails', icon: 'mail', group: 'Business', need: 'premium' },
     { id: 'certs', label: 'Certificates', icon: 'award', group: 'Academy', need: 'certificates', cnt: 'certificates' },
@@ -645,17 +651,38 @@
   }
   VIEWS.members = async (alive, sub) => {
     let rows = [], f = mfTest[sub] ? sub : 'all', shown = 60, q = '';
+    // date filter: joined or last active, between two days (India time), inclusive
+    const dt = { field: 'created_at', from: '', to: '' };
+    const dayStart = (d) => new Date(d + 'T00:00:00+05:30').getTime();
+    const inDates = (m) => {
+      if (!dt.from && !dt.to) return true;
+      const v = m[dt.field]; if (!v) return false;
+      const t = new Date(v).getTime();
+      return (!dt.from || t >= dayStart(dt.from)) && (!dt.to || t < dayStart(dt.to) + 864e5);
+    };
+    const ist = (d) => { const x = new Date(Date.now() + 5.5 * 36e5 - (d || 0) * 864e5); return x.toISOString().slice(0, 10); };
+    const PRESETS = [['today', 'Today', () => [ist(), ist()]], ['7d', 'Last 7 days', () => [ist(6), ist()]], ['30d', 'Last 30 days', () => [ist(29), ist()]],
+      ['month', 'This month', () => [ist().slice(0, 8) + '01', ist()]],
+      ['lastmonth', 'Last month', () => { const t = new Date(ist() + 'T00:00:00Z'); const a = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() - 1, 1)); const b = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), 0));
+        return [a.toISOString().slice(0, 10), b.toISOString().slice(0, 10)]; }]];
     $('view').innerHTML = `<div class="box">
-      <div class="box-head"><div><h2>Members</h2><div class="sub" id="mSub">Loading…</div></div></div>
+      <div class="box-head"><div><h2>Members</h2><div class="sub" id="mSub">Loading…</div></div>
+        <button type="button" class="pill sm" id="mCsv">${I('download', 15)}Download list (CSV)</button></div>
       <div class="cr-tools"><input id="mq" type="search" placeholder="Search name, email, @username or Fit Lab ID" autocomplete="off" aria-label="Search members"></div>
+      <div class="cr-dates"><select id="mdF" aria-label="Which date"><option value="created_at">Joined</option><option value="last_activity_at">Last active</option></select>
+        <select id="mdP" aria-label="Date range"><option value="">Any time</option>${PRESETS.map(([k, l]) => `<option value="${k}">${E(l)}</option>`).join('')}<option value="custom">Custom dates</option></select>
+        <input type="date" id="mdA" aria-label="From"><span class="sep">to</span><input type="date" id="mdB" aria-label="To">
+        <button type="button" class="lnk" id="mdX" hidden>Clear dates</button></div>
       <div class="catbar" id="mf"></div>
       <div class="mlist-h"><span>Member</span><span>Stars</span><span>Courses</span><span>Last active</span><span></span></div>
       <div id="mlist">${spinner}</div>
       <div class="box-foot" id="mMoreW" hidden><button type="button" id="mMore">Show more</button></div></div>`;
     const render = () => {
-      const list = rows.filter(mfTest[f]);
-      $('mf').innerHTML = MF.map(([k, l]) => { const c = rows.filter(mfTest[k]).length; return (k === 'all' || c || k === f) ? `<button type="button" data-f="${k}" class="${k === f ? 'on' : ''}">${E(l)}<i>${n(c)}</i></button>` : ''; }).join('');
-      $('mSub').textContent = q ? `${plural(list.length, 'match', 'matches')} for “${q}”` : `${plural(rows.length, 'member')} registered`;
+      const base = rows.filter(inDates), list = base.filter(mfTest[f]);
+      $('mf').innerHTML = MF.map(([k, l]) => { const c = base.filter(mfTest[k]).length; return (k === 'all' || c || k === f) ? `<button type="button" data-f="${k}" class="${k === f ? 'on' : ''}">${E(l)}<i>${n(c)}</i></button>` : ''; }).join('');
+      const when = dt.from || dt.to ? ` · ${dt.field === 'created_at' ? 'joined' : 'active'} ${dt.from && dt.to ? (dt.from === dt.to ? 'on ' + fmt(dt.from) : fmt(dt.from) + ' – ' + fmt(dt.to)) : dt.from ? 'from ' + fmt(dt.from) : 'until ' + fmt(dt.to)}` : '';
+      $('mSub').textContent = (q ? `${plural(list.length, 'match', 'matches')} for “${q}”` : dt.from || dt.to ? plural(list.length, 'member') : `${plural(rows.length, 'member')} registered`) + when;
+      $('mdX').hidden = !(dt.from || dt.to);
       $('mlist').innerHTML = list.length ? list.slice(0, shown).map(mrow).join('') : `<div class="empty">${q ? 'No members match that search.' : 'No members here.'}</div>`;
       $('mMoreW').hidden = list.length <= shown;
     };
@@ -668,6 +695,33 @@
     $('mq').oninput = debounce(() => { q = $('mq').value.trim(); shown = 60; load(); }, 350);
     $('mf').onclick = (e) => { const b = e.target.closest('[data-f]'); if (!b) return; f = b.dataset.f; shown = 60; render(); };
     $('mMore').onclick = () => { shown += 60; render(); };
+    const setDates = () => { dt.from = $('mdA').value; dt.to = $('mdB').value; if (dt.from && dt.to && dt.from > dt.to) [dt.from, dt.to] = [dt.to, dt.from]; shown = 60; render(); };
+    $('mdF').onchange = () => { dt.field = $('mdF').value; render(); };
+    $('mdP').onchange = () => {
+      const k = $('mdP').value, pr = PRESETS.find((x) => x[0] === k);
+      if (pr) { const [a, b] = pr[2](); $('mdA').value = a; $('mdB').value = b; }
+      else if (!k) { $('mdA').value = ''; $('mdB').value = ''; }
+      else { $('mdA').focus(); }
+      setDates();
+    };
+    ['mdA', 'mdB'].forEach((id) => { $(id).onchange = () => { $('mdP').value = 'custom'; setDates(); }; });
+    $('mdX').onclick = () => { $('mdP').value = ''; $('mdA').value = ''; $('mdB').value = ''; setDates(); };
+    $('mCsv').onclick = () => {
+      const list = rows.filter(inDates).filter(mfTest[f]);
+      if (!list.length) return FL.toast('No members in this list', 'err');
+      const when = (v) => v ? new Date(v).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+      const cols = [['Fit Lab ID', (m) => m.unique_id], ['Name', (m) => m.full_name], ['Username', (m) => m.username], ['Email', (m) => m.email], ['Phone', (m) => m.phone],
+        ['Headline', (m) => m.headline || m.occupation], ['City', (m) => m.city], ['District', (m) => m.district], ['Country', (m) => m.country],
+        ['Joined', (m) => when(m.created_at)], ['Last active', (m) => when(m.last_activity_at)], ['Courses', (m) => m.enrolled], ['Profile finished', (m) => m.profile_completed ? 'Yes' : 'No'],
+        ['Status', (m) => m.community_status || 'active']];
+      const cell = (v) => { v = v == null ? '' : String(v); if (/^[=+\-@]/.test(v)) v = "'" + v; return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+      const csv = '\ufeff' + [cols.map((c) => c[0]).join(','), ...list.map((m) => cols.map((c) => cell(c[1](m))).join(','))].join('\r\n');
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+      a.download = `fitlab-members-${dt.from || 'all'}${dt.to && dt.to !== dt.from ? '-to-' + dt.to : ''}.csv`;
+      document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+      FL.toast(`${plural(list.length, 'member')} downloaded`, 'ok');
+    };
     $('mlist').onclick = (e) => { const r = e.target.closest('[data-member]'); if (r) openMember(r.dataset.member); };
     $('mlist').onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { const r = e.target.closest('[data-member]'); if (r) { e.preventDefault(); openMember(r.dataset.member); } } };
     reloadView = load;
@@ -1400,7 +1454,7 @@
       <div class="box"><div class="box-head"><h2>Payments</h2></div>
         ${pays.length ? `<div class="tblwrap"><table class="tbl"><thead><tr><th>Date</th><th>Member</th><th>Plan</th><th>Amount</th><th>Status</th><th>Razorpay IDs</th></tr></thead><tbody>
           ${pays.map((y) => `<tr><td>${E(fmt(y.created_at))}</td><td>${y.member ? whoLink(y.member) : '—'}</td><td>${E(FL.PLAN_NAMES[y.plan] || y.plan)} · ${y.period === 'year' ? 'yearly' : 'monthly'}</td>
-            <td>${E(FL.paise(y.amount))}</td><td><span class="st st-${E(y.status)}">${E(y.status)}</span></td><td class="mono" style="font-size:10.5px">${E(y.order_id || '')}<br>${E(y.payment_id || '')}</td></tr>`).join('')}</tbody></table></div>`
+            <td>${E(FL.paise(y.amount))}</td><td><span class="st st-${E(y.status)}">${E(y.status)}</span></td><td class="mono" style="font-size:10.5px">${E(y.order_id || '')}<br>${E(y.payment_id || '')}${y.status === 'paid' ? `<br><button class="pill sm" type="button" data-rcpt="${E(y.order_id)}" style="margin-top:4px">${I('download', 13)}Receipt</button>` : ''}</td></tr>`).join('')}</tbody></table></div>`
           : '<div class="empty">No payments yet.</div>'}</div>
       ${data.coach_ai ? `<div class="box"><div class="box-head"><div><h2>Coach AI</h2><div class="sub">${E(FL.paise(data.coach_ai_revenue || 0))} paid through Razorpay · ${n((data.coach_ai || []).filter((x) => x.active).length)} active</div></div></div>
         <form class="cr-tools" id="aiGrant"><input id="aUser" placeholder="@username or Fit Lab ID" aria-label="Member">
@@ -1616,6 +1670,84 @@
       const ok = await act(fn, args, done);
       if (b.isConnected) FL.busy(b, false);
       if (ok) load();
+    };
+    reloadView = load;
+    await load();
+  };
+
+  // ------------------------------------------------------------------ PAYMENTS & RECEIPTS (fix-39)
+  // Every payment — Premium, courses, Coach AI and online bookings — with dates, totals, CSV and PDF receipts.
+  const KIND_L = { premium: 'Premium', course: 'Course', coach_ai: 'Coach AI', booking: 'Booking' };
+  // any "Receipt" button in the Control Room (Payments, Premium, Coach AI)
+  $('view').addEventListener('click', (e) => { const b = e.target.closest('[data-rcpt]'); if (b && !b.disabled) receiptFor(b.dataset.rcpt, b); });
+  async function receiptFor(orderId, btn) {
+    FL.busy(btn, true, '…');
+    try {
+      const { data, error } = await sb.rpc('admin_receipt', { p_order: orderId });
+      if (error) throw error;
+      if (!data) throw new Error('No receipt for this payment — it may not be paid.');
+      await FL.loadScript('assets/receipt.js?v=cf38c4c3b8'); await window.FLReceipt.download(data);
+    } catch (e) { FL.toast(FL.friendly(e), 'err'); }
+    FL.busy(btn, false);
+  }
+  VIEWS.payments = async (alive) => {
+    const ist = (d) => new Date(Date.now() + 5.5 * 36e5 - (d || 0) * 864e5).toISOString().slice(0, 10);
+    const PR = [['30d', 'Last 30 days', () => [ist(29), ist()]], ['today', 'Today', () => [ist(), ist()]], ['7d', 'Last 7 days', () => [ist(6), ist()]],
+      ['month', 'This month', () => [ist().slice(0, 8) + '01', ist()]],
+      ['lastmonth', 'Last month', () => { const t = new Date(ist() + 'T00:00:00Z'); return [new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() - 1, 1)).toISOString().slice(0, 10), new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), 0)).toISOString().slice(0, 10)]; }],
+      ['all', 'All time', () => ['', '']]];
+    let rows = [], st = 'paid', kind = 'all', q = '';
+    $('view').innerHTML = `<div class="box"><div class="box-head"><div><h2>Payments &amp; receipts</h2><div class="sub" id="pySub">Loading…</div></div>
+        <button type="button" class="pill sm" id="pyCsv">${I('download', 15)}Download list (CSV)</button></div>
+      <div class="cr-tools"><input id="pyQ" type="search" placeholder="Search name, Fit Lab ID, order or payment ID" autocomplete="off" aria-label="Search payments"></div>
+      <div class="cr-dates"><select id="pyP" aria-label="Date range">${PR.map(([k, l]) => `<option value="${k}">${E(l)}</option>`).join('')}<option value="custom">Custom dates</option></select>
+        <input type="date" id="pyA" aria-label="From"><span class="sep">to</span><input type="date" id="pyB" aria-label="To">
+        <select id="pyS" aria-label="Status"><option value="paid">Paid</option><option value="all">All attempts</option></select></div>
+      <div class="catbar" id="pyK"></div>
+      <div id="pyList">${spinner}</div></div>`;
+    const shown = () => rows.filter((r) => (st === 'all' || r.status === 'paid') && (kind === 'all' || r.kind === kind)
+      && (!q || [r.member && r.member.full_name, r.member && r.member.unique_id, r.member && r.member.username, r.order_id, r.payment_id, r.item].some((v) => String(v || '').toLowerCase().includes(q))));
+    const render = () => {
+      const list = shown(), paid = list.filter((r) => r.status === 'paid');
+      const total = paid.reduce((a, r) => a + Number(r.amount || 0), 0);
+      const a = $('pyA').value, b = $('pyB').value;
+      $('pySub').textContent = `${plural(paid.length, 'payment')} · ${FL.paise(total)} received${a || b ? ` · ${a ? fmt(a) : '…'} – ${b ? fmt(b) : 'today'}` : ' · all time'}`;
+      const kinds = ['all', 'course', 'premium', 'coach_ai', 'booking'];
+      $('pyK').innerHTML = kinds.map((k) => { const c = rows.filter((r) => (st === 'all' || r.status === 'paid') && (k === 'all' || r.kind === k)).length;
+        return k === 'all' || c ? `<button type="button" data-k="${k}" class="${k === kind ? 'on' : ''}">${E(k === 'all' ? 'All' : KIND_L[k])}<i>${n(c)}</i></button>` : ''; }).join('');
+      $('pyList').innerHTML = list.length ? `<div class="tblwrap"><table class="tbl"><thead><tr><th>Date</th><th>Member</th><th>For</th><th>Amount</th><th>Status</th><th>Razorpay IDs</th><th></th></tr></thead><tbody>
+        ${list.slice(0, 300).map((r) => `<tr><td>${E(fmt(r.paid_at || r.created_at))}</td><td>${r.member && r.member.user_id ? whoLink(r.member) : '—'}</td>
+          <td>${E(r.item || '')}<br><span class="sub">${E(KIND_L[r.kind] || r.kind)}</span></td><td>${E(FL.paise(r.amount))}</td>
+          <td><span class="st st-${E(r.status)}">${E(r.status)}</span></td><td class="mono" style="font-size:10.5px">${E(r.order_id || '')}<br>${E(r.payment_id || '')}</td>
+          <td>${r.status === 'paid' ? `<button class="pill sm" type="button" data-rcpt="${E(r.order_id)}">${I('download', 14)}Receipt</button>` : ''}</td></tr>`).join('')}</tbody></table></div>
+        ${list.length > 300 ? `<div class="empty">Showing the latest 300 — narrow the dates or download the CSV for all ${n(list.length)}.</div>` : ''}`
+        : '<div class="empty"><b>No payments here</b>Try a wider date range.</div>';
+    };
+    const load = async () => {
+      $('pyList').innerHTML = spinner;
+      const { data, error } = await sb.rpc('admin_all_payments', { p_from: $('pyA').value || null, p_to: $('pyB').value || null });
+      if (!alive()) return;
+      if (error) { $('pyList').innerHTML = `<div class="empty">${E(FL.friendly(error))}</div>`; return; }
+      rows = data || []; render();
+    };
+    const preset = (k) => { const p = PR.find((x) => x[0] === k); if (p) { const [a, b] = p[2](); $('pyA').value = a; $('pyB').value = b; } };
+    preset('30d');
+    $('pyP').onchange = () => { if ($('pyP').value !== 'custom') { preset($('pyP').value); load(); } else $('pyA').focus(); };
+    ['pyA', 'pyB'].forEach((id) => { $(id).onchange = () => { $('pyP').value = 'custom'; load(); }; });
+    $('pyS').onchange = () => { st = $('pyS').value; render(); };
+    $('pyQ').oninput = debounce(() => { q = $('pyQ').value.trim().toLowerCase(); render(); }, 250);
+    $('pyK').onclick = (e) => { const b = e.target.closest('[data-k]'); if (b) { kind = b.dataset.k; render(); } };
+    $('pyCsv').onclick = () => {
+      const list = shown(); if (!list.length) return FL.toast('No payments in this list', 'err');
+      const when = (v) => v ? new Date(v).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+      const cols = [['Date', (r) => when(r.paid_at || r.created_at)], ['Member', (r) => r.member && r.member.full_name], ['Fit Lab ID', (r) => r.member && r.member.unique_id],
+        ['Type', (r) => KIND_L[r.kind] || r.kind], ['For', (r) => r.item], ['Amount (INR)', (r) => (Number(r.amount || 0) / 100).toFixed(2)], ['Status', (r) => r.status],
+        ['Order ID', (r) => r.order_id], ['Payment ID', (r) => r.payment_id]];
+      const cell = (v) => { v = v == null ? '' : String(v); if (/^[=+\-@]/.test(v)) v = "'" + v; return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+      const csv = '﻿' + [cols.map((c) => c[0]).join(','), ...list.map((r) => cols.map((c) => cell(c[1](r))).join(','))].join('\r\n');
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+      a.download = `fitlab-payments-${$('pyA').value || 'all'}-to-${$('pyB').value || 'today'}.csv`;
+      document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
     };
     reloadView = load;
     await load();

@@ -609,6 +609,16 @@
       return c[(36 - (s % 36)) % 36] === g[14];
     },
 
+    // load one of our own scripts on demand (once)
+    loadScript(src) {
+      this._scripts = this._scripts || {};
+      if (!this._scripts[src]) this._scripts[src] = new Promise((res, rej) => {
+        const s = document.createElement('script'); s.src = src; s.async = true;
+        s.onload = res; s.onerror = () => { delete this._scripts[src]; s.remove(); rej(new Error('Couldn\'t load that. Check your connection and try again.')); };
+        document.head.appendChild(s);
+      });
+      return this._scripts[src];
+    },
     // Edge Function call with the member's login; returns {data} or {error}
     async fn(name, body) {
       try {
@@ -1041,6 +1051,7 @@
         <div class="me-sec"><h6>Look</h6>${this.looksHtml()}${this.themeSwitchHtml()}</div>
         <div class="me-sec"><h6>Account</h6>
           <a href="settings">${icon('settings', 18)}Settings &amp; privacy</a>
+          <a href="settings#receipts">${icon('rupee', 18)}Payments &amp; receipts</a>
           <a href="settings#notifications">${icon('bell', 18)}Pop-up notifications</a>
           <button class="lnk" type="button" id="meInstall" hidden>${icon('phone', 18)}Install the app</button>
           <a href="courses">${icon('award', 18)}Courses &amp; certificates</a>
