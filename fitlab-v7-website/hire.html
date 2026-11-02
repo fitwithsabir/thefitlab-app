@@ -6,8 +6,8 @@
 <title>Hire a coach — The Fit Lab Academy</title>
 <link rel="icon" href="assets/favicon.png">
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
-<script src="assets/theme.js"></script>
-<link rel="stylesheet" href="assets/styles.css">
+<script src="assets/theme.js?v=891b5cdc5d"></script>
+<link rel="stylesheet" href="assets/styles.css?v=206a997986">
 <style>
   .layout{display:grid;grid-template-columns:250px 1fr;gap:22px;margin-top:24px}
   @media(max-width:800px){.layout{grid-template-columns:1fr}}
@@ -107,9 +107,9 @@
   <div class="footer">© <span id="yr"></span> The Fit Lab Academy · Contact details are never published here</div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js"></script>
-<script src="assets/app.js"></script>
+<script src="assets/vendor/supabase-2.118.0.js?v=8795eb1487"></script>
+<script src="config.js?v=e763b77801"></script>
+<script src="assets/app.js?v=ccd9a307d7"></script>
 <script>
 (async () => {
   const $ = (id) => document.getElementById(id);
@@ -169,8 +169,8 @@
           ${c.age ? `<span class="chip">${c.age} yrs</span>` : ''}
           ${c.gender ? `<span class="chip">${FL.esc(c.gender)}</span>` : ''}
           ${c.experience_level ? `<span class="chip">${FL.esc(c.experience_level)}</span>` : ''}
-          ${[c.city, c.district, c.country].filter(Boolean).length
-            ? `<span class="chip">${FL.esc([c.city, c.district, c.country].filter(Boolean).join(' · '))}</span>` : ''}
+          ${FL.place([c.city, c.district, c.country])
+            ? `<span class="chip">${FL.esc(FL.place([c.city, c.district, c.country], ' · '))}</span>` : ''}
         </div>
         ${c.occupation ? `<div class="small" style="margin-bottom:6px">${FL.esc(c.occupation)}</div>` : ''}
         ${c.bio ? `<p class="small" style="color:var(--ash);margin:0 0 10px">${FL.esc(c.bio)}</p>` : ''}

@@ -208,11 +208,18 @@
       return String(name || '?').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '?';
     },
 
+    // city, district, country without repeats ("Kakinada, Kakinada, India" → "Kakinada, India")
+    place(parts, sep = ', ') {
+      const seen = new Set();
+      return (parts || []).map((x) => String(x || '').trim()).filter((x) => { const k = x.toLowerCase(); if (!x || seen.has(k)) return false; seen.add(k); return true; }).join(sep);
+    },
     avatarHtml(profile, cls = 'avatar') {
-      if (profile && profile.photo_url) return `<img class="${cls}" src="${esc(profile.photo_url)}" alt="" loading="lazy">`;
       const nm = String((profile && (profile.full_name || profile.username)) || '?');
       let h = 0; for (let i = 0; i < nm.length; i++) h = (h * 31 + nm.charCodeAt(i)) >>> 0;
-      return `<div class="${cls}" data-h="${h % 6}">${esc(this.initials(nm))}</div>`;
+      const ini = `<div class="${cls}" data-h="${h % 6}">${esc(this.initials(nm))}</div>`;
+      // a photo that can't load shows the initials instead of a broken-image icon
+      if (profile && profile.photo_url) return `<img class="${cls}" src="${esc(profile.photo_url)}" alt="" loading="lazy" decoding="async" data-ini="${esc(ini)}" onerror="this.onerror=null;this.outerHTML=this.dataset.ini">`;
+      return ini;
     },
 
     // escape, keep line breaks (CSS pre-line) and turn web links into links
@@ -379,7 +386,7 @@
       if (this._askLoading) return;
       this._askLoading = true;
       const s = document.createElement('script');
-      s.src = 'assets/ask.js';
+      s.src = 'assets/ask.js?v=3756f78624';
       s.onload = () => { this._askLoading = false; if (window.FLAsk) window.FLAsk.open(); };
       s.onerror = () => { this._askLoading = false; s.remove(); this.toast('Couldn\'t open the chat. Check your connection and try again.', 'err'); };
       document.head.appendChild(s);
@@ -975,10 +982,11 @@
         bar.innerHTML = `<div class="topbar-in">
           <a class="tb-logo" href="feed" aria-label="The Fit Lab — home"><img class="logo-d" src="assets/logo-600.png" alt="The Fit Lab"><img class="logo-l" src="assets/logo-600-light.png" alt="" aria-hidden="true"></a>
           <form class="tb-search" action="search" role="search">${icon('search', 17)}
-            <input name="q" type="search" placeholder="Search people, jobs, pages" value="${esc(q)}" aria-label="Search"></form>
+            <input name="q" type="search" placeholder="${window.matchMedia('(max-width:767px)').matches ? 'Search' : 'Search people, jobs, pages'}" value="${esc(q)}" aria-label="Search people, jobs, pages"></form>
           <nav class="tb-tabs">
             ${tabs.map(([k, href, label, ic, cnt]) => `<a class="tb-tab ${k === 'messages' ? 'tb-msg' : ''} ${k === 'tools' ? 'tb-tools' : ''} ${page === k ? 'on' : ''}" href="${href}"${k === 'tools' ? ' aria-label="Coach tools"' : ''}>
               <span class="ic">${icon(ic, 24)}${cnt ? `<span class="cnt" data-cnt="${cnt}"></span>` : ''}</span><span class="lbl">${label}</span></a>`).join('')}
+            <button class="tb-tab tb-ask" type="button" data-ask aria-label="Ask The Fit Lab"><span class="ic">${icon('sparkles', 24)}</span><span class="lbl">Ask</span></button>
             <button class="tb-tab tb-me ${page === 'me' || (page === 'profile' && this.param('u') === profile.username) ? 'on' : ''}" type="button" aria-haspopup="true" aria-expanded="false">
               <span class="ic">${this.avatarHtml(profile, 'ava avatar')}</span><span class="lbl">Me ${icon('down', 12)}</span></button>
             ${(profile.is_admin || profile.is_owner) ? `<span class="tb-sep"></span><a class="tb-tab ${/\/admin(\.html)?$/.test(location.pathname) ? 'on' : ''}" href="admin"><span class="ic">${icon('shield', 24)}</span><span class="lbl">Admin</span></a>` : ''}

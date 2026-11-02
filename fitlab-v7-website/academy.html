@@ -12,9 +12,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="icon" href="assets/favicon.png">
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b">
-<script src="assets/theme.js"></script>
-<link rel="stylesheet" href="assets/styles.css">
-<link rel="stylesheet" href="assets/funnel.css">
+<script src="assets/theme.js?v=891b5cdc5d"></script>
+<link rel="stylesheet" href="assets/styles.css?v=206a997986">
+<link rel="stylesheet" href="assets/funnel.css?v=0a5a59fa25">
 <style>
   body.v-direct [data-v="full"], body:not(.v-direct) [data-v="direct"]{display:none!important}
 </style>
@@ -133,10 +133,10 @@
 <div class="lp-sticky"><div><b>₹99</b><span data-v="full">Full course + certificate</span><span data-v="direct">Direct certification</span></div>
   <a class="btn btn-primary" href="#signup" data-pick="full" data-v="full">Start now</a><a class="btn btn-primary" href="#signup" data-pick="direct" data-v="direct">Get certified</a></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="config.js"></script>
-<script src="assets/app.js"></script>
-<script src="assets/track.js"></script>
+<script src="assets/vendor/supabase-2.118.0.js?v=8795eb1487"></script>
+<script src="config.js?v=e763b77801"></script>
+<script src="assets/app.js?v=ccd9a307d7"></script>
+<script src="assets/track.js?v=c458497b3e"></script>
 <script>
   const DIRECT = document.body.classList.contains('v-direct');
   document.getElementById('yr').textContent = new Date().getFullYear();
@@ -165,6 +165,6 @@
     fine: 'Secure payment by Razorpay · UPI, cards, net banking',
   };
 </script>
-<script src="assets/funnel.js"></script>
+<script src="assets/funnel.js?v=e1d7bb72a4"></script>
 </body>
 </html>
