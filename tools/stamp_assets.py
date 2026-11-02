@@ -35,6 +35,12 @@ def main():
         t = re.sub(r"(\.src\s*=\s*)(['\"])(assets/[\w./-]+\.js)(?:\?v=[0-9a-f]+)?\2",
                    lambda m: f"{m.group(1)}{m.group(2)}{m.group(3)}?v={digest(m.group(3))}{m.group(2)}" if digest(m.group(3)) else m.group(0), s)
         if t != s: f.write_text(t, encoding='utf-8'); changed.append(rel)
+    # 1b. scripts loaded on demand with FL.loadScript('assets/…') in pages and scripts
+    LOADER = re.compile(r"(loadScript\(\s*)(['\"])(assets/[\w./-]+\.js)(?:\?v=[0-9a-f]+)?\2")
+    for f in sorted(list(SITE.glob('*.html')) + list((SITE / 'assets').glob('*.js'))):
+        s = f.read_text(encoding='utf-8')
+        t = LOADER.sub(lambda m: f"{m.group(1)}{m.group(2)}{m.group(3)}?v={digest(m.group(3))}{m.group(2)}" if digest(m.group(3)) else m.group(0), s)
+        if t != s: f.write_text(t, encoding='utf-8'); changed.append(f.name)
     # 2. every page: <script src> and <link href> to our own files
     for f in sorted(SITE.glob('*.html')):
         s = f.read_text(encoding='utf-8')
