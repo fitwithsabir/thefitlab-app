@@ -9,7 +9,7 @@
 <link rel="icon" href="assets/favicon.png">
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#06070a"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
 <script src="assets/theme.js?v=891b5cdc5d"></script>
-<link rel="stylesheet" href="assets/styles.css?v=d92351a790">
+<link rel="stylesheet" href="assets/styles.css?v=35ff5fbea3">
 <link rel="stylesheet" href="assets/home.css?v=edbbb33f7d">
 </head>
 <body class="home">
@@ -427,6 +427,7 @@
     </div>
 
     <form id="formLogin" novalidate>
+      <div class="li-auth" hidden><button type="button" class="btn btn-block" data-li>Continue with LinkedIn</button><div class="or-line"><span>or with email</span></div></div>
       <div class="field"><label for="liEmail">Email or username</label><input id="liEmail" type="text" autocomplete="username" required placeholder="you@example.com or your username"></div>
       <div class="field"><label for="liPass">Password</label><input id="liPass" type="password" autocomplete="current-password" required placeholder="••••••••"></div>
       <button class="btn btn-primary btn-block" type="submit">Log in</button>
@@ -434,6 +435,7 @@
     </form>
 
     <form id="formSignup" class="hidden" novalidate>
+      <div class="li-auth" hidden><button type="button" class="btn btn-block" data-li>Continue with LinkedIn</button><div class="or-line"><span>or with email</span></div></div>
       <div class="field"><label for="suName">Full name</label><input id="suName" autocomplete="name" required placeholder="As it should appear on your certificate"></div>
       <div class="field"><label for="suEmail">Email</label><input id="suEmail" type="email" autocomplete="email" required placeholder="you@example.com"></div>
       <div class="field"><label for="suPass">Password</label><input id="suPass" type="password" autocomplete="new-password" required minlength="8" placeholder="At least 8 characters"></div>
@@ -460,7 +462,7 @@
 
 <script src="config.js?v=e763b77801"></script>
 <script src="assets/vendor/supabase-2.118.0.js?v=8795eb1487"></script>
-<script src="assets/app.js?v=a67080c5c9"></script>
+<script src="assets/app.js?v=891b283934"></script>
 <script src="assets/track.js?v=c458497b3e"></script>
 <script>
 (async function () {
@@ -568,6 +570,16 @@
       put('title', c.title); put('days', String(c.total_days || '')); put('chip1', parts[0] || c.level || ''); put('chip2', parts[1] || '');
     }
   } catch (_) { /* keep the built-in course text */ }
+
+  // LinkedIn sign-in, once it's switched on in Supabase Auth
+  FL.linkedinReady().then((ok) => { if (!ok) return;
+    document.querySelectorAll('.li-auth').forEach((x) => { x.hidden = false; });
+    document.querySelectorAll('[data-li]').forEach((b) => { b.onclick = async () => {
+      FL.busy(b, true, 'Opening LinkedIn…');
+      const { error } = await sb.auth.signInWithOAuth({ provider: 'linkedin_oidc', options: { redirectTo: location.origin + '/' } });
+      if (error) { FL.busy(b, false); say(FL.friendly(error)); }
+    }; });
+  });
 
   forms.login.onsubmit = async (e) => {
     e.preventDefault(); clear();

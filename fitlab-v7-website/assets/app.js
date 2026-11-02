@@ -365,6 +365,19 @@
         this.photoCheck.warm(); inp.click();
       };
     },
+    // ---- LinkedIn sign-in (fix-43): shown only once the LinkedIn provider is switched on in Supabase Auth
+    linkedinReady() {
+      if (this._liReady) return this._liReady;
+      const cfg = window.FITLAB_CONFIG || {};
+      this._liReady = (async () => {
+        try { const c = sessionStorage.getItem('fl:li'); if (c) return c === '1'; } catch (_) {}
+        let ok = false;
+        try { const r = await fetch(cfg.SUPABASE_URL + '/auth/v1/settings', { headers: { apikey: cfg.SUPABASE_ANON_KEY } }); const j = await r.json(); ok = !!(j && j.external && j.external.linkedin_oidc); } catch (_) {}
+        try { sessionStorage.setItem('fl:li', ok ? '1' : '0'); } catch (_) {}
+        return ok;
+      })();
+      return this._liReady;
+    },
     // ---- who may use the network (fix-41): a licence/certificate, business proof, or a course
     ACCESS_OPEN: ['access', 'register', 'settings', 'courses', 'academy', 'dashboard', 'lesson', 'exam', 'verify', 'certificate', 'notifications',
       'tools', 'tools-ai', 'tools-diet', 'tools-workout', 'privacy', 'terms', 'refunds', 'about', 'contact', 'pricing', 'index', 'admin', 'offline'],

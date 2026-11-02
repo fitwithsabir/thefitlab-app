@@ -7,7 +7,7 @@
 <script src="assets/theme.js?v=891b5cdc5d"></script>
 <link rel="icon" href="assets/favicon.png">
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
-<link rel="stylesheet" href="assets/styles.css?v=d92351a790">
+<link rel="stylesheet" href="assets/styles.css?v=35ff5fbea3">
 <style>
   .acts-menu{position:relative}
   .add-sec{position:relative}
@@ -38,7 +38,7 @@
 
 <script src="assets/vendor/supabase-2.118.0.js?v=8795eb1487"></script>
 <script src="config.js?v=e763b77801"></script>
-<script src="assets/app.js?v=a67080c5c9"></script>
+<script src="assets/app.js?v=891b283934"></script>
 <script src="assets/bookings.js?v=8175031af9"></script>
 <script src="assets/posts.js?v=fb1d8743cc"></script>
 <script>
@@ -300,7 +300,7 @@
     },
     langs() {
       formModal({ title: 'Languages', values: { langs: (me.languages || []).join(', ') }, fields: [
-        { k: 'langs', label: 'Languages you can coach in', max: 300, ph: 'e.g. English, Telugu, Hindi, Urdu', help: 'Separate with commas.' }],
+        { k: 'langs', label: 'Languages you speak', max: 300, ph: 'e.g. English, Telugu, Hindi, Urdu', help: 'Separate with commas.' }],
         onSave: async (v) => {
           const arr = [...new Set(v.langs.split(',').map((s) => s.trim()).filter(Boolean).map((s) => s.slice(0, 30)))].slice(0, 12);
           must(await sb.from('profiles').update({ languages: arr }).eq('id', me.id)); me = await FL.getProfile(true);
@@ -361,7 +361,7 @@
         ${p.profession_label && !(String(p.headline || '').toLowerCase().includes(String(p.profession_label).toLowerCase()) && !p.licence_label) ? `<p class="ph-prof">${esc(p.profession_label)}${p.licence_label ? ` · <span style="color:var(--lime);font-weight:700">${I('shield', 13)} ${esc(p.licence_label)}</span>` : ''}</p>`
           : self ? `<p class="ph-prof"><button class="txt-btn" data-ed="intro" style="color:var(--lime);padding:0">${I('plus', 15)}Add your profession</button></p>` : ''}
         ${(p.specialties || []).length ? `<div class="spec">${p.specialties.map((x) => `<span class="chip">${esc(x)}</span>`).join('')}</div>` : ''}
-        <p class="ph-loc">${loc ? esc(loc) + ' · ' : ''}<span class="mono" style="font-size:12px">${esc(p.unique_id || '')}</span></p>
+        <p class="ph-loc">${loc ? esc(loc) + ' · ' : ''}<span class="mono" style="font-size:12px">${esc(p.unique_id || '')}</span>${p.linkedin ? ` · <span class="li-ok" title="${esc('LinkedIn account: ' + (p.linkedin.name || ''))}">${I('check', 13)}Confirmed with LinkedIn</span>` : ''}</p>
         <p class="ph-loc"><a href="${self ? 'network#connections' : '#'}" ${self ? '' : 'onclick="return false"'}>${p.connections} connection${p.connections === 1 ? '' : 's'}</a>${!self && p.mutual ? ` · ${p.mutual} mutual` : ''}
           ${!self && c.state === 'connected' ? ` · <button class="txt-btn tagbtn" data-tag="1">${I('tag', 13)}${p.my_tag ? esc((FL.CONN_TAGS.find((x) => x[0] === p.my_tag) || [])[1] || p.my_tag) : 'Add how you know them'}</button>` : ''}
           ${!self && p.open_profile ? ` · <span class="chip acc" style="font-size:11px">${I('send', 12)}Open Profile</span>` : ''}</p>
@@ -385,14 +385,16 @@
       ['Profile photo', !!p.photo_url, 'photo'], ['Headline', !!p.headline, 'intro'], ['About (50+ characters)', (p.bio || '').length >= 50, 'about'],
       ['Experience', (p.experience || []).length > 0, 'exp'], ['Education', (p.education || []).length > 0, 'edu'],
       ['3 or more skills', (p.skills || []).length >= 3, 'skills'], ['A license or certification', (p.credentials || []).length + (p.certifications || []).length > 0, 'cred'],
-      ['Cover image', !!p.cover_url, 'cover'], ['Languages', (p.languages || []).length > 0, 'langs'], ['Profession', !!p.profession, 'intro']];
+      ['Cover image', !!p.cover_url, 'cover'], ['Languages', (p.languages || []).length > 0, 'langs'], ['Profession', !!p.profession, 'intro'],
+      ['Where you are (city and state)', !!p.city && (!!p.state || !/^india$/i.test(p.country || 'India')), 'intro']];
     const done = items.filter((x) => x[1]).length, pct = Math.round(done / items.length * 100);
     if (pct === 100) return '';
     const label = pct < 40 ? 'Beginner' : pct < 70 ? 'Intermediate' : pct < 100 ? 'Advanced' : 'All-Star';
     return `<div class="box"><div class="box-head"><h2>Profile strength: ${label}</h2><span class="sub">Private to you</span></div>
       <div class="strength"><div class="bar"><i style="width:${pct}%"></i></div>
         <p class="t-sm muted" style="margin:10px 0 0">Complete profiles rank higher in search, match more jobs and raise your verification trust score.</p>
-        <ul>${items.filter((x) => !x[1]).slice(0, 4).map(([l, , k]) => `<li>${I('plus', 16)}${l}<button class="pill sm" data-ed="${k}">Add</button></li>`).join('')}</ul></div></div>`;
+        <ul>${items.filter((x) => !x[1]).slice(0, 4).map(([l, , k]) => `<li>${I('plus', 16)}${l}<button class="pill sm" data-ed="${k}">Add</button></li>`).join('')}</ul>
+        <button class="pill ghost sm" data-ed="import" style="margin-top:12px">${I('upload', 15)}Fill it from LinkedIn</button></div></div>`;
   }
 
   function about() {
@@ -617,6 +619,11 @@
     const asb = $('allSkills'); if (asb) asb.onclick = () => { $('skills').outerHTML = skills(true); };
   }
 
+  async function openImport() {
+    try { await FL.loadScript('assets/li-import.js?v=5557717366'); } catch (ex) { return FL.toast(FL.friendly(ex), 'err'); }
+    FLImport.open({ me, p, onDone: async () => { me = await FL.getProfile(true); await reload(); } });
+  }
+
   // the site-wide "add your photo" pop-up finished — show the new photo here too
   window.addEventListener('fl:photo', async () => { me = await FL.getProfile(true); await reload(); });
   async function reload() {
@@ -641,6 +648,7 @@
     const ed = e.target.closest('[data-ed]');
     if (ed) { const k = ed.dataset.ed, id = ed.dataset.id || null;
       if (k === 'photo') return uploadPic('photo'); if (k === 'cover') return uploadPic('cover');
+      if (k === 'import') { const pop = ed.closest('.menu-pop'); if (pop) pop.remove(); return openImport(); }
       return editors[k] && editors[k](id); }
     const uf = e.target.closest('[data-unfeat]');
     if (uf) { e.preventDefault(); const r = await FL.call('delete_featured', { p_id: uf.dataset.unfeat }); if (r) reload(); return; }
@@ -663,7 +671,7 @@
     if (t.id === 'btnAddSec') {
       const old = main.querySelector('.add-sec .menu-pop'); if (old) return old.remove();
       const pop = document.createElement('div'); pop.className = 'menu-pop'; pop.style.left = '0'; pop.style.right = 'auto';
-      pop.innerHTML = [['about', 'About', 'edit'], ['exp', 'Experience', 'briefcase'], ['edu', 'Education', 'school'], ['cred', 'License or certification', 'award'],
+      pop.innerHTML = [['import', 'Import from LinkedIn', 'upload'], ['about', 'About', 'edit'], ['exp', 'Experience', 'briefcase'], ['edu', 'Education', 'school'], ['cred', 'License or certification', 'award'],
         ['skills', 'Skills', 'sparkles'], ['svc', 'Services', 'briefcase'], ['feat', 'Featured', 'bookmark'], ['langs', 'Languages', 'globe'], ['social', 'Contact & social links', 'link'], ['photo', 'Profile photo', 'camera'], ['cover', 'Cover image', 'image']]
         .map(([k, l, ic]) => `<button data-ed="${k}">${I(ic, 18)}${l}</button>`).join('');
       t.parentElement.appendChild(pop); return;
@@ -714,6 +722,16 @@
   await reload();
   side();
   if (isSelf() && FL.param('edit') === '1') editors.intro();
+  // ?add=import opens the LinkedIn import, ?add=exp (etc.) opens that editor; ?li=confirm comes back from LinkedIn
+  { const add = FL.param('add');
+    if (isSelf() && add === 'import') openImport();
+    else if (isSelf() && add && add !== 'photo' && editors[add]) editors[add]();
+    if (isSelf() && FL.param('li') === 'confirm') {
+      history.replaceState(null, '', 'profile');
+      const r = await FL.call('linkedin_confirm');
+      if (r && r.ok) { FL.toast('Confirmed with LinkedIn', 'ok'); await reload(); }
+      else if (r) FL.toast(r.message || 'Couldn\'t confirm with LinkedIn.', 'err');
+    } }
   if (isSelf() && FL.param('edit') === 'social') editors.social();
 })();
 </script>
