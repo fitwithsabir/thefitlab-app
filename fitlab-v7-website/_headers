@@ -12,3 +12,10 @@
   Access-Control-Allow-Origin: *
 /offline
   Cache-Control: no-cache
+# Scripts, styles and images: browsers keep them for a day instead of re-checking each one on every
+# page (that cost 0.2–0.7 s per page on Indian mobile networks). Pages ask for changed scripts and
+# styles under a new ?v= address (tools/stamp_assets.py), so updates still show straight away.
+/assets/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/config.js
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800

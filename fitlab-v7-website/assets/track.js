@@ -33,13 +33,22 @@
   }
 
   // ---- Meta Pixel
-  let pixel = false;
+  let pixel = false, loadPixel = () => {};
   if (C.META_PIXEL_ID) {
     /* eslint-disable */
-    !function (f, b, e, v, n, t, s) { if (f.fbq) return; n = f.fbq = function () { n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments); };
-      if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0'; n.queue = []; t = b.createElement(e); t.async = !0;
-      t.src = v; s = b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t, s); }(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
+    !function (f) { if (f.fbq) return; const n = f.fbq = function () { n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments); };
+      if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0'; n.queue = []; }(window);
     /* eslint-enable */
+    // The page comes first: Meta's ~200 KB script loads once the page has finished loading. Calls made
+    // before then wait in fbq's queue; a conversion event (sign-up, purchase…) loads it straight away.
+    let asked = false;
+    loadPixel = () => {
+      if (asked) return; asked = true;
+      const t = document.createElement('script'); t.async = true; t.src = 'https://connect.facebook.net/en_US/fbevents.js';
+      (document.head || document.documentElement).appendChild(t);
+    };
+    const later = () => ('requestIdleCallback' in window ? requestIdleCallback(loadPixel, { timeout: 2500 }) : setTimeout(loadPixel, 1200));
+    if (document.readyState === 'complete') later(); else window.addEventListener('load', later, { once: true });
     window.fbq('init', C.META_PIXEL_ID);
     window.fbq('track', 'PageView');
     pixel = true;
@@ -51,6 +60,7 @@
     // Meta event; eventId de-duplicates against the server-side Conversions API event
     event(name, params, eventId) {
       if (!pixel) return;
+      loadPixel();
       try { window.fbq(STANDARD.has(name) ? 'track' : 'trackCustom', name, params || {}, eventId ? { eventID: String(eventId) } : undefined); } catch (_) {}
     },
     // better ad matching once we know who the visitor is (the Pixel hashes these in the browser)

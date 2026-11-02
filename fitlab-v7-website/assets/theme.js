@@ -23,10 +23,17 @@
   d.setAttribute('data-style', s);
   if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t); else d.removeAttribute('data-theme');
   d.setAttribute('data-mode', modeOf());
-  // cards rise in on first paint only (styles.css .fl-enter)
-  d.classList.add('fl-enter');
-  setTimeout(function () { d.classList.remove('fl-enter'); }, 1600);
+  // cards rise in on the first page of a visit only (styles.css .fl-enter); after that pages show at once
+  var seen = null; try { seen = window.sessionStorage.getItem('fl:entered'); window.sessionStorage.setItem('fl:entered', '1'); } catch (e) {}
+  if (!seen) {
+    d.classList.add('fl-enter');
+    setTimeout(function () { d.classList.remove('fl-enter'); }, 1600);
+  }
 
+  // open the connections the page will need straight away (saves a round trip each on slow networks)
+  ['https://izdsqmghkawvdvcolajv.supabase.co', 'https://fonts.gstatic.com'].forEach(function (h) {
+    var pc = document.createElement('link'); pc.rel = 'preconnect'; pc.href = h; pc.crossOrigin = 'anonymous'; document.head.appendChild(pc);
+  });
   var link = document.createElement('link');
   link.rel = 'stylesheet'; link.id = 'fl-fonts';
   link.href = 'https://fonts.googleapis.com/css2?' + FONTS[s] + '&display=swap';
