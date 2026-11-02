@@ -28,6 +28,7 @@
       <div class="eyebrow" id="regEyebrow">Step 1 of 1 · Member profile</div>
       <h1 class="display" id="regTitle" style="font-size:clamp(38px,6vw,64px);margin:8px 0 6px">Set up your <span class="lime">member profile</span></h1>
       <p class="ash" style="margin:0 0 24px">This is what appears on your certificate and verification page, so use your real name and a clear, well-lit photo of yourself — the kind you'd use for a professional bio.</p>
+      <p class="ash" id="regOnly" style="margin:-14px 0 24px;font-size:14px">The Fit Lab is only for health and fitness professionals. Next, you'll show a licence, certificate or business proof — or enrol in a course, if you'd like to learn with us.</p>
 
       <form id="form" class="card hud" novalidate><span class="c1"></span><span class="c2"></span>
         <div class="field">
@@ -200,6 +201,7 @@
   if (editing && profile.profile_completed) {
     $('regEyebrow').textContent = 'Member profile · ' + (profile.unique_id || '');
     $('regTitle').innerHTML = 'Edit your <span class="lime">profile</span>';
+    { const o = $('regOnly'); if (o) o.remove(); }
   }
 
   // live username availability
