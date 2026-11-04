@@ -50,7 +50,7 @@
 
 <script src="assets/vendor/supabase-2.118.0.js?v=8795eb1487"></script>
 <script src="config.js?v=e763b77801"></script>
-<script src="assets/app.js?v=fe7aa3993d"></script>
+<script src="assets/app.js?v=83f0680e83"></script>
 <script src="assets/track.js?v=c458497b3e"></script>
 <script>
 (async () => {
@@ -205,6 +205,7 @@
         ${e ? `<div class="cprog" style="margin-top:14px"><span class="progress"><i style="width:${s.pct}%"></i></span><span class="t-sm"><b>${s.doneCount}/${c.total_days}</b> days · ${s.pct}%</span></div>` : ''}
         ${e ? `<div class="cta-row">${ctaFor(c, s)}</div>` : price(c) ? buyBox(c) : `<div class="cta-row"><button class="pill solid lg" id="btnEnroll">Enroll — free</button></div>`}
         ${certifyOffer(c, e, s)}
+        ${FL.canEditPrices(me) ? `<div class="notice" style="margin:14px 0 0;align-items:center;flex-wrap:wrap">${FL.icon('rupee', 18)}<div style="flex:1;min-width:180px"><b>Prices</b> · full course ${price(c) ? rupees(price(c)) : 'free'} · direct certification ${price(c) ? rupees(directPrice(c)) : 'free'}<div class="t-xs muted">Only you and your payments team see this.</div></div><button class="pill solid sm" id="btnPrices" type="button">Edit prices</button></div>` : ''}
         <div class="stats3">${stt.enrolled_count != null ? `<span><b>${stt.enrolled_count}</b> enrolled</span><span><b>${stt.completed_count}</b> completed</span><span><b>${stt.in_progress_count}</b> in progress</span>` : ''}</div>
         ${c.description ? `<p class="desc">${esc(c.description)}</p>` : ''}
       </div></div>
@@ -248,6 +249,8 @@
     const be = $('btnEnroll');
     if (be) be.onclick = () => enroll(c, be);
     $('main').querySelectorAll('[data-buy]').forEach((b) => { b.onclick = () => buy(c, b.dataset.buy, b); });
+    const bp = $('btnPrices');
+    if (bp) bp.onclick = () => FL.editCoursePrices(c, () => location.reload());   // fix-44
     const offer = $('certify');
     if (offer && location.hash === '#certify') { offer.scrollIntoView({ block: 'center' }); offer.classList.add('flash'); setTimeout(() => offer.classList.remove('flash'), 2600); }
     side(c);

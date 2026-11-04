@@ -532,6 +532,32 @@
       return v;
     },
     clearPrices() { try { Object.keys(sessionStorage).filter((k) => k.startsWith('fl:price:')).forEach((k) => sessionStorage.removeItem(k)); } catch (_) { /* ignore */ } },
+    // who may change course prices: the owner and the "Premium & payments" team (the database checks this too)
+    canEditPrices(p) { return !!p && !!(p.is_owner || (p.is_admin && p.admin_rights && p.admin_rights.premium)); },
+    // the "Edit prices" dialog (course page; Admin → Course prices has the same fields)
+    editCoursePrices(c, onDone) {
+      const rs = (v) => (v == null ? '' : String(+(Number(v) / 100).toFixed(2)));
+      const m = this.modal({ title: 'Course & certification prices', body: `
+        <p class="t-sm muted" style="margin:0 0 14px">${esc(c.title)}. The site and new payments use the new prices straight away.</p>
+        <div class="field"><label for="epFull">Full course (₹)</label><input id="epFull" type="number" min="0" max="100000" step="0.01" inputmode="decimal" value="${rs(c.price_paise)}">
+          <div class="t-xs muted" style="margin-top:4px">0 makes the course free</div></div>
+        <div class="field" style="margin-top:12px"><label for="epDirect">Direct certification (₹)</label><input id="epDirect" type="number" min="1" max="100000" step="0.01" inputmode="decimal" value="${rs(c.direct_price_paise)}" placeholder="Same as the full course">
+          <div class="t-xs muted" style="margin-top:4px">Leave empty to charge the same as the full course</div></div>`,
+        foot: `<a class="pill ghost" href="admin#prices">Price history</a><button class="pill solid" data-save>Save prices</button>` });
+      m.q('[data-save]').onclick = async (ev) => {
+        const b = ev.currentTarget, f = m.q('#epFull').value.trim(), d = m.q('#epDirect').value.trim();
+        if (f === '' || !isFinite(parseFloat(f))) return this.toast('Enter the full course price (0 for free).', 'err');
+        const full = Math.round(parseFloat(f) * 100), direct = d === '' ? null : Math.round(parseFloat(d) * 100);
+        if (direct != null && !isFinite(direct)) return this.toast('Enter the certification price, or leave it empty.', 'err');
+        this.busy(b, true, 'Saving…');
+        const { data, error } = await sb.rpc('admin_set_course_price', { p_course: c.id, p_course_paise: full, p_direct_paise: direct });
+        this.busy(b, false);
+        if (error) return this.toast(this.friendly(error), 'err');
+        if (data && data.ok === false) return this.toast(data.message || 'That price isn\'t allowed', 'err');
+        this.clearPrices(); m.close(); this.toast('Prices saved', 'ok');
+        if (onDone) onDone(data);
+      };
+    },
     // Fills the page's prices:
     //   data-price="full" | "direct" | "auto"   → the text becomes that price (auto = this page's track)
     //   data-price-tpl="Get certified for {direct}"   → a sentence with {full} {direct} {auto} in it

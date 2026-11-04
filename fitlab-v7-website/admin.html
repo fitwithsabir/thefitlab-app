@@ -297,7 +297,7 @@
 
 <script src="assets/vendor/supabase-2.118.0.js?v=8795eb1487"></script>
 <script src="config.js?v=e763b77801"></script>
-<script src="assets/app.js?v=fe7aa3993d"></script>
+<script src="assets/app.js?v=83f0680e83"></script>
 <script>
 (async () => {
   const $ = (id) => document.getElementById(id);
@@ -402,12 +402,12 @@
     { id: 'conduct', label: 'Settings & rules', icon: 'settings', group: 'Trust & safety', need: 'moderation', short: 'Rules' },
     { id: 'pages', label: 'Pages', icon: 'building', group: 'Business', need: 'verification' },
     { id: 'premium', label: 'Premium', icon: 'crown', group: 'Business', need: 'premium' },
+    { id: 'prices', label: 'Course prices', icon: 'rupee', group: 'Business', need: 'premium', short: 'Course prices' },
     { id: 'bookings', label: 'Bookings & payouts', icon: 'calendar', group: 'Business', need: 'premium', short: 'Bookings' },
     { id: 'payments', label: 'Payments & receipts', icon: 'rupee', group: 'Business', need: 'premium', short: 'Payments' },
     { id: 'marketing', label: 'Marketing & ads', icon: 'chart', group: 'Business', need: 'premium', short: 'Marketing' },
     { id: 'emails', label: 'Emails', icon: 'mail', group: 'Business', need: 'premium' },
     { id: 'certs', label: 'Certificates', icon: 'award', group: 'Academy', need: 'certificates', cnt: 'certificates' },
-    { id: 'prices', label: 'Course prices', icon: 'rupee', group: 'Academy', need: 'premium', short: 'Prices' },
     { id: 'broadcast', label: 'Announcements', icon: 'bell', group: 'Academy', need: 'announcements' },
   ];
   const allowed = ROUTES.filter((r) => can(r.need));
@@ -584,7 +584,8 @@
         ...(ca.revenue_30d != null ? [[FL.paise(ca.revenue_30d), 'Coach AI revenue · 30 days', `${FL.paise(ca.revenue_all)} all time`]] : [])]]] : []),
     ];
     const kpis = groups.map(([g, items]) => `<div class="kgrp">${E(g)}</div><div class="kpis">${items.map(([v, l, s]) =>
-      `<div class="kpi"><b>${typeof v === 'string' ? E(v) : n(v)}</b><span>${E(l)}</span>${s ? `<em>${E(s)}</em>` : ''}</div>`).join('')}</div>`).join('');
+      `<div class="kpi"><b>${typeof v === 'string' ? E(v) : n(v)}</b><span>${E(l)}</span>${s ? `<em>${E(s)}</em>` : ''}</div>`).join('')}</div>`
+      + (g === 'Academy' && can('premium') ? `<div style="margin:8px 0 4px"><a class="pill sm" href="#prices">${I('rupee', 14)}Change course &amp; certification prices</a></div>` : '')).join('');
     const hb = (list) => { const max = Math.max(1, ...list.map((x) => x.n)); return list.map((x) => `<div class="hbar"><span title="${E(x.label)}">${E(x.label)}</span><div class="t"><i style="width:${Math.round(x.n / max * 100)}%"></i></div><b>${n(x.n)}</b></div>`).join(''); };
     const series = o.series || [];
     const METRICS = [['signups', 'Sign-ups'], ['posts', 'Posts'], ['connections', 'Connections']];
@@ -1442,7 +1443,7 @@
           <select id="gPlan" aria-label="Plan" style="flex:0 1 150px"><option value="pro">Pro</option><option value="business">Business</option><option value="recruiter">Recruiter</option></select>
           <select id="gDays" aria-label="How long" style="flex:0 1 150px"><option value="30">30 days</option><option value="90">3 months</option><option value="365">1 year</option></select>
           <button class="pill solid" type="submit">Give</button></form></div>
-      <div class="box"><div class="box-head"><div><h2>Plans & prices</h2><div class="sub">Prices in rupees. Changes apply to new purchases straight away. Members are never charged automatically.</div></div></div>
+      <div class="box"><div class="box-head"><div><h2>Plans & prices</h2><div class="sub">Prices in rupees. Changes apply to new purchases straight away. Members are never charged automatically.</div></div><a class="pill sm" href="#prices">${I('rupee', 14)}Course &amp; certification prices</a></div>
         <div class="tblwrap"><table class="tbl"><thead><tr><th>Plan</th><th>₹ / month</th><th>₹ / year</th><th>InMail / month</th><th>On sale</th><th></th></tr></thead>
           <tbody id="plbody">${(data.plans || []).map((p) => `<tr data-plan="${E(p.code)}"><td><b>${E(p.name)}</b></td>
             <td><input type="number" min="0" data-k="price_month" value="${Math.round(p.price_month / 100)}" style="width:100px" aria-label="${E(p.name)} monthly price"></td>
