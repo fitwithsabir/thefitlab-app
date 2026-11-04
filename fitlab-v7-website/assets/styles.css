@@ -1708,3 +1708,8 @@ div.avatar[data-h="3"]{background:#ffb86b} div.avatar[data-h="4"]{background:#7c
 .pstr.slim b{font-size:14px}
 .pstr.slim small{color:var(--ash);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pstr.slim .pstr-bar{flex:0 0 72px}
+
+/* fix-44: prices come from the database — hide the HTML's ₹ text for a moment so an old price never flashes.
+   If the prices can't load, the text in the page shows after 2.5 seconds anyway. */
+[data-price]:not(.pr-ok), [data-price-tpl]:not(.pr-ok) { visibility: hidden; animation: pr-show 0s linear 2.5s forwards; }
+@keyframes pr-show { to { visibility: visible; } }

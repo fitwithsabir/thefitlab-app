@@ -7,7 +7,7 @@
 <link rel="icon" href="assets/favicon.png">
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
 <script src="assets/theme.js?v=891b5cdc5d"></script>
-<link rel="stylesheet" href="assets/styles.css?v=35ff5fbea3">
+<link rel="stylesheet" href="assets/styles.css?v=30a90be14f">
 <style>
   .exwrap{max-width:760px;margin:0 auto}
   .exbar{position:sticky;top:0;z-index:30;background:rgba(5,6,5,.94);backdrop-filter:blur(8px);
@@ -128,7 +128,7 @@
 
 <script src="assets/vendor/supabase-2.118.0.js?v=8795eb1487"></script>
 <script src="config.js?v=e763b77801"></script>
-<script src="assets/app.js?v=891b283934"></script>
+<script src="assets/app.js?v=fe7aa3993d"></script>
 <script>
 (async () => {
   const $ = (id) => document.getElementById(id);
@@ -177,7 +177,7 @@
     return block(c.status === 'approved' || c.status === 'auto_approved' ? 'Already certified' : 'Exam passed', 'You have passed this exam', msg);
   }
   if (!direct && !allDays) {
-    const fee = course.price_paise >= 100 ? '₹' + (course.price_paise / 100).toLocaleString('en-IN') : null;
+    const fee = course.price_paise >= 100 ? FL.rs(course.direct_price_paise ?? course.price_paise) : null;   // fix-44: the direct certification price
     const nextDay = Math.min((doneDays || 0) + 1, course.total_days);
     return block('Not yet', `${course.total_days - (doneDays || 0)} days still to go`,
       `The course exam unlocks once all ${course.total_days} days are complete — you have finished ${doneDays || 0}.` +

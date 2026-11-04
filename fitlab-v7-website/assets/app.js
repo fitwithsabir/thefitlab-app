@@ -518,6 +518,43 @@
     },
     inr(rupees) { return '₹' + Number(rupees || 0).toLocaleString('en-IN'); },
     paise(p) { return '₹' + (Number(p || 0) / 100).toLocaleString('en-IN', { maximumFractionDigits: 0 }); },
+    // ₹149 or ₹129.50 (paise kept when there are any)
+    rs(p) { const r = Number(p || 0) / 100; return '₹' + r.toLocaleString('en-IN', { minimumFractionDigits: r % 1 ? 2 : 0, maximumFractionDigits: 2 }); },
+    // fix-44: course and certification prices come from the database, so a price changed in Admin shows
+    // everywhere. { full, direct, title } in paise; kept for a minute in this tab so pages don't flicker.
+    async coursePrices(slug = 'fitness-coaching-mastery') {
+      const key = 'fl:price:' + slug;
+      try { const c = JSON.parse(sessionStorage.getItem(key) || 'null'); if (c && Date.now() - c.t < 60000) return c.v; } catch (_) { /* ignore */ }
+      const { data, error } = await sb.from('courses').select('title, price_paise, direct_price_paise').eq('slug', slug).maybeSingle();
+      if (error || !data) return null;
+      const v = { title: data.title, full: Number(data.price_paise || 0), direct: Number(data.direct_price_paise ?? data.price_paise ?? 0) };
+      try { sessionStorage.setItem(key, JSON.stringify({ t: Date.now(), v })); } catch (_) { /* ignore */ }
+      return v;
+    },
+    clearPrices() { try { Object.keys(sessionStorage).filter((k) => k.startsWith('fl:price:')).forEach((k) => sessionStorage.removeItem(k)); } catch (_) { /* ignore */ } },
+    // Fills the page's prices:
+    //   data-price="full" | "direct" | "auto"   → the text becomes that price (auto = this page's track)
+    //   data-price-tpl="Get certified for {direct}"   → a sentence with {full} {direct} {auto} in it
+    //   data-price-tpl-diff="…"   → used instead when the two prices are different
+    // Works on <title> and <meta content> too. The ₹ text in the HTML is only shown if the prices can't load.
+    async fillPrices(root = document, slug) {
+      let p = null;
+      try { p = await this.coursePrices(slug); } catch (_) { /* keep the text in the page */ }
+      const els = root.querySelectorAll('[data-price],[data-price-tpl]');
+      if (p) {
+        const auto = document.body.classList.contains('v-direct') ? 'direct' : 'full';
+        const show = (k) => { const v = k === 'auto' ? p[auto] : p[k]; return v >= 100 ? this.rs(v) : 'Free'; };
+        const fill = (t) => t.replace(/\{(full|direct|auto)\}/g, (_m, k) => show(k));
+        els.forEach((el) => {
+          let text = null;
+          if (el.dataset.price) text = show(el.dataset.price);
+          else text = fill(p.full !== p.direct && el.dataset.priceTplDiff ? el.dataset.priceTplDiff : el.dataset.priceTpl);
+          if (el.tagName === 'META') el.setAttribute('content', text); else el.textContent = text;
+        });
+      }
+      els.forEach((el) => el.classList.add('pr-ok'));
+      return p;
+    },
     PERIOD: { month: 'month', year: 'year', hour: 'hour', session: 'session' },
     pay(j) {
       if (!j || j.salary_min == null) return '';

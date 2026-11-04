@@ -7,7 +7,7 @@
 <script src="assets/theme.js?v=891b5cdc5d"></script>
 <link rel="icon" href="assets/favicon.png">
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
-<link rel="stylesheet" href="assets/styles.css?v=35ff5fbea3">
+<link rel="stylesheet" href="assets/styles.css?v=30a90be14f">
 <style>
   /* ---------- Control Room shell ---------- */
   .cr{display:grid;gap:22px;align-items:start}
@@ -297,7 +297,7 @@
 
 <script src="assets/vendor/supabase-2.118.0.js?v=8795eb1487"></script>
 <script src="config.js?v=e763b77801"></script>
-<script src="assets/app.js?v=891b283934"></script>
+<script src="assets/app.js?v=fe7aa3993d"></script>
 <script>
 (async () => {
   const $ = (id) => document.getElementById(id);
@@ -407,6 +407,7 @@
     { id: 'marketing', label: 'Marketing & ads', icon: 'chart', group: 'Business', need: 'premium', short: 'Marketing' },
     { id: 'emails', label: 'Emails', icon: 'mail', group: 'Business', need: 'premium' },
     { id: 'certs', label: 'Certificates', icon: 'award', group: 'Academy', need: 'certificates', cnt: 'certificates' },
+    { id: 'prices', label: 'Course prices', icon: 'rupee', group: 'Academy', need: 'premium', short: 'Prices' },
     { id: 'broadcast', label: 'Announcements', icon: 'bell', group: 'Academy', need: 'announcements' },
   ];
   const allowed = ROUTES.filter((r) => can(r.need));
@@ -512,7 +513,7 @@
   VIEWS.marketing = async (alive) => {
     let days = 30;
     const SITE = 'https://thefitlab.in';
-    const LINKS = [['Full course · ₹99', '/academy', 'fcm_course'], ['Direct certification · ₹99', '/certify', 'fcm_direct'],
+    const LINKS = [['Full course', '/academy', 'fcm_course'], ['Direct certification', '/certify', 'fcm_direct'],
       ['Jobs · trainers', '/trainer-jobs', 'jobs_trainer'], ['Jobs · coaches', '/coach-jobs', 'jobs_coach'], ['Jobs · nutritionists', '/nutritionist-jobs', 'jobs_nutritionist'],
       ['Hiring · trainers', '/hire-trainers', 'hire_trainer'], ['Hiring · coaches', '/hire-coaches', 'hire_coach'], ['Hiring · nutritionists', '/hire-nutritionists', 'hire_nutritionist']];
     const PARAMS = 'utm_source=meta&utm_medium=paid_social&utm_campaign={{campaign.name}}&utm_content={{ad.name}}&utm_term={{adset.name}}&placement={{placement}}';
@@ -1511,6 +1512,55 @@
       e.preventDefault();
       const m = await findMember($('gUser').value); if (!m) return FL.toast('No member found with that username or ID', 'err');
       if (await act('admin_grant_premium', { p_user: m.user_id, p_plan: $('gPlan').value, p_days: +$('gDays').value }, `${m.full_name} now has ${FL.PLAN_NAMES[$('gPlan').value]}`)) reload();
+    };
+  };
+
+  // ------------------------------------------------------------------ COURSE PRICES (fix-44)
+  // The full course and the direct certification each have a price. Saving changes the site and new
+  // payments straight away; a payment someone has already started keeps the price it was started at.
+  VIEWS.prices = async (alive) => {
+    const { data, error } = await sb.rpc('admin_course_prices');
+    if (!alive()) return;
+    if (error || !data) { $('view').innerHTML = errBox(error || {}); return; }
+    const rs = (p) => (p == null ? '' : String(+(Number(p) / 100).toFixed(2)));
+    const money = (p) => (Number(p) >= 100 ? FL.rs(p) : 'Free');
+    const list = data.courses || [], hist = data.history || [];
+    $('view').innerHTML = `<div class="stack" id="cpRoot">
+      <div class="box"><div class="box-head"><div><h2>Course &amp; certification prices</h2>
+        <div class="sub">Prices in rupees. A new price shows on the site and is charged on new payments straight away. Anyone already at the payment step pays the price they started with.</div></div></div>
+        ${list.length ? `<div class="tblwrap"><table class="tbl"><thead><tr><th>Course</th><th>Full course (₹)</th><th>Direct certification (₹)</th><th></th></tr></thead>
+          <tbody id="cpBody">${list.map((c) => `<tr data-cp="${E(c.id)}" data-title="${E(c.title)}" data-was-course="${E(c.course)}" data-was-direct="${E(c.direct_effective)}" data-was-raw="${E(c.direct == null ? '' : c.direct)}">
+            <td><b>${E(c.title)}</b>${c.published ? '' : '<div class="sub">Not published yet</div>'}<div class="sub">Now: ${E(money(c.course))} · certification ${E(money(c.direct_effective))}</div></td>
+            <td><input type="number" min="0" max="100000" step="0.01" inputmode="decimal" data-k="course" value="${E(rs(c.course))}" style="width:120px" aria-label="${E(c.title)}: full course price in rupees"><div class="sub">0 = free</div></td>
+            <td><input type="number" min="1" max="100000" step="0.01" inputmode="decimal" data-k="direct" value="${E(rs(c.direct))}" placeholder="Same as course" style="width:140px" aria-label="${E(c.title)}: direct certification price in rupees"><div class="sub">Empty = same as the course</div></td>
+            <td><button class="pill solid sm" type="button" data-savecp="${E(c.id)}">Save</button></td></tr>`).join('')}</tbody></table></div>`
+          : '<div class="empty">No courses yet.</div>'}</div>
+      <div class="box"><div class="box-head"><div><h2>Recent price changes</h2><div class="sub">Also in the Activity log.</div></div></div>
+        ${hist.length ? hist.map((h) => { const d = h.detail || {};
+          return `<div class="lrow"><div><div class="nm">${E(h.course)}</div>
+            <div class="sub">Full course ${E(money(d.course_before))} → <b>${E(money(d.course_after))}</b> · Direct certification ${E(money(d.direct_before))} → <b>${E(money(d.direct_after))}</b></div>
+            <div class="sub">${E(fmt(h.at))} · ${E(h.by)}</div></div></div>`; }).join('') : '<div class="empty">No changes yet.</div>'}</div></div>`;
+    reloadView = () => { if (current === 'prices') VIEWS.prices(alive); };
+    const body = $('cpBody');
+    if (!body) return;
+    body.onclick = async (e) => {
+      const b = e.target.closest('[data-savecp]'); if (!b) return;
+      const tr = b.closest('tr'), v = (k) => tr.querySelector(`[data-k="${k}"]`).value.trim();
+      const toPaise = (s) => Math.round(parseFloat(s) * 100);
+      if (v('course') === '' || !isFinite(parseFloat(v('course')))) return FL.toast('Enter the full course price (0 for free).', 'err');
+      const course = toPaise(v('course'));
+      const direct = v('direct') === '' ? null : toPaise(v('direct'));
+      if (direct != null && !isFinite(direct)) return FL.toast('Enter the certification price, or leave it empty.', 'err');
+      const newDirect = direct == null ? course : direct;
+      const wasC = +tr.dataset.wasCourse, wasD = +tr.dataset.wasDirect;
+      if (course === wasC && String(direct == null ? '' : direct) === tr.dataset.wasRaw) return FL.toast('No change to save.', 'ok');
+      if (!(await FL.confirm('Change the price?',
+        `${tr.dataset.title}: full course ${money(wasC)} → ${money(course)}, direct certification ${money(wasD)} → ${money(newDirect)}. The site and new payments use the new price straight away.`,
+        'Change price'))) return;
+      FL.busy(b, true, '…');
+      const ok = await act('admin_set_course_price', { p_course: tr.dataset.cp, p_course_paise: course, p_direct_paise: direct }, 'Price saved');
+      FL.busy(b, false);
+      if (ok) { FL.clearPrices(); reloadView(); }
     };
   };
 
