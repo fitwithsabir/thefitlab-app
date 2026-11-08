@@ -8,7 +8,7 @@
 <script src="assets/i18n.js?v=5a53b6d0a1"></script>
 <link rel="icon" href="assets/favicon.png">
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
-<link rel="stylesheet" href="assets/styles.css?v=aa315fca94">
+<link rel="stylesheet" href="assets/styles.css?v=30a90be14f">
 <style>
   .acts-menu{position:relative}
   .add-sec{position:relative}
@@ -39,7 +39,7 @@
 
 <script src="assets/vendor/supabase-2.118.0.js?v=8795eb1487"></script>
 <script src="config.js?v=e763b77801"></script>
-<script src="assets/app.js?v=a9d2c41a7a"></script>
+<script src="assets/app.js?v=3b8a32deaf"></script>
 <script src="assets/bookings.js?v=8175031af9"></script>
 <script src="assets/posts.js?v=fb1d8743cc"></script>
 <script>
@@ -67,6 +67,7 @@
       const v = values[f.k] ?? f.def ?? '';
       const lbl = `<label for="f_${f.k}" class="${f.req ? 'req' : ''}">${esc(f.label)}</label>`;
       let input;
+      if (f.type === 'place') return `<div class="geo-slot" id="f_${f.k}" style="margin-bottom:2px"></div>`;
       if (f.type === 'textarea') input = `<textarea id="f_${f.k}" maxlength="${f.max || 2000}" placeholder="${esc(f.ph || '')}" style="min-height:${f.rows || 120}px">${esc(v)}</textarea>`;
       else if (f.type === 'select') input = `<select id="f_${f.k}">${f.optionsHtml || f.options.map(([ov, ol]) => `<option value="${esc(ov)}" ${String(v) === String(ov) ? 'selected' : ''}>${esc(ol)}</option>`).join('')}</select>`;
       else if (f.type === 'checkbox') return `<label class="check" style="margin-bottom:12px;color:var(--bone)"><input type="checkbox" id="f_${f.k}" ${v ? 'checked' : ''}><span>${esc(f.label)}</span></label>`;
@@ -79,7 +80,14 @@
     if (buf.length) body += `<div class="row2">${buf.join('')}</div>`;
     const m = FL.modal({ title, wide, body: `<p class="t-xs muted" style="margin:0 0 12px">* Indicates required</p>${body}<div class="err hidden" id="fErr"></div>`,
       foot: `${onDelete ? `<button class="pill ghost left" data-del style="color:var(--danger-text);border-color:var(--line-2)">Delete</button>` : ''}<button class="pill solid" data-save>Save</button>` });
-    const read = () => Object.fromEntries(fields.map((f) => { const el = m.q('#f_' + f.k); return [f.k, f.type === 'checkbox' ? el.checked : el.value.trim()]; }));
+    const pickers = {};
+    fields.filter((f) => f.type === 'place').forEach((f) => {
+      FL.loadScript('assets/places.js?v=6464b3dab4').then(() => FLPlaces.mount(m.q('#f_' + f.k), { value: values, levels: f.levels })).then((p) => { pickers[f.k] = p; })
+        .catch(() => { m.q('#f_' + f.k).innerHTML = `<div class="field"><label for="f_${f.k}_city">City, town or village</label><input id="f_${f.k}_city" maxlength="80" value="${esc(values.city || '')}"></div>`; });
+    });
+    const read = () => Object.fromEntries(fields.map((f) => {
+      if (f.type === 'place') { const fb = m.q('#f_' + f.k + '_city'); return [f.k, pickers[f.k] ? pickers[f.k].get() : fb ? { city: fb.value.trim() || null } : {}]; }
+      const el = m.q('#f_' + f.k); return [f.k, f.type === 'checkbox' ? el.checked : el.value.trim()]; }));
     m.q('[data-save]').onclick = async (e) => {
       const vals = read(); const err = m.q('#fErr');
       const missing = fields.find((f) => f.req && !vals[f.k]);
@@ -108,9 +116,8 @@
         { k: 'specialties', label: 'Specialties', max: 300, ph: 'e.g. PCOS, Post-natal, Sports rehab', help: 'Up to 10, separated by commas.', half: true },
         { k: 'username', label: 'Username', max: 30, help: 'Letters and numbers only. Used for your profile link, search and sign-in.', half: true },
         { k: 'occupation', label: 'Current position', max: 120, ph: 'e.g. Head Coach at Shaan Fitness', half: true },
-        { k: 'city', label: 'City', max: 60, half: true }, { k: 'district', label: 'District', max: 60, half: true },
-        { k: 'country', label: 'Country/Region', max: 60, half: true },
-        { k: 'experience_level', label: 'Coaching experience', type: 'select', options: [['', 'Select'], ['beginner', 'Beginner / aspiring coach'], ['1-3 years', '1–3 years'], ['3+ years', '3+ years']], half: true },
+        { k: 'place', label: 'Location', type: 'place' },
+        { k: 'experience_level', label: 'Experience in health & fitness', type: 'select', options: [['', 'Select'], ['beginner', 'Beginner / aspiring coach'], ['1-3 years', '1–3 years'], ['3+ years', '3+ years']], half: true },
         { k: 'date_of_birth', label: 'Date of birth (private)', type: 'date', half: true },
         { k: 'phone', label: 'Mobile (private — only the Academy sees it)', type: 'tel', max: 20, half: true },
         { k: 'open_to_work', label: 'Show #OpenToWork — I\'m looking for a role (green photo frame, and I appear in employers\' searches)', type: 'checkbox' },
@@ -122,7 +129,7 @@
           if (av && !av.ok) throw new Error('Username: ' + av.reason);
         }
         must(await sb.from('profiles').update({ full_name: v.full_name, headline: v.headline, username: un || undefined, occupation: v.occupation || null,
-          city: v.city || null, district: v.district || null, country: v.country || null, experience_level: v.experience_level || null,
+          ...v.place, experience_level: v.experience_level || null,
           date_of_birth: v.date_of_birth || null, phone: v.phone || null, open_to_work: v.open_to_work, hiring: v.hiring,
           profession: v.profession || null, specialties: [...new Set(v.specialties.split(',').map((x) => x.trim()).filter(Boolean).map((x) => x.slice(0, 40)))].slice(0, 10) }).eq('id', me.id));
         me = await FL.getProfile(true);
@@ -294,7 +301,7 @@
     },
     langs() {
       formModal({ title: 'Languages', values: { langs: (me.languages || []).join(', ') }, fields: [
-        { k: 'langs', label: 'Languages you can coach in', max: 300, ph: 'e.g. English, Telugu, Hindi, Urdu', help: 'Separate with commas.' }],
+        { k: 'langs', label: 'Languages you speak', max: 300, ph: 'e.g. English, Telugu, Hindi, Urdu', help: 'Separate with commas.' }],
         onSave: async (v) => {
           const arr = [...new Set(v.langs.split(',').map((s) => s.trim()).filter(Boolean).map((s) => s.slice(0, 30)))].slice(0, 12);
           must(await sb.from('profiles').update({ languages: arr }).eq('id', me.id)); me = await FL.getProfile(true);
@@ -321,7 +328,7 @@
   // ------------------------------------------------------------ render
   function header() {
     const self = isSelf(), c = p.connection || {};
-    const loc = [p.city, p.district, p.country].filter(Boolean).join(', ');
+    const loc = FL.place([p.city, p.district, p.state, p.state && /^india$/i.test(p.country || '') ? '' : p.country]);
     let acts = '';
     if (self) {
       acts = `<div class="add-sec"><button class="pill solid" id="btnAddSec">Add profile section ${I('down', 14)}</button></div>
@@ -355,7 +362,7 @@
         ${p.profession_label ? `<p class="ph-prof">${esc(p.profession_label)}${p.licence_label ? ` · <span style="color:var(--lime);font-weight:700">${I('shield', 13)} ${esc(p.licence_label)}</span>` : ''}</p>`
           : self ? `<p class="ph-prof"><button class="txt-btn" data-ed="intro" style="color:var(--lime);padding:0">${I('plus', 15)}Add your profession</button></p>` : ''}
         ${(p.specialties || []).length ? `<div class="spec">${p.specialties.map((x) => `<span class="chip">${esc(x)}</span>`).join('')}</div>` : ''}
-        <p class="ph-loc">${loc ? esc(loc) + ' · ' : ''}<span class="mono" style="font-size:12px">${esc(p.unique_id || '')}</span></p>
+        <p class="ph-loc">${loc ? esc(loc) + ' · ' : ''}<span class="mono" style="font-size:12px">${esc(p.unique_id || '')}</span>${p.linkedin ? ` · <span class="li-ok" title="${esc('LinkedIn account: ' + (p.linkedin.name || ''))}">${I('check', 13)}Confirmed with LinkedIn</span>` : ''}</p>
         <p class="ph-loc"><a href="${self ? 'network#connections' : '#'}" ${self ? '' : 'onclick="return false"'}>${p.connections} connection${p.connections === 1 ? '' : 's'}</a>${!self && p.mutual ? ` · ${p.mutual} mutual` : ''}
           ${!self && c.state === 'connected' ? ` · <button class="txt-btn tagbtn" data-tag="1">${I('tag', 13)}${p.my_tag ? esc((FL.CONN_TAGS.find((x) => x[0] === p.my_tag) || [])[1] || p.my_tag) : 'Add how you know them'}</button>` : ''}
           ${!self && p.open_profile ? ` · <span class="chip acc" style="font-size:11px">${I('send', 12)}Open Profile</span>` : ''}</p>
@@ -379,14 +386,16 @@
       ['Profile photo', !!p.photo_url, 'photo'], ['Headline', !!p.headline, 'intro'], ['About (50+ characters)', (p.bio || '').length >= 50, 'about'],
       ['Experience', (p.experience || []).length > 0, 'exp'], ['Education', (p.education || []).length > 0, 'edu'],
       ['3 or more skills', (p.skills || []).length >= 3, 'skills'], ['A license or certification', (p.credentials || []).length + (p.certifications || []).length > 0, 'cred'],
-      ['Cover image', !!p.cover_url, 'cover'], ['Languages', (p.languages || []).length > 0, 'langs'], ['Profession', !!p.profession, 'intro']];
+      ['Cover image', !!p.cover_url, 'cover'], ['Languages', (p.languages || []).length > 0, 'langs'], ['Profession', !!p.profession, 'intro'],
+      ['Where you are (city and state)', !!p.city && (!!p.state || !/^india$/i.test(p.country || 'India')), 'intro']];
     const done = items.filter((x) => x[1]).length, pct = Math.round(done / items.length * 100);
     if (pct === 100) return '';
     const label = pct < 40 ? 'Beginner' : pct < 70 ? 'Intermediate' : pct < 100 ? 'Advanced' : 'All-Star';
     return `<div class="box"><div class="box-head"><h2>Profile strength: ${label}</h2><span class="sub">Private to you</span></div>
       <div class="strength"><div class="bar"><i style="width:${pct}%"></i></div>
         <p class="t-sm muted" style="margin:10px 0 0">Complete profiles rank higher in search, match more jobs and raise your verification trust score.</p>
-        <ul>${items.filter((x) => !x[1]).slice(0, 4).map(([l, , k]) => `<li>${I('plus', 16)}${l}<button class="pill sm" data-ed="${k}">Add</button></li>`).join('')}</ul></div></div>`;
+        <ul>${items.filter((x) => !x[1]).slice(0, 4).map(([l, , k]) => `<li>${I('plus', 16)}${l}<button class="pill sm" data-ed="${k}">Add</button></li>`).join('')}</ul>
+        <button class="pill ghost sm" data-ed="import" style="margin-top:12px">${I('upload', 15)}Fill it from LinkedIn</button></div></div>`;
   }
 
   function about() {
@@ -611,6 +620,11 @@
     const asb = $('allSkills'); if (asb) asb.onclick = () => { $('skills').outerHTML = skills(true); };
   }
 
+  async function openImport() {
+    try { await FL.loadScript('assets/li-import.js?v=5557717366'); } catch (ex) { return FL.toast(FL.friendly(ex), 'err'); }
+    FLImport.open({ me, p, onDone: async () => { me = await FL.getProfile(true); await reload(); } });
+  }
+
   // the site-wide "add your photo" pop-up finished — show the new photo here too
   window.addEventListener('fl:photo', async () => { me = await FL.getProfile(true); await reload(); });
   async function reload() {
@@ -635,6 +649,7 @@
     const ed = e.target.closest('[data-ed]');
     if (ed) { const k = ed.dataset.ed, id = ed.dataset.id || null;
       if (k === 'photo') return uploadPic('photo'); if (k === 'cover') return uploadPic('cover');
+      if (k === 'import') { const pop = ed.closest('.menu-pop'); if (pop) pop.remove(); return openImport(); }
       return editors[k] && editors[k](id); }
     const uf = e.target.closest('[data-unfeat]');
     if (uf) { e.preventDefault(); const r = await FL.call('delete_featured', { p_id: uf.dataset.unfeat }); if (r) reload(); return; }
@@ -657,7 +672,7 @@
     if (t.id === 'btnAddSec') {
       const old = main.querySelector('.add-sec .menu-pop'); if (old) return old.remove();
       const pop = document.createElement('div'); pop.className = 'menu-pop'; pop.style.left = '0'; pop.style.right = 'auto';
-      pop.innerHTML = [['about', 'About', 'edit'], ['exp', 'Experience', 'briefcase'], ['edu', 'Education', 'school'], ['cred', 'License or certification', 'award'],
+      pop.innerHTML = [['import', 'Import from LinkedIn', 'upload'], ['about', 'About', 'edit'], ['exp', 'Experience', 'briefcase'], ['edu', 'Education', 'school'], ['cred', 'License or certification', 'award'],
         ['skills', 'Skills', 'sparkles'], ['svc', 'Services', 'briefcase'], ['feat', 'Featured', 'bookmark'], ['langs', 'Languages', 'globe'], ['social', 'Contact & social links', 'link'], ['photo', 'Profile photo', 'camera'], ['cover', 'Cover image', 'image']]
         .map(([k, l, ic]) => `<button data-ed="${k}">${I(ic, 18)}${l}</button>`).join('');
       t.parentElement.appendChild(pop); return;
@@ -708,6 +723,16 @@
   await reload();
   side();
   if (isSelf() && FL.param('edit') === '1') editors.intro();
+  // ?add=import opens the LinkedIn import, ?add=exp (etc.) opens that editor; ?li=confirm comes back from LinkedIn
+  { const add = FL.param('add');
+    if (isSelf() && add === 'import') openImport();
+    else if (isSelf() && add && add !== 'photo' && editors[add]) editors[add]();
+    if (isSelf() && FL.param('li') === 'confirm') {
+      history.replaceState(null, '', 'profile');
+      const r = await FL.call('linkedin_confirm');
+      if (r && r.ok) { FL.toast('Confirmed with LinkedIn', 'ok'); await reload(); }
+      else if (r) FL.toast(r.message || 'Couldn\'t confirm with LinkedIn.', 'err');
+    } }
   if (isSelf() && FL.param('edit') === 'social') editors.social();
 })();
 </script>

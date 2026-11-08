@@ -1,7 +1,7 @@
 // =====================================================================
 //  THE FIT LAB — sign-up card for the promotion pages
 //  One card, three journeys (set by window.FUNNEL on each page):
-//    kind 'course' → create account → pay ₹99 (full course or direct certification)
+//    kind 'course' → create account → pay the course or certification price (full course or direct certification)
 //    kind 'jobs'   → create account → profile visible to employers + job alerts
 //    kind 'hire'   → create account → hiring page created → post a job
 //  Needs: config.js, supabase-js, app.js, track.js.
@@ -32,13 +32,17 @@
   let me = session ? await FL.getProfile().catch(() => null) : null;
   let course = null, track = F.track || 'full', gender = (me && me.gender) || '';
   if (F.kind === 'course') {
-    const { data } = await sb.from('courses').select('id, slug, title, price_paise, exam_question_count, exam_seconds_per_question, pass_percentage, max_attempts')
+    const { data } = await sb.from('courses').select('id, slug, title, price_paise, direct_price_paise, exam_question_count, exam_seconds_per_question, pass_percentage, max_attempts')
       .eq('slug', F.courseSlug).maybeSingle();
     course = data;
   }
-  const price = course && course.price_paise ? '₹' + (course.price_paise / 100).toLocaleString('en-IN') : '₹99';
+  // fix-44: the full course and the direct certification each have their own price (set in Admin)
+  const pp = course ? { full: Number(course.price_paise || 0), direct: Number(course.direct_price_paise ?? course.price_paise ?? 0) }
+    : (F.kind === 'jobs' ? await FL.coursePrices().catch(() => null) : null);
+  const paiseOf = (t) => (pp ? pp[t === 'direct' ? 'direct' : 'full'] : 0);
+  const priceOf = (t) => (pp ? (paiseOf(t) >= 100 ? FL.rs(paiseOf(t)) : 'Free') : '');
   const contentId = () => `${F.courseSlug || F.funnel}-${track}`;
-  if (F.kind === 'course') FLTrack.event('ViewContent', { content_name: F.title, content_ids: [contentId()], content_type: 'product', value: (course?.price_paise || 9900) / 100, currency: 'INR' });
+  if (F.kind === 'course') FLTrack.event('ViewContent', { content_name: F.title, content_ids: [contentId()], content_type: 'product', value: paiseOf(track) / 100, currency: 'INR' });
   else FLTrack.event('ViewContent', { content_name: F.funnel, content_category: F.kind });
 
   // ------------------------------------------------------------------ the form
@@ -74,8 +78,8 @@
         <div class="field"><label for="fWork">Where you work now</label><input id="fWork" maxlength="100" placeholder="e.g. Trainer at ___ Gym · Freelance PT · Student"></div></details>` : '';
     return `
       ${F.kind === 'course' ? `<div class="trk" id="trk">
-        <label class="${track === 'full' ? 'on' : ''}"><input type="radio" name="trk" value="full" ${track === 'full' ? 'checked' : ''}><span class="t"><b>Full course + certificate</b><span>30 days · 6 modules · then the exam</span></span><span class="p">${price}</span></label>
-        <label class="${track === 'direct' ? 'on' : ''}"><input type="radio" name="trk" value="direct" ${track === 'direct' ? 'checked' : ''}><span class="t"><b>Direct certification</b><span>Skip the lessons · take the exam now</span></span><span class="p">${price}</span></label></div>` : ''}
+        <label class="${track === 'full' ? 'on' : ''}"><input type="radio" name="trk" value="full" ${track === 'full' ? 'checked' : ''}><span class="t"><b>Full course + certificate</b><span>30 days · 6 modules · then the exam</span></span><span class="p">${priceOf('full')}</span></label>
+        <label class="${track === 'direct' ? 'on' : ''}"><input type="radio" name="trk" value="direct" ${track === 'direct' ? 'checked' : ''}><span class="t"><b>Direct certification</b><span>Skip the lessons · take the exam now</span></span><span class="p">${priceOf('direct')}</span></label></div>` : ''}
       ${!needAccount ? `<div class="me">${FL.avatarHtml(me || { full_name: session.user.email }, 'avatar sm')}<div><b>${esc((me && me.full_name) || session.user.email)}</b><span>Signed in · <a href="#" id="swUser">not you?</a></span></div></div>` : ''}
       <form id="suForm" novalidate>
         ${needAccount ? `
@@ -97,14 +101,14 @@
       </form>`;
   }
   function ctaText() {
-    if (F.kind === 'course') return (needAccount ? 'Create account & pay ' : 'Pay ') + price;
+    if (F.kind === 'course') return ((needAccount ? 'Create account & pay ' : 'Pay ') + priceOf(track)).trim();
     if (F.kind === 'jobs') return needAccount ? 'Create my free profile' : 'Make my profile visible';
     return needAccount ? 'Create free hiring account' : 'Set up my hiring page';
   }
 
   function render() {
     root.innerHTML = `<div class="card glow hud su"><span class="c1"></span><span class="c2"></span>
-      <div class="eyebrow">${esc(F.formEyebrow)}</div><h2>${esc(F.formTitle)}</h2><p class="su-sub">${esc(F.formSub)}</p>
+      <div class="eyebrow">${esc(F.formEyebrow)}</div><h2>${esc(String(F.formTitle || '').replace('{price}', priceOf(F.track)).replace(/ — $/, ''))}</h2><p class="su-sub">${esc(F.formSub)}</p>
       <div id="suBody">${formHtml()}</div></div>`;
     wire();
   }
@@ -144,6 +148,9 @@
     if (needAccount) {
       if (v.name.length < 2 || !/[a-z]/i.test(v.name)) return 'Enter your full name.';
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email)) return 'Enter a valid email address.';
+      // fix-45: a misspelt domain is caught once; tapping again keeps the address as typed
+      const fix = FL.emailTypo(v.email);
+      if (fix && $('fEmail').dataset.keep !== v.email) { $('fEmail').dataset.keep = v.email; return `Did you mean ${fix}? Fix your email, or tap again to keep ${v.email}.`; }
       if (!phoneOk(v.phone)) return 'Enter a 10-digit Indian mobile number.';
       if (v.pass.length < 8) return 'Choose a password with at least 8 characters.';
     }
@@ -279,7 +286,7 @@
   function payLater(msg) {
     $('suBody').innerHTML = `<div class="me">${FL.avatarHtml(me || {}, 'avatar sm')}<div><b>${esc((me && me.full_name) || 'Your account')}</b><span>Account ready</span></div></div>
       <div class="err" style="margin-bottom:12px">${esc(msg)}</div>
-      <button class="btn btn-primary btn-block" id="payAgain">Pay ${price} &amp; ${track === 'direct' ? 'get certified' : 'start'}</button>
+      <button class="btn btn-primary btn-block" id="payAgain">Pay ${priceOf(track)} &amp; ${track === 'direct' ? 'get certified' : 'start'}</button>
       <p class="fine">Secure payment by Razorpay · UPI, cards, net banking</p>`;
     $('payAgain').onclick = pay;
   }
@@ -296,7 +303,7 @@
         a: `<a class="btn btn-primary" href="exam?course=${slug}">Take the exam</a>${photo}<a class="btn btn-ghost" href="courses?c=${slug}">Study the course first</a>` },
       jobs: { t: 'You\'re visible to employers', p: `Your profile is live with #OpenToWork, and we'll alert you when a matching job is posted.`,
         a: `<a class="btn btn-primary" href="jobs">See jobs for you</a><a class="btn" href="profile?edit=1">Add photo &amp; experience</a>`,
-        up: `<b>Stand out to gyms:</b> add a QR-verified Fit Lab certificate to your profile for ${price}. <a href="certify?utm_source=site&utm_medium=funnel&utm_campaign=jobs_upsell">Get certified →</a>` },
+        up: `<b>Stand out to gyms:</b> add a QR-verified Fit Lab certificate to your profile${priceOf('direct') ? ' for ' + priceOf('direct') : ''}. <a href="certify?utm_source=site&utm_medium=funnel&utm_campaign=jobs_upsell">Get certified →</a>` },
       hire: { t: 'Your hiring page is ready', p: `Post your first job — the pay is always shown, so serious ${ROLE_WORD[F.role] || 'candidates'} apply. You can message candidates directly.`,
         a: `<a class="btn btn-primary" href="hiring?new=1&role=${encodeURIComponent(F.role || '')}">Post a job</a><a class="btn" href="hiring?tab=candidates">Browse candidates</a>` },
     }[what];

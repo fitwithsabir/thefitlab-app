@@ -374,6 +374,64 @@
         this.photoCheck.warm(); inp.click();
       };
     },
+    // ---- LinkedIn sign-in (fix-43): shown only once the LinkedIn provider is switched on in Supabase Auth
+    linkedinReady() {
+      if (this._liReady) return this._liReady;
+      const cfg = window.FITLAB_CONFIG || {};
+      this._liReady = (async () => {
+        try { const c = sessionStorage.getItem('fl:li'); if (c) return c === '1'; } catch (_) {}
+        let ok = false;
+        try { const r = await fetch(cfg.SUPABASE_URL + '/auth/v1/settings', { headers: { apikey: cfg.SUPABASE_ANON_KEY } }); const j = await r.json(); ok = !!(j && j.external && j.external.linkedin_oidc); } catch (_) {}
+        try { sessionStorage.setItem('fl:li', ok ? '1' : '0'); } catch (_) {}
+        return ok;
+      })();
+      return this._liReady;
+    },
+    // ---- who may use the network (fix-41): a licence/certificate, business proof, or a course
+    ACCESS_OPEN: ['access', 'register', 'settings', 'courses', 'academy', 'dashboard', 'lesson', 'exam', 'verify', 'certificate', 'notifications',
+      'tools', 'tools-ai', 'tools-diet', 'tools-workout', 'privacy', 'terms', 'refunds', 'about', 'contact', 'pricing', 'index', 'admin', 'offline'],
+    async myAccess(fresh) {
+      if (!fresh) { try { const c = JSON.parse(sessionStorage.getItem('fl:access') || 'null'); if (c && Date.now() - c.t < 120000) return c.v; } catch (_) {} }
+      const { data } = await sb.rpc('my_access');
+      try { sessionStorage.setItem('fl:access', JSON.stringify({ t: Date.now(), v: data })); } catch (_) {}
+      return data;
+    },
+    async accessCheck(profile) {
+      if (!profile || !profile.profile_completed || profile.is_admin || profile.is_owner) return;
+      const file = (location.pathname.split('/').pop() || 'index').replace('.html', '');
+      let a; try { a = await this.myAccess(file === 'access'); } catch (_) { return; }
+      if (!a || !a.rule_on || a.state === 'approved') return;
+      const own = file === 'profile' && (!this.param('u') || this.param('u') === profile.username);
+      if (a.state === 'locked' && !this.ACCESS_OPEN.includes(file) && !own) { location.replace('access'); return; }
+      if (file === 'access') return;
+      const doc = a.doc || {};
+      let html = '';
+      if (a.state === 'pending' || a.pending) html = `${icon('clock', 17)}<span><b>We're checking your document.</b> ${a.state === 'pending' ? 'You can look around; posting, messaging and connecting open once it\'s approved.' : 'You keep full access meanwhile.'}</span>`;
+      else if (a.state === 'grace') {
+        const d = Math.max(0, Math.ceil((new Date(a.deadline).getTime() - Date.now()) / 864e5));
+        html = `${icon('shield', 17)}<span><b>${doc.status === 'rejected' ? 'Your document wasn\'t approved.' : 'Verified professionals only.'}</b> ${this.accessAsk(a.need)} within ${d} day${d === 1 ? '' : 's'} to keep your access.</span><a class="pill solid sm" href="access">Do it now</a>`;
+      } else if (a.state === 'locked') html = `${icon('shield', 17)}<span><b>Join the network.</b> ${this.accessAsk(a.need)} to post, message and connect.</span><a class="pill solid sm" href="access">Get verified</a>`;
+      if (!html) return;
+      document.querySelectorAll('.acc-bar').forEach((e) => e.remove());
+      const bar = document.createElement('div');
+      bar.className = 'acc-bar' + (a.state === 'grace' && Math.ceil((new Date(a.deadline).getTime() - Date.now()) / 864e5) <= 3 ? ' urgent' : '');
+      bar.innerHTML = `<div class="acc-in">${html}</div>`;
+      const top = document.querySelector('.topbar');
+      if (top) top.after(bar); else document.body.prepend(bar);
+    },
+    accessAsk(need) {
+      return need === 'business' ? 'Upload business proof or enrol in a course'
+        : need === 'course' ? 'Enrol in a course or take the direct certification'
+        : 'Upload your licence or certificate, or enrol in a course';
+    },
+    accessNotice(data) {
+      const pending = data && data.state === 'pending';
+      const m = this.modal({ title: pending ? 'Waiting for approval' : 'Verified professionals only',
+        body: `<p style="margin:0;line-height:1.6">${esc(data && data.message || '')}</p>`,
+        foot: `<button class="pill ghost" data-no>Not now</button><a class="pill solid" href="access">${pending ? 'See status' : 'Get verified'}</a>` });
+      m.q('[data-no]').onclick = m.close;
+    },
+
     // "Ask The Fit Lab" — the round button at the bottom right (the panel itself is assets/ask.js, loaded on first tap)
     askFab(profile) {
       document.querySelectorAll('.ask-fab').forEach((e) => e.remove());
@@ -469,6 +527,80 @@
     },
     inr(rupees) { return '₹' + Number(rupees || 0).toLocaleString('en-IN'); },
     paise(p) { return '₹' + (Number(p || 0) / 100).toLocaleString('en-IN', { maximumFractionDigits: 0 }); },
+    // fix-45: "you@gamil.com" → "you@gmail.com" (null when the address looks fine). Same list as email_domain_fix() in the database.
+    emailTypo(email) {
+      const m = /^([^@\s]+)@([^@\s]+)$/.exec(String(email || '').trim().toLowerCase()); if (!m) return null;
+      const FIX = { gmail: 'gamil gmial gmai gmal gnail gmaill gmali gimal gmeil gmaul gmil gamail gmail.co gmail.con gmail.cm gmail.om gmail.cmo gmail.comm gmail.in gmail.co.in gmailcom gmail.c gmail.ocm',
+        yahoo: 'yahooo yaho yahoo.con yhoo yahoo.co yahho', hotmail: 'hotmial hotmal hotmail.con hotmai', outlook: 'outlok outlook.con outllook',
+        icloud: 'iclod icloud.con iclould', rediffmail: 'redifmail rediffmail.con rediffmial' };
+      for (const [good, bad] of Object.entries(FIX)) {
+        if (bad.split(' ').some((b) => m[2] === (b.includes('.') ? b : b + '.com'))) return `${m[1]}@${good}.com`;
+      }
+      return null;
+    },
+    // ₹149 or ₹129.50 (paise kept when there are any)
+    rs(p) { const r = Number(p || 0) / 100; return '₹' + r.toLocaleString('en-IN', { minimumFractionDigits: r % 1 ? 2 : 0, maximumFractionDigits: 2 }); },
+    // fix-44: course and certification prices come from the database, so a price changed in Admin shows
+    // everywhere. { full, direct, title } in paise; kept for a minute in this tab so pages don't flicker.
+    async coursePrices(slug = 'fitness-coaching-mastery') {
+      const key = 'fl:price:' + slug;
+      try { const c = JSON.parse(sessionStorage.getItem(key) || 'null'); if (c && Date.now() - c.t < 60000) return c.v; } catch (_) { /* ignore */ }
+      const { data, error } = await sb.from('courses').select('title, price_paise, direct_price_paise').eq('slug', slug).maybeSingle();
+      if (error || !data) return null;
+      const v = { title: data.title, full: Number(data.price_paise || 0), direct: Number(data.direct_price_paise ?? data.price_paise ?? 0) };
+      try { sessionStorage.setItem(key, JSON.stringify({ t: Date.now(), v })); } catch (_) { /* ignore */ }
+      return v;
+    },
+    clearPrices() { try { Object.keys(sessionStorage).filter((k) => k.startsWith('fl:price:')).forEach((k) => sessionStorage.removeItem(k)); } catch (_) { /* ignore */ } },
+    // who may change course prices: the owner and the "Premium & payments" team (the database checks this too)
+    canEditPrices(p) { return !!p && !!(p.is_owner || (p.is_admin && p.admin_rights && p.admin_rights.premium)); },
+    // the "Edit prices" dialog (course page; Admin → Course prices has the same fields)
+    editCoursePrices(c, onDone) {
+      const rs = (v) => (v == null ? '' : String(+(Number(v) / 100).toFixed(2)));
+      const m = this.modal({ title: 'Course & certification prices', body: `
+        <p class="t-sm muted" style="margin:0 0 14px">${esc(c.title)}. The site and new payments use the new prices straight away.</p>
+        <div class="field"><label for="epFull">Full course (₹)</label><input id="epFull" type="number" min="0" max="100000" step="0.01" inputmode="decimal" value="${rs(c.price_paise)}">
+          <div class="t-xs muted" style="margin-top:4px">0 makes the course free</div></div>
+        <div class="field" style="margin-top:12px"><label for="epDirect">Direct certification (₹)</label><input id="epDirect" type="number" min="1" max="100000" step="0.01" inputmode="decimal" value="${rs(c.direct_price_paise)}" placeholder="Same as the full course">
+          <div class="t-xs muted" style="margin-top:4px">Leave empty to charge the same as the full course</div></div>`,
+        foot: `<a class="pill ghost" href="admin#prices">Price history</a><button class="pill solid" data-save>Save prices</button>` });
+      m.q('[data-save]').onclick = async (ev) => {
+        const b = ev.currentTarget, f = m.q('#epFull').value.trim(), d = m.q('#epDirect').value.trim();
+        if (f === '' || !isFinite(parseFloat(f))) return this.toast('Enter the full course price (0 for free).', 'err');
+        const full = Math.round(parseFloat(f) * 100), direct = d === '' ? null : Math.round(parseFloat(d) * 100);
+        if (direct != null && !isFinite(direct)) return this.toast('Enter the certification price, or leave it empty.', 'err');
+        this.busy(b, true, 'Saving…');
+        const { data, error } = await sb.rpc('admin_set_course_price', { p_course: c.id, p_course_paise: full, p_direct_paise: direct });
+        this.busy(b, false);
+        if (error) return this.toast(this.friendly(error), 'err');
+        if (data && data.ok === false) return this.toast(data.message || 'That price isn\'t allowed', 'err');
+        this.clearPrices(); m.close(); this.toast('Prices saved', 'ok');
+        if (onDone) onDone(data);
+      };
+    },
+    // Fills the page's prices:
+    //   data-price="full" | "direct" | "auto"   → the text becomes that price (auto = this page's track)
+    //   data-price-tpl="Get certified for {direct}"   → a sentence with {full} {direct} {auto} in it
+    //   data-price-tpl-diff="…"   → used instead when the two prices are different
+    // Works on <title> and <meta content> too. The ₹ text in the HTML is only shown if the prices can't load.
+    async fillPrices(root = document, slug) {
+      let p = null;
+      try { p = await this.coursePrices(slug); } catch (_) { /* keep the text in the page */ }
+      const els = root.querySelectorAll('[data-price],[data-price-tpl]');
+      if (p) {
+        const auto = document.body.classList.contains('v-direct') ? 'direct' : 'full';
+        const show = (k) => { const v = k === 'auto' ? p[auto] : p[k]; return v >= 100 ? this.rs(v) : 'Free'; };
+        const fill = (t) => t.replace(/\{(full|direct|auto)\}/g, (_m, k) => show(k));
+        els.forEach((el) => {
+          let text = null;
+          if (el.dataset.price) text = show(el.dataset.price);
+          else text = fill(p.full !== p.direct && el.dataset.priceTplDiff ? el.dataset.priceTplDiff : el.dataset.priceTpl);
+          if (el.tagName === 'META') el.setAttribute('content', text); else el.textContent = text;
+        });
+      }
+      els.forEach((el) => el.classList.add('pr-ok'));
+      return p;
+    },
     PERIOD: { month: 'month', year: 'year', hour: 'hour', session: 'session' },
     pay(j) {
       if (!j || j.salary_min == null) return '';
@@ -574,6 +706,7 @@
     form({ title, fields, values = {}, onSave, onDelete, wide = false, saveLabel = 'Save', note = '* Indicates required' }) {
       const fieldHtml = (f) => {
         if (f.html) return f.html;
+        if (f.type === 'place') return `<div class="geo-slot" id="f_${f.k}"></div>`;
         const v = values[f.k] ?? f.def ?? '';
         const lbl = `<label for="f_${f.k}" class="${f.req ? 'req' : ''}">${esc(f.label)}</label>`;
         let input;
@@ -589,7 +722,15 @@
       flush();
       const m = this.modal({ title, wide, body: `${note ? `<p class="t-xs muted" style="margin:0 0 12px">${esc(note)}</p>` : ''}${body}<div class="err hidden" id="fErr"></div>`,
         foot: `${onDelete ? `<button class="pill ghost left" data-del style="color:var(--danger-text);border-color:var(--line-2)">Delete</button>` : ''}<button class="pill solid" data-save>${esc(saveLabel)}</button>` });
-      const read = () => Object.fromEntries(fields.filter((f) => f.k).map((f) => { const el = m.q('#f_' + f.k); return [f.k, !el ? null : f.type === 'checkbox' ? el.checked : el.value.trim()]; }));
+      // location fields (assets/places.js): the value is { country, state, district, subdistrict, city }
+      const pickers = {};
+      fields.filter((f) => f.type === 'place').forEach((f) => {
+        this.loadScript('assets/places.js?v=6464b3dab4').then(() => window.FLPlaces.mount(m.q('#f_' + f.k), { value: values, levels: f.levels, country: f.country })).then((p) => { pickers[f.k] = p; })
+          .catch(() => { m.q('#f_' + f.k).innerHTML = `<div class="field"><label for="f_${f.k}_city">City</label><input id="f_${f.k}_city" maxlength="80" value="${esc(values.city || '')}"></div>`; });
+      });
+      const read = () => Object.fromEntries(fields.filter((f) => f.k).map((f) => {
+        if (f.type === 'place') { const fb = m.q('#f_' + f.k + '_city'); return [f.k, pickers[f.k] ? pickers[f.k].get() : { city: fb ? fb.value.trim() || null : null }]; }
+        const el = m.q('#f_' + f.k); return [f.k, !el ? null : f.type === 'checkbox' ? el.checked : el.value.trim()]; }));
       const err = m.q('#fErr');
       const showErr = (t) => { err.textContent = t; err.classList.remove('hidden'); err.scrollIntoView({ block: 'nearest' }); };
       m.q('[data-save]').onclick = async (e) => {
@@ -715,6 +856,7 @@
         }
         if (data.blocked) { this.notice(data.category === 'contact' ? 'Keep contact details off the network' : 'Not sent', data.message); return null; }
         if (data.code === 'suspended' || data.code === 'banned') { this.notice('Community access paused', data.message); return null; }
+        if (data.code === 'access') { this.accessNotice(data); return null; }
         if (data.code === 'premium') { this.upsell('Premium feature', data.message, /Recruiter/.test(data.message || '') ? 'recruiter' : 'pro'); return null; }
         if (!quiet) this.toast(data.message || 'That isn\'t allowed.', 'err');
         return null;
@@ -1069,7 +1211,8 @@
           <button class="lnk" type="button" data-ask>${icon('sparkles', 18)}Ask The Fit Lab</button>
           <a href="mailto:${esc(cfg.SUPPORT_EMAIL || '')}">${icon('help', 18)}Help</a></div>
         <div class="me-sec"><h6>For gyms &amp; studios</h6><a href="hire">${icon('hire', 18)}Hire a coach</a>
-          ${(profile.is_admin || profile.is_owner) ? `<a href="admin">${icon('shield', 18)}Admin control room</a>` : ''}</div>
+          ${(profile.is_admin || profile.is_owner) ? `<a href="admin">${icon('shield', 18)}Admin control room</a>` : ''}
+          ${this.canEditPrices(profile) ? `<a href="admin#prices">${icon('rupee', 18)}Course &amp; certification prices</a>` : ''}</div>
         <div class="me-sec"><button class="lnk" type="button" id="btnSignOut">${icon('logout', 18)}Sign out</button></div>`;
       document.body.appendChild(menu);
 
@@ -1108,6 +1251,7 @@
       if (!this.isStandalone() && this.isIOS()) { const a = document.getElementById('meInstall'); if (a) a.hidden = false; }
       if (profile.id) this.dailyTick(profile.id);
       this.askFab(profile);
+      this.accessCheck(profile);
       if (profile.id && !profile.photo_url && !this._photoAsked) {
         this._photoAsked = true;
         const force = new URLSearchParams(location.search).get('add') === 'photo';

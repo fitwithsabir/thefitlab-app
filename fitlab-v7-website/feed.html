@@ -8,7 +8,7 @@
 <script src="assets/i18n.js?v=5a53b6d0a1"></script>
 <link rel="icon" href="assets/favicon.png">
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
-<link rel="stylesheet" href="assets/styles.css?v=aa315fca94">
+<link rel="stylesheet" href="assets/styles.css?v=30a90be14f">
 </head>
 <body data-page="home">
 <main class="page">
@@ -40,7 +40,7 @@
 
 <script src="assets/vendor/supabase-2.118.0.js?v=8795eb1487"></script>
 <script src="config.js?v=e763b77801"></script>
-<script src="assets/app.js?v=a9d2c41a7a"></script>
+<script src="assets/app.js?v=3b8a32deaf"></script>
 <script src="assets/posts.js?v=fb1d8743cc"></script>
 <script src="assets/today.js?v=298627e754"></script>
 <script>
@@ -167,6 +167,25 @@
           <span class="cprog" style="margin:6px 0 0"><span class="progress"><i style="width:${pct}%"></i></span><span class="t-xs muted">${done}/${tot}</span></span></span></a>`; }).join('')}</div>`;
   }
   $('left').innerHTML = FL.miniProfile(me, { connections: cnt.data ?? 0, courses: courses.length }) + learn;
+
+  // ---- finish your profile (fix-43): a card on the left, and a slim bar on phones
+  sb.rpc('my_profile_strength').then(({ data: ps }) => {
+    if (!ps || ps.pct >= 100) return;
+    const link = (k) => k === 'cover' ? 'profile' : 'profile?add=' + k;
+    const next = (ps.missing || []).slice(0, 3);
+    $('left').insertAdjacentHTML('beforeend', `<div class="box pstr"><div class="pstr-h"><b>Your profile is ${ps.pct}% complete</b><span class="t-xs muted">${ps.done} of ${ps.total} done</span></div>
+      <div class="pstr-bar"><i style="width:${ps.pct}%"></i></div>
+      <ul>${next.map((x) => `<li><a href="${link(x.k)}">${FL.icon('plus', 14)}${FL.esc(x.label)}</a></li>`).join('')}</ul>
+      <a class="pill ghost sm" href="profile?add=import">${FL.icon('upload', 14)}Fill it from LinkedIn</a></div>`);
+    let snooze = 0; try { snooze = +localStorage.getItem('fl:pstr') || 0; } catch (_) {}
+    if (matchMedia('(max-width: 767px)').matches && Date.now() > snooze) {
+      const el = document.createElement('div'); el.className = 'box pstr slim';
+      el.innerHTML = `<a href="${link((next[0] || {}).k || 'intro')}"><span><b>Profile ${ps.pct}% complete</b><small>Next: ${FL.esc((next[0] || {}).label || 'finish your profile')}</small></span>
+        <span class="pstr-bar"><i style="width:${ps.pct}%"></i></span></a><button class="icon-btn" aria-label="Hide for now">${FL.icon('close', 16)}</button>`;
+      el.querySelector('button').onclick = () => { el.remove(); try { localStorage.setItem('fl:pstr', String(Date.now() + 3 * 864e5)); } catch (_) {} };
+      $('notice').after(el);
+    }
+  }, () => {});
 
   // ---- right: suggestions + academy ----
   const [{ data: sugg }, { data: pgs }, { data: jobs }, { data: trend }] = await Promise.all([

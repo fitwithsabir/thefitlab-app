@@ -8,7 +8,7 @@
 <script src="assets/i18n.js?v=5a53b6d0a1"></script>
 <link rel="icon" href="assets/favicon.png">
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
-<link rel="stylesheet" href="assets/styles.css?v=aa315fca94">
+<link rel="stylesheet" href="assets/styles.css?v=30a90be14f">
 <style>
   /* ---------- Control Room shell ---------- */
   .cr{display:grid;gap:22px;align-items:start}
@@ -298,7 +298,7 @@
 
 <script src="assets/vendor/supabase-2.118.0.js?v=8795eb1487"></script>
 <script src="config.js?v=e763b77801"></script>
-<script src="assets/app.js?v=a9d2c41a7a"></script>
+<script src="assets/app.js?v=3b8a32deaf"></script>
 <script>
 (async () => {
   const $ = (id) => document.getElementById(id);
@@ -398,10 +398,12 @@
     { id: 'activity', label: 'Activity log', icon: 'activity', group: 'People', need: 'team', short: 'Activity' },
     { id: 'ideas', label: 'Ideas & feedback', icon: 'sparkles', group: 'People', need: 'members', cnt: 'ideas', short: 'Ideas' },
     { id: 'moderation', label: 'Reports', icon: 'flag', group: 'Trust & safety', need: 'moderation', cnt: 'reports' },
+    { id: 'access', label: 'Access reviews', icon: 'shield', group: 'Trust & safety', need: 'verification', cnt: 'access', short: 'Access' },
     { id: 'verify', label: 'Verification', icon: 'tick', group: 'Trust & safety', need: 'verification', cnt: 'verification' },
     { id: 'conduct', label: 'Settings & rules', icon: 'settings', group: 'Trust & safety', need: 'moderation', short: 'Rules' },
     { id: 'pages', label: 'Pages', icon: 'building', group: 'Business', need: 'verification' },
     { id: 'premium', label: 'Premium', icon: 'crown', group: 'Business', need: 'premium' },
+    { id: 'prices', label: 'Course prices', icon: 'rupee', group: 'Business', need: 'premium', short: 'Course prices' },
     { id: 'bookings', label: 'Bookings & payouts', icon: 'calendar', group: 'Business', need: 'premium', short: 'Bookings' },
     { id: 'payments', label: 'Payments & receipts', icon: 'rupee', group: 'Business', need: 'premium', short: 'Payments' },
     { id: 'marketing', label: 'Marketing & ads', icon: 'chart', group: 'Business', need: 'premium', short: 'Marketing' },
@@ -512,7 +514,7 @@
   VIEWS.marketing = async (alive) => {
     let days = 30;
     const SITE = 'https://thefitlab.in';
-    const LINKS = [['Full course · ₹99', '/academy', 'fcm_course'], ['Direct certification · ₹99', '/certify', 'fcm_direct'],
+    const LINKS = [['Full course', '/academy', 'fcm_course'], ['Direct certification', '/certify', 'fcm_direct'],
       ['Jobs · trainers', '/trainer-jobs', 'jobs_trainer'], ['Jobs · coaches', '/coach-jobs', 'jobs_coach'], ['Jobs · nutritionists', '/nutritionist-jobs', 'jobs_nutritionist'],
       ['Hiring · trainers', '/hire-trainers', 'hire_trainer'], ['Hiring · coaches', '/hire-coaches', 'hire_coach'], ['Hiring · nutritionists', '/hire-nutritionists', 'hire_nutritionist']];
     const PARAMS = 'utm_source=meta&utm_medium=paid_social&utm_campaign={{campaign.name}}&utm_content={{ad.name}}&utm_term={{adset.name}}&placement={{placement}}';
@@ -583,7 +585,8 @@
         ...(ca.revenue_30d != null ? [[FL.paise(ca.revenue_30d), 'Coach AI revenue · 30 days', `${FL.paise(ca.revenue_all)} all time`]] : [])]]] : []),
     ];
     const kpis = groups.map(([g, items]) => `<div class="kgrp">${E(g)}</div><div class="kpis">${items.map(([v, l, s]) =>
-      `<div class="kpi"><b>${typeof v === 'string' ? E(v) : n(v)}</b><span>${E(l)}</span>${s ? `<em>${E(s)}</em>` : ''}</div>`).join('')}</div>`).join('');
+      `<div class="kpi"><b>${typeof v === 'string' ? E(v) : n(v)}</b><span>${E(l)}</span>${s ? `<em>${E(s)}</em>` : ''}</div>`).join('')}</div>`
+      + (g === 'Academy' && can('premium') ? `<div style="margin:8px 0 4px"><a class="pill sm" href="#prices">${I('rupee', 14)}Change course &amp; certification prices</a></div>` : '')).join('');
     const hb = (list) => { const max = Math.max(1, ...list.map((x) => x.n)); return list.map((x) => `<div class="hbar"><span title="${E(x.label)}">${E(x.label)}</span><div class="t"><i style="width:${Math.round(x.n / max * 100)}%"></i></div><b>${n(x.n)}</b></div>`).join(''); };
     const series = o.series || [];
     const METRICS = [['signups', 'Sign-ups'], ['posts', 'Posts'], ['connections', 'Connections']];
@@ -1441,7 +1444,7 @@
           <select id="gPlan" aria-label="Plan" style="flex:0 1 150px"><option value="pro">Pro</option><option value="business">Business</option><option value="recruiter">Recruiter</option></select>
           <select id="gDays" aria-label="How long" style="flex:0 1 150px"><option value="30">30 days</option><option value="90">3 months</option><option value="365">1 year</option></select>
           <button class="pill solid" type="submit">Give</button></form></div>
-      <div class="box"><div class="box-head"><div><h2>Plans & prices</h2><div class="sub">Prices in rupees. Changes apply to new purchases straight away. Members are never charged automatically.</div></div></div>
+      <div class="box"><div class="box-head"><div><h2>Plans & prices</h2><div class="sub">Prices in rupees. Changes apply to new purchases straight away. Members are never charged automatically.</div></div><a class="pill sm" href="#prices">${I('rupee', 14)}Course &amp; certification prices</a></div>
         <div class="tblwrap"><table class="tbl"><thead><tr><th>Plan</th><th>₹ / month</th><th>₹ / year</th><th>InMail / month</th><th>On sale</th><th></th></tr></thead>
           <tbody id="plbody">${(data.plans || []).map((p) => `<tr data-plan="${E(p.code)}"><td><b>${E(p.name)}</b></td>
             <td><input type="number" min="0" data-k="price_month" value="${Math.round(p.price_month / 100)}" style="width:100px" aria-label="${E(p.name)} monthly price"></td>
@@ -1511,6 +1514,55 @@
       e.preventDefault();
       const m = await findMember($('gUser').value); if (!m) return FL.toast('No member found with that username or ID', 'err');
       if (await act('admin_grant_premium', { p_user: m.user_id, p_plan: $('gPlan').value, p_days: +$('gDays').value }, `${m.full_name} now has ${FL.PLAN_NAMES[$('gPlan').value]}`)) reload();
+    };
+  };
+
+  // ------------------------------------------------------------------ COURSE PRICES (fix-44)
+  // The full course and the direct certification each have a price. Saving changes the site and new
+  // payments straight away; a payment someone has already started keeps the price it was started at.
+  VIEWS.prices = async (alive) => {
+    const { data, error } = await sb.rpc('admin_course_prices');
+    if (!alive()) return;
+    if (error || !data) { $('view').innerHTML = errBox(error || {}); return; }
+    const rs = (p) => (p == null ? '' : String(+(Number(p) / 100).toFixed(2)));
+    const money = (p) => (Number(p) >= 100 ? FL.rs(p) : 'Free');
+    const list = data.courses || [], hist = data.history || [];
+    $('view').innerHTML = `<div class="stack" id="cpRoot">
+      <div class="box"><div class="box-head"><div><h2>Course &amp; certification prices</h2>
+        <div class="sub">Prices in rupees. A new price shows on the site and is charged on new payments straight away. Anyone already at the payment step pays the price they started with.</div></div></div>
+        ${list.length ? `<div class="tblwrap"><table class="tbl"><thead><tr><th>Course</th><th>Full course (₹)</th><th>Direct certification (₹)</th><th></th></tr></thead>
+          <tbody id="cpBody">${list.map((c) => `<tr data-cp="${E(c.id)}" data-title="${E(c.title)}" data-was-course="${E(c.course)}" data-was-direct="${E(c.direct_effective)}" data-was-raw="${E(c.direct == null ? '' : c.direct)}">
+            <td><b>${E(c.title)}</b>${c.published ? '' : '<div class="sub">Not published yet</div>'}<div class="sub">Now: ${E(money(c.course))} · certification ${E(money(c.direct_effective))}</div></td>
+            <td><input type="number" min="0" max="100000" step="0.01" inputmode="decimal" data-k="course" value="${E(rs(c.course))}" style="width:120px" aria-label="${E(c.title)}: full course price in rupees"><div class="sub">0 = free</div></td>
+            <td><input type="number" min="1" max="100000" step="0.01" inputmode="decimal" data-k="direct" value="${E(rs(c.direct))}" placeholder="Same as course" style="width:140px" aria-label="${E(c.title)}: direct certification price in rupees"><div class="sub">Empty = same as the course</div></td>
+            <td><button class="pill solid sm" type="button" data-savecp="${E(c.id)}">Save</button></td></tr>`).join('')}</tbody></table></div>`
+          : '<div class="empty">No courses yet.</div>'}</div>
+      <div class="box"><div class="box-head"><div><h2>Recent price changes</h2><div class="sub">Also in the Activity log.</div></div></div>
+        ${hist.length ? hist.map((h) => { const d = h.detail || {};
+          return `<div class="lrow"><div><div class="nm">${E(h.course)}</div>
+            <div class="sub">Full course ${E(money(d.course_before))} → <b>${E(money(d.course_after))}</b> · Direct certification ${E(money(d.direct_before))} → <b>${E(money(d.direct_after))}</b></div>
+            <div class="sub">${E(fmt(h.at))} · ${E(h.by)}</div></div></div>`; }).join('') : '<div class="empty">No changes yet.</div>'}</div></div>`;
+    reloadView = () => { if (current === 'prices') VIEWS.prices(alive); };
+    const body = $('cpBody');
+    if (!body) return;
+    body.onclick = async (e) => {
+      const b = e.target.closest('[data-savecp]'); if (!b) return;
+      const tr = b.closest('tr'), v = (k) => tr.querySelector(`[data-k="${k}"]`).value.trim();
+      const toPaise = (s) => Math.round(parseFloat(s) * 100);
+      if (v('course') === '' || !isFinite(parseFloat(v('course')))) return FL.toast('Enter the full course price (0 for free).', 'err');
+      const course = toPaise(v('course'));
+      const direct = v('direct') === '' ? null : toPaise(v('direct'));
+      if (direct != null && !isFinite(direct)) return FL.toast('Enter the certification price, or leave it empty.', 'err');
+      const newDirect = direct == null ? course : direct;
+      const wasC = +tr.dataset.wasCourse, wasD = +tr.dataset.wasDirect;
+      if (course === wasC && String(direct == null ? '' : direct) === tr.dataset.wasRaw) return FL.toast('No change to save.', 'ok');
+      if (!(await FL.confirm('Change the price?',
+        `${tr.dataset.title}: full course ${money(wasC)} → ${money(course)}, direct certification ${money(wasD)} → ${money(newDirect)}. The site and new payments use the new price straight away.`,
+        'Change price'))) return;
+      FL.busy(b, true, '…');
+      const ok = await act('admin_set_course_price', { p_course: tr.dataset.cp, p_course_paise: course, p_direct_paise: direct }, 'Price saved');
+      FL.busy(b, false);
+      if (ok) { FL.clearPrices(); reloadView(); }
     };
   };
 
@@ -1671,6 +1723,85 @@
       const ok = await act(fn, args, done);
       if (b.isConnected) FL.busy(b, false);
       if (ok) load();
+    };
+    reloadView = load;
+    await load();
+  };
+
+  // ------------------------------------------------------------------ ACCESS REVIEWS (fix-41)
+  // Documents members upload to join the network: licences, certificates and business proof.
+  const ACC_KIND = { licence: 'Licence / registration', certificate: 'Certificate', business: 'Business proof' };
+  const refreshAccessCount = () => sb.rpc('admin_access_summary').then(({ data }) => { if (data) setCount('access', data.docs_waiting || 0); }).catch(() => {});
+  VIEWS.access = async (alive) => {
+    let f = 'pending', docs = [], sum = null, aiReady = false;
+    $('view').innerHTML = `<div class="box" id="acSum">${spinner}</div>
+      <div class="box"><div class="box-head"><div><h2>Documents</h2><div class="sub">Licences, certificates and business proof members upload to join the network. Approving one also adds it to their profile's Licenses &amp; certifications.</div></div></div>
+        <div class="catbar" id="acF">${[['pending', 'Waiting'], ['approved', 'Approved'], ['rejected', 'Not approved'], ['all', 'All']].map(([k, l]) => `<button type="button" data-f="${k}" class="${k === f ? 'on' : ''}">${l}</button>`).join('')}</div>
+        <div id="acList">${spinner}</div></div>
+      <div class="box"><div class="box-head"><div><h2>Let a member in without a document</h2><div class="sub">For people you know personally, partners or staff. It's recorded in the Activity log.</div></div></div>
+        <form class="cr-tools" id="acOv"><input id="acOvU" placeholder="@username or Fit Lab ID" aria-label="Member"><input id="acOvN" placeholder="Why (only the team sees this)" aria-label="Note">
+          <button class="pill solid" type="submit">Let them in</button></form></div>`;
+    const kpi = (k, l, v, sub) => `<div class="kpi"><b>${n(v)}</b><span>${E(l)}</span>${sub ? `<em>${E(sub)}</em>` : ''}</div>`;
+    const renderSum = () => {
+      const on = !!sum.rule_start, end = on ? new Date(new Date(sum.rule_start).getTime() + 14 * 864e5) : null;
+      $('acSum').innerHTML = `<div class="box-head"><div><h2>Who can use the network</h2><div class="sub">${on
+          ? `The rule started ${E(fmt(sum.rule_start))}. Members who joined before then have until ${E(fmt(end))}.`
+          : 'The rule is not switched on yet — everyone has full access. These numbers show what would happen.'}${aiReady ? ' AI checker: on.' : ' AI checker: off until the Anthropic key is added, so documents wait here for you.'}</div></div></div>
+        <div class="kpis">${kpi('ok', 'Approved', sum.approved, 'credential, business proof or course')}${kpi('grace', on ? 'On 14-day notice' : 'Would get 14 days’ notice', sum.grace)}
+          ${kpi('wait', 'Document waiting', sum.docs_waiting)}${kpi('locked', 'Locked', sum.locked)}</div>`;
+    };
+    const renderList = () => {
+      $('acList').innerHTML = docs.length ? docs.map((d) => {
+        const ai = d.ai || null;
+        const aiLine = ai ? `<div class="sub" style="margin-top:6px">${I('sparkles', 13)} AI: <b>${E({ approve: 'looks fine', reject: 'reject', person: 'needs a person' }[ai.recommendation] || ai.recommendation || '')}</b>
+            · name ${E(ai.name_match || '?')}${ai.name_on_document ? ` (“${E(ai.name_on_document)}”)` : ''} · ${ai.expired ? 'expired' : 'not expired'} · editing: ${E(ai.tampering || '?')}
+            ${ai.notes_for_team ? `<br>${E(ai.notes_for_team)}` : ''}</div>` : '';
+        return `<div class="lrow" data-acd="${E(d.id)}" style="align-items:flex-start"><div class="who" style="align-items:flex-start">${FL.avatarHtml(d.member, 'avatar sm')}<div>
+            <div class="nm">${whoLink(d.member)}<span class="st st-${E(d.status)}">${E({ pending: 'Waiting', approved: 'Approved', rejected: 'Not approved' }[d.status])}</span>${d.reviewer ? `<span class="tg ${d.reviewer === 'ai' ? 'ok' : ''}">${d.reviewer === 'ai' ? 'By AI' : 'By team'}</span>` : ''}</div>
+            <div class="sub">${E(d.member.profession || '')}${d.member.city ? ' · ' + E(d.member.city) : ''} · sent ${E(ago(d.created_at))}</div>
+            <div style="margin-top:6px"><b>${E(d.title)}</b> <span class="tg">${E(ACC_KIND[d.kind] || d.kind)}</span></div>
+            <div class="sub">${[d.issuer, d.number ? 'No. ' + d.number : '', d.issued_on ? 'issued ' + fmt(d.issued_on) : '', d.expires_on ? 'valid until ' + fmt(d.expires_on) : ''].filter(Boolean).map(E).join(' · ')}</div>
+            ${aiLine}${d.reason ? `<div class="sub" style="margin-top:4px">Reason given: ${E(d.reason)}</div>` : ''}</div></div>
+          <div class="acts"><button class="pill sm" type="button" data-acdoc="${E(d.file_path)}">${I('eye', 14)}Open document</button>
+            ${d.status === 'pending' ? `${aiReady && !ai ? `<button class="pill sm" type="button" data-acai>${I('sparkles', 14)}Ask AI</button>` : ''}
+              <button class="pill solid sm" type="button" data-acok>Approve</button><button class="pill red-o sm" type="button" data-acno>Not approved</button>` : ''}</div></div>`;
+      }).join('') : `<div class="empty">${f === 'pending' ? '<b>Nothing waiting</b>Documents members upload appear here.' : 'Nothing here.'}</div>`;
+    };
+    const load = async () => {
+      const [s, q, st] = await Promise.all([sb.rpc('admin_access_summary'), sb.rpc('admin_access_queue', { p_status: f }), FL.fn('credential-review', { action: 'status' })]);
+      if (!alive()) return;
+      if (s.error || q.error) { $('acList').innerHTML = `<div class="empty">${E(FL.friendly(s.error || q.error))}</div>`; return; }
+      sum = s.data; docs = q.data || []; aiReady = !!(st.data && st.data.ready);
+      setCount('access', sum.docs_waiting || 0); renderSum(); renderList();
+    };
+    $('acF').onclick = (e) => { const b = e.target.closest('[data-f]'); if (!b) return; f = b.dataset.f; $('acF').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); load(); };
+    $('acList').onclick = async (e) => {
+      const mb = e.target.closest('[data-member]'); if (mb) return openMember(mb.dataset.member);
+      const od = e.target.closest('[data-acdoc]');
+      if (od) { const { data, error } = await sb.storage.from('verification-docs').createSignedUrl(od.dataset.acdoc, 600);
+        if (error || !data) return FL.toast('Couldn\'t open that document', 'err'); window.open(data.signedUrl, '_blank', 'noopener'); return; }
+      const row = e.target.closest('[data-acd]'); if (!row) return;
+      const d = docs.find((x) => x.id === row.dataset.acd); if (!d) return;
+      if (e.target.closest('[data-acai]')) { const b = e.target.closest('[data-acai]'); FL.busy(b, true, 'Checking…');
+        const { data } = await FL.fn('credential-review', { doc_id: d.id }); FL.busy(b, false);
+        FL.toast(data && data.status ? `AI: ${data.status === 'approved' ? 'approved' : data.status === 'rejected' ? 'not approved' : 'needs a person'}` : 'The AI couldn\'t check it', data && data.status ? 'ok' : 'err'); return load(); }
+      if (e.target.closest('[data-acok]')) {
+        if (!(await FL.confirm('Approve this document?', `${d.member.full_name || 'They'} get full access, and “${d.title}” is added to their profile.`, 'Approve'))) return;
+        if (await act('admin_access_decide', { p_doc: d.id, p_approve: true, p_reason: null }, 'Approved')) load(); return; }
+      if (e.target.closest('[data-acno]')) {
+        const r = await askNote({ title: 'Not approved', help: 'They\'ll see this reason and can upload another document or enrol in a course.', okLabel: 'Send', danger: true, required: true,
+          ph: 'e.g. The name on the certificate doesn\'t match your profile.' });
+        if (!r) return;
+        if (await act('admin_access_decide', { p_doc: d.id, p_approve: false, p_reason: r.note }, 'Sent')) load(); }
+    };
+    $('acOv').onsubmit = async (e) => {
+      e.preventDefault();
+      const h = $('acOvU').value.trim().replace(/^@/, ''); if (!h) return FL.toast('Who should be let in?', 'err');
+      const { data: rows } = await sb.rpc('admin_list_members', { p_search: h });
+      const m = (rows || []).find((x) => [x.username, x.unique_id].some((v) => String(v || '').toLowerCase() === h.toLowerCase())) || ((rows || []).length === 1 ? rows[0] : null);
+      if (!m) return FL.toast('No single member matches that — use their exact @username or Fit Lab ID', 'err');
+      if (!(await FL.confirm('Let them in?', `${m.full_name} gets full access without a document.`, 'Let them in'))) return;
+      if (await act('admin_access_override', { p_user: m.id, p_on: true, p_note: $('acOvN').value.trim() || null }, `${m.full_name} can use the network`)) { $('acOvU').value = ''; $('acOvN').value = ''; load(); }
     };
     reloadView = load;
     await load();
@@ -1915,6 +2046,7 @@
   go();
   if (current !== 'overview') sb.rpc('admin_overview').then(({ data }) => { if (data) applyCounts(data.attention); });
   if (can('members')) refreshIdeaCount();
+  if (can('verification')) refreshAccessCount();
 })();
 </script>
 </body>

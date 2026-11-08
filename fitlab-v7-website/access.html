@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Verified professionals — The Fit Lab</title>
+<script src="assets/theme.js?v=891b5cdc5d"></script>
+<script src="assets/i18n.js"></script>
+<link rel="icon" href="assets/favicon.png">
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b">
+<link rel="stylesheet" href="assets/styles.css?v=30a90be14f">
+<style>
+  .ac-hero{display:flex;gap:16px;align-items:flex-start;padding:22px 22px 18px}
+  .ac-hero .ic{flex:none;width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:color-mix(in srgb,var(--lime) 14%,transparent);color:var(--lime)}
+  .ac-hero.ok .ic{background:var(--fill);color:var(--on-fill)}
+  .ac-hero.warn .ic{background:color-mix(in srgb,var(--warn,#e0a100) 16%,transparent);color:var(--warn,#e0a100)}
+  .ac-hero h1{font:700 clamp(20px,2.8vw,26px)/1.25 var(--body);margin:0;letter-spacing:0;text-transform:none}
+  .ac-hero p{margin:6px 0 0;color:var(--ash);line-height:1.55;font-size:14.5px}
+  .ac-days{display:inline-flex;align-items:center;gap:6px;margin-top:10px;font-weight:700;font-size:13.5px;padding:5px 11px;border-radius:999px;background:color-mix(in srgb,var(--warn,#e0a100) 14%,transparent);color:var(--warn,#e0a100)}
+  .ac-ways{display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--line)}
+  .ac-way{padding:18px 20px}
+  .ac-way + .ac-way{border-left:1px solid var(--line)}
+  .ac-way h2{display:flex;align-items:center;gap:9px;font:700 16.5px var(--body);margin:0 0 6px;letter-spacing:0;text-transform:none}
+  .ac-way h2 .n{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--lime);font-size:12.5px;flex:none}
+  .ac-way p{margin:0 0 12px;color:var(--ash);font-size:14px;line-height:1.5}
+  .ac-ex{font-size:13px;color:var(--ash);margin:-4px 0 12px;line-height:1.5}
+  .ac-or{display:none}
+  @media (max-width:760px){ .ac-ways{grid-template-columns:1fr} .ac-way + .ac-way{border-left:0;border-top:1px solid var(--line)} }
+  .ac-file{display:flex;align-items:center;gap:10px;padding:12px;border:1.5px dashed var(--line-2);border-radius:12px;cursor:pointer;color:var(--ash);font-size:14px}
+  .ac-file:hover{border-color:var(--lime)}
+  .ac-file b{color:var(--bone)}
+  .ac-file input{display:none}
+  .ac-note{font-size:12.5px;color:var(--ash);line-height:1.5;margin:10px 0 0;display:flex;gap:8px}
+  .ac-note svg{flex:none;margin-top:2px}
+  .ac-doc{display:flex;gap:12px;align-items:flex-start;padding:14px 20px;border-top:1px solid var(--line)}
+  .ac-doc .st{flex:none}
+  .ac-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media (max-width:420px){ .ac-row2{grid-template-columns:1fr} }
+  .ac-check{display:flex;gap:10px;align-items:center;padding:14px 16px;border-radius:12px;background:var(--panel-2);margin-top:12px;font-size:14px}
+</style>
+</head>
+<body data-page="me">
+<main class="page">
+  <div class="layout l-main-side">
+    <section class="stack" id="main"><div class="box skeleton" style="height:420px"></div></section>
+    <aside><div class="sticky-col" id="side"></div></aside>
+  </div>
+</main>
+
+<script src="assets/vendor/supabase-2.118.0.js?v=8795eb1487"></script>
+<script src="config.js?v=e763b77801"></script>
+<script src="assets/app.js?v=3b8a32deaf"></script>
+<script>
+(async () => {
+  const $ = (id) => document.getElementById(id);
+  const esc = FL.esc, I = FL.icon;
+  const session = await FL.requireAuth(); if (!session) return;
+  let me; try { me = await FL.getProfile(); } catch (e) { return FL.toast(FL.friendly(e), 'err'); }
+  if (!me.profile_completed) return location.replace('register');
+  FL.renderHeader(me);
+
+  const NEED = {
+    credential: { kind: 'certificate', what: 'your licence or certificate', ex: 'For example a council registration (physio, dietitian, doctor, nurse), or a fitness, yoga or nutrition certificate such as REPs India, ACE, NASM, ACSM, ISSA or K11.' },
+    business: { kind: 'business', what: 'proof of your fitness business', ex: 'For example a GST registration, shop &amp; establishment or trade licence, company registration, or your company ID card or appointment letter.' },
+    course: { kind: 'certificate', what: 'a certificate if you already have one', ex: 'Students and trainees usually enrol in a course. If you already hold a fitness, yoga or nutrition certificate, upload it instead.' },
+  };
+  let a = null, aiReady = false;
+  const days = (d) => Math.max(0, Math.ceil((new Date(d).getTime() - Date.now()) / 864e5));
+  const when = (d) => FL.fmtDate ? FL.fmtDate(d) : new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+
+  $('side').innerHTML = `<div class="box box-pad"><b style="display:flex;gap:8px;align-items:center">${I('shield', 20)}Why we ask</b>
+      <ul class="checklist" style="margin-top:10px">
+        <li>${I('check', 15)}The Fit Lab is a professional network for health and fitness professionals. Showing a credential keeps it trusted for everyone — clients, gyms and colleagues.</li>
+        <li>${I('check', 15)}Your document is only seen by our review team and our AI checker. It never appears on your profile; only the name of your credential does.</li>
+        <li>${I('check', 15)}No Aadhaar, PAN or other government ID is needed.</li>
+        <li>${I('check', 15)}Courses are optional — enrolling is just another way in.</li>
+      </ul></div>`;
+
+  async function load() {
+    try { sessionStorage.removeItem('fl:access'); } catch (_) {}
+    const { data, error } = await sb.rpc('my_access');
+    if (error) { $('main').innerHTML = `<div class="box"><div class="empty">${esc(FL.friendly(error))}</div></div>`; return; }
+    a = data || {};
+    const st = await FL.fn('credential-review', { action: 'status' }); aiReady = !!(st.data && st.data.ready);
+    render();
+  }
+
+  function hero() {
+    const doc = a.doc || null;
+    if (a.state === 'approved') {
+      const via = { credential: 'Your licence or certificate is approved.', business: 'Your business proof is approved.', course: 'You\'re enrolled in a Fit Lab course.', team: 'You\'re part of the Fit Lab team.', admin: 'The Fit Lab team has approved your account.', rule_off: 'You have full access to The Fit Lab.' }[a.via] || 'You have full access.';
+      return `<div class="ac-hero ok"><span class="ic">${I('check', 26)}</span><div><h1>You're a verified member</h1>
+        <p>${esc(via)} Posting, messaging, connecting and applying for jobs are all open to you.</p>
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><a class="pill solid" href="feed">Go to your feed</a><a class="pill" href="profile">View your profile</a></div></div></div>`;
+    }
+    if (a.state === 'pending' || a.pending) {
+      return `<div class="ac-hero"><span class="ic">${I('clock', 26)}</span><div><h1>We're checking your document</h1>
+        <p>${esc(doc ? doc.title : 'Your document')} is with ${aiReady ? 'our AI checker — this usually takes under a minute. If it needs a person, our team checks it within a day' : 'our review team — usually within a day'}.
+        ${a.state === 'pending' ? 'Until then you can look around; posting, messaging, connecting and applying open once it\'s approved.' : ''}</p>
+        ${a.deadline && a.state !== 'pending' ? `<span class="ac-days">${I('clock', 14)}Full access until ${esc(when(a.deadline))}</span>` : ''}</div></div>`;
+    }
+    const rejected = doc && doc.status === 'rejected' ? `<div class="notice warn" style="margin:0 22px 16px">${I('flag', 18)}<div><b>Your last document wasn't approved.</b> ${esc(doc.reason || 'We couldn\'t confirm it.')} You can upload another one, or enrol in a course.</div></div>` : '';
+    if (a.state === 'grace') {
+      const d = days(a.deadline);
+      return `<div class="ac-hero warn"><span class="ic">${I('shield', 26)}</span><div><h1>Keep your access: show you're a professional</h1>
+        <p>The Fit Lab is now for verified health and fitness professionals only. Upload ${NEED[a.need || 'credential'].what}, or enrol in a course, and you're set — it takes two minutes.</p>
+        <span class="ac-days">${I('clock', 14)}${d ? `${d} day${d === 1 ? '' : 's'} left — until ${esc(when(a.deadline))}` : 'Last day today'}</span></div></div>${rejected}`;
+    }
+    return `<div class="ac-hero"><span class="ic">${I('shield', 26)}</span><div><h1>Join the network of verified professionals</h1>
+      <p>The Fit Lab is a professional network for health and fitness professionals. To post, message, connect and apply for jobs, upload ${NEED[a.need || 'credential'].what} — or enrol in a course.</p></div></div>${rejected}`;
+  }
+
+  function uploadWay(n) {
+    const need = NEED[a.need || 'credential'];
+    const kind = need.kind;
+    return `<div class="ac-way"><h2><span class="n">${n}</span>${a.need === 'business' ? 'Upload business proof' : 'Upload your licence or certificate'}</h2>
+      <p class="ac-ex">${need.ex}</p>
+      <form id="acForm" autocomplete="off">
+        <div class="field"><label for="acKind">What is it?</label><select id="acKind">
+          <option value="certificate" ${kind === 'certificate' ? 'selected' : ''}>Certificate or qualification</option>
+          <option value="licence">Licence or council registration</option>
+          <option value="business" ${kind === 'business' ? 'selected' : ''}>Business proof</option></select></div>
+        <div class="field"><label for="acTitle" class="req">Name of the document</label><input id="acTitle" maxlength="160" placeholder="${kind === 'business' ? 'e.g. GST registration — Shaan Fitness' : 'e.g. REPs India Level 3 Personal Trainer'}"></div>
+        <div class="field"><label for="acIssuer">Issued by</label><input id="acIssuer" maxlength="160" placeholder="${kind === 'business' ? 'e.g. GST Department, Government of India' : 'e.g. REPs India'}"></div>
+        <div class="field"><label for="acNum">Registration or certificate number <span class="muted">(if it has one)</span></label><input id="acNum" maxlength="80"></div>
+        <div class="ac-row2"><div class="field"><label for="acFrom">Issued on</label><input type="date" id="acFrom"></div>
+          <div class="field"><label for="acTo">Valid until <span class="muted">(if it expires)</span></label><input type="date" id="acTo"></div></div>
+        <label class="ac-file" for="acFile">${I('upload', 22)}<span id="acFileTx"><b>Choose the document</b><br>A clear photo or PDF of the whole page — up to 6 MB</span>
+          <input type="file" id="acFile" accept="image/jpeg,image/png,image/webp,application/pdf"></label>
+        <button class="pill solid lg" type="submit" id="acSend" style="margin-top:14px;width:100%">${I('send', 16)}Send for checking</button>
+        <p class="ac-note">${I('lock', 14)}<span>Only our review team and AI checker see the document. Your name on it should match your profile${me.full_name ? ` (<b>${esc(me.full_name)}</b>)` : ''}.</span></p>
+      </form></div>`;
+  }
+  function courseWay(n) {
+    return `<div class="ac-way"><h2><span class="n">${n}</span>Or enrol in a course</h2>
+      <p>Courses are optional. If you'd rather learn with us, enrolling in the 30-day Fitness Coaching Mastery course or taking the direct certification exam gives you access straight away.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="pill solid" href="academy">See the course and direct certification</a></div>
+      <p class="ac-note" style="margin-top:14px">${I('award', 14)}<span>Passing the exam also gives you a QR-verified Fit Lab certificate for your profile.</span></p></div>`;
+  }
+
+  function render() {
+    const done = a.state === 'approved';
+    const ways = done ? '' : (a.need === 'course' ? `<div class="ac-ways">${courseWay(1)}${uploadWay(2)}</div>` : `<div class="ac-ways">${uploadWay(1)}${courseWay(2)}</div>`);
+    const extra = done && a.via !== 'credential' && a.via !== 'business' && a.via !== 'team'
+      ? `<div class="box"><div class="box-head"><div><h2>Add a licence or certificate</h2><div class="sub">Optional — it shows under Licenses &amp; certifications on your profile once it's checked.</div></div></div>${uploadWay('+')}</div>` : '';
+    $('main').innerHTML = `<div class="box">${hero()}${ways}</div>${extra}`;
+    const f = $('acForm'); if (!f) return;
+    $('acFile').onchange = () => { const x = $('acFile').files[0]; $('acFileTx').innerHTML = x ? `<b>${esc(x.name)}</b><br>${(x.size / 1048576).toFixed(1)} MB · tap to change` : '<b>Choose the document</b>'; };
+    f.onsubmit = async (e) => {
+      e.preventDefault();
+      const file = $('acFile').files[0], title = $('acTitle').value.trim();
+      if (title.length < 2) { $('acTitle').focus(); return FL.toast('Write the name of the document', 'err'); }
+      if (!file) return FL.toast('Choose the document to upload', 'err');
+      if (file.size > 6 * 1048576) return FL.toast('The file is larger than 6 MB — try a smaller photo or PDF', 'err');
+      const btn = $('acSend'); FL.busy(btn, true, 'Uploading…');
+      try {
+        const path = `${me.id}/access/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${file.type === 'application/pdf' ? 'pdf' : 'img'}`;
+        await FL.uploadFile('verification-docs', path, file, 6);
+        const r = await FL.call('submit_access_doc', { p: { kind: $('acKind').value, title, issuer: $('acIssuer').value.trim(), number: $('acNum').value.trim(),
+          issued_on: $('acFrom').value || null, expires_on: $('acTo').value || null, file_path: path } });
+        if (!r) { FL.busy(btn, false); return; }
+        try { sessionStorage.removeItem('fl:access'); } catch (_) {}
+        if (aiReady) {
+          FL.busy(btn, true, 'Checking…');
+          btn.insertAdjacentHTML('afterend', `<div class="ac-check" id="acChk"><span class="spin"></span>Our AI checker is reading your document — this usually takes under a minute.</div>`);
+          const { data } = await FL.fn('credential-review', { doc_id: r.id });
+          if (data && data.status === 'approved') { FL.toast('Approved — welcome to the network', 'ok'); }
+          else if (data && data.status === 'rejected') { FL.notice('Not approved', data.reason || 'We couldn\'t confirm this document.'); }
+          else FL.toast('Sent — a person will check it, usually within a day', 'ok');
+        } else FL.toast('Sent — our team will check it, usually within a day', 'ok');
+        await load();
+      } catch (err) { FL.busy(btn, false); FL.toast(FL.friendly(err), 'err'); }
+    };
+  }
+  await load();
+})();
+</script>
+</body>
+</html>

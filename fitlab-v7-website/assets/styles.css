@@ -995,6 +995,16 @@ body.app .footer{margin-top:40px}
 .checklist li.neg .pts{color:var(--danger-text)}
 .codebox{font:700 15px var(--mono);background:var(--panel-2);border:1px dashed var(--line-2);border-radius:10px;padding:12px 14px;word-break:break-all;user-select:all}
 
+/* access rule banner under the top bar (fix-41) */
+.acc-bar{background:color-mix(in srgb,var(--lime) 10%,var(--panel));border-bottom:1px solid color-mix(in srgb,var(--lime) 30%,var(--line))}
+.acc-bar.urgent{background:color-mix(in srgb,var(--warn,#e0a100) 14%,var(--panel));border-bottom-color:color-mix(in srgb,var(--warn,#e0a100) 40%,var(--line))}
+.acc-in{max-width:1180px;margin:0 auto;padding:9px 16px;display:flex;align-items:center;gap:10px;font-size:13.5px;line-height:1.45;color:var(--bone)}
+.acc-in > svg{flex:none;color:var(--lime)}
+.acc-bar.urgent .acc-in > svg{color:var(--warn,#e0a100)}
+.acc-in span{flex:1;min-width:0}
+.acc-in .pill{flex:none}
+@media (max-width:600px){ .acc-in{font-size:12.5px;padding:8px 12px} }
+
 /* "Ask The Fit Lab" button + chat panel (fix-38) */
 .ask-fab{position:fixed;right:max(16px,calc((100vw - 1180px) / 2 + 16px));bottom:22px;z-index:56;display:flex;align-items:center;gap:8px;height:50px;padding:0 20px 0 16px;
   border-radius:999px;border:0;cursor:pointer;background:var(--fill);color:var(--on-fill);font:700 15px var(--body);box-shadow:var(--shadow-lg);-webkit-tap-highlight-color:transparent}
@@ -1639,3 +1649,76 @@ div.avatar[data-h="3"]{background:#ffb86b} div.avatar[data-h="4"]{background:#7c
 :root[data-lang=ur] body{line-height:1.9}
 :root[data-lang=ur] h1,:root[data-lang=ur] h2,:root[data-lang=ur] h3{line-height:1.6}
 :root[dir=rtl] .ico-flip,:root[dir=rtl] [data-flip]{transform:scaleX(-1)}
+
+/* location picker (fix-42) */
+.geo-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.geo-f[hidden]{display:none}
+.geo-f.wide{grid-column:1/-1}
+.geo-box{position:relative}
+.geo-box input{padding-right:38px}
+.geo-x{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:28px;height:28px;border:0;border-radius:8px;background:transparent;color:var(--ash);font-size:18px;line-height:1;cursor:pointer}
+.geo-x:hover{background:var(--panel-2);color:var(--bone)}
+.geo-menu{list-style:none;margin:6px 0 0;padding:4px;border:1px solid var(--line-2);border-radius:12px;background:var(--panel);max-height:236px;overflow:auto;display:none;overscroll-behavior:contain;box-shadow:0 10px 30px rgba(0,0,0,.18)}
+.geo-menu.open{display:block}
+.geo-menu li{display:flex;align-items:baseline;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;font-size:14px;color:var(--bone);line-height:1.35}
+.geo-menu li .geo-nm{flex:1;min-width:0}
+.geo-menu li small{color:var(--ash);font-size:12px;text-align:right;flex:none;max-width:58%}
+.geo-menu li.on,.geo-menu li[data-i]:hover{background:var(--field)}
+.geo-menu li.on{box-shadow:inset 3px 0 0 var(--lime)}
+.geo-menu li.note{cursor:default;color:var(--ash);font-size:13px}
+.geo-fl{flex:none}
+.geo-hint{margin:-6px 0 14px}
+@media (max-width:560px){.geo-grid{grid-template-columns:1fr}.geo-menu li small{max-width:50%}}
+
+/* LinkedIn import (fix-43) */
+.lii-steps{margin:0 0 16px;padding-left:20px;display:grid;gap:8px;font-size:14px;line-height:1.55;color:var(--bone)}
+.lii-drop{display:flex;align-items:center;gap:14px;padding:18px;border:1.5px dashed var(--line-2);border-radius:14px;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--bone);font-weight:500;transition:border-color .15s,background .15s}
+.lii-drop:hover{border-color:var(--lime);background:color-mix(in srgb,var(--lime) 6%,transparent)}
+.lii-drop b{display:block;font-size:15px}
+.lii-drop small{display:block;color:var(--ash);font-size:12.5px;margin-top:2px}
+.lii-drop.busy{opacity:.7;pointer-events:none}
+.lii-sec{border-top:1px solid var(--line);padding:14px 0 6px}
+.lii-h{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.lii-h b{font-size:15px}
+.lii-h .txt-btn{margin-left:auto;color:var(--lime)}
+.lii-list{display:grid;gap:2px}
+.lii-row{display:flex;gap:12px;align-items:flex-start;padding:9px 8px;border-radius:10px;cursor:pointer;text-transform:none;letter-spacing:0;font-weight:500;color:var(--bone)}
+.lii-row:hover{background:var(--field)}
+.lii-row input,.lii-chip input{width:18px;height:18px;flex:none;margin-top:2px;accent-color:var(--lime)}
+.lii-t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.lii-t b{font-size:14.5px}
+.lii-t small{color:var(--ash);font-size:12.5px;line-height:1.45;overflow-wrap:anywhere}
+.lii-t em{font-style:normal;color:var(--ash);font-size:12px}
+.lii-row.dim{opacity:.6;cursor:default}
+.lii-chips{display:flex;flex-wrap:wrap;gap:6px}
+.lii-chip{display:inline-flex;align-items:center;gap:7px;padding:6px 11px 6px 8px;border:1px solid var(--line-2);border-radius:999px;font-size:13px;text-transform:none;letter-spacing:0;font-weight:500;color:var(--bone);cursor:pointer}
+.lii-chip input{margin:0;width:15px;height:15px}
+.lii-chip.dim{opacity:.55}
+.lii-warn{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:10px;background:color-mix(in srgb,#e8a33d 14%,transparent);color:var(--bone);font-size:13.5px;margin-bottom:10px}
+.li-ok{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--ash)}
+.li-auth{margin-bottom:6px}
+.or-line{display:flex;align-items:center;gap:12px;margin:14px 0 10px;color:var(--ash);font-size:12px}
+.or-line::before,.or-line::after{content:"";flex:1;height:1px;background:var(--line-2)}
+.lii-confirm{display:flex;align-items:center;gap:12px;margin-top:16px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--panel-2);font-size:14px}
+.lii-confirm span{flex:1;display:flex;flex-direction:column;gap:2px}
+.lii-confirm small{color:var(--ash);font-size:12.5px}
+/* finish-your-profile card on the feed (fix-43) */
+.pstr{padding:16px 18px}
+.pstr-h{display:flex;flex-direction:column;gap:2px;margin-bottom:10px}
+.pstr-h b{font-size:15px}
+.pstr-bar{display:block;height:7px;border-radius:99px;background:var(--line);overflow:hidden}
+.pstr-bar i{display:block;height:100%;background:var(--fill);border-radius:99px}
+.pstr ul{list-style:none;margin:12px 0;padding:0;display:grid;gap:4px}
+.pstr li a{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--bone);padding:4px 0}
+.pstr li a:hover{color:var(--lime);text-decoration:none}
+.pstr.slim{display:flex;align-items:center;gap:6px;padding:10px 8px 10px 16px}
+.pstr.slim>a{flex:1;display:flex;align-items:center;gap:14px;color:var(--bone);text-decoration:none;min-width:0}
+.pstr.slim>a>span:first-child{display:flex;flex-direction:column;min-width:0}
+.pstr.slim b{font-size:14px}
+.pstr.slim small{color:var(--ash);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pstr.slim .pstr-bar{flex:0 0 72px}
+
+/* fix-44: prices come from the database — hide the HTML's ₹ text for a moment so an old price never flashes.
+   If the prices can't load, the text in the page shows after 2.5 seconds anyway. */
+[data-price]:not(.pr-ok), [data-price-tpl]:not(.pr-ok) { visibility: hidden; animation: pr-show 0s linear 2.5s forwards; }
+@keyframes pr-show { to { visibility: visible; } }

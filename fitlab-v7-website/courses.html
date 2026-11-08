@@ -8,7 +8,7 @@
 <script src="assets/i18n.js?v=5a53b6d0a1"></script>
 <link rel="icon" href="assets/favicon.png">
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
-<link rel="stylesheet" href="assets/styles.css?v=aa315fca94">
+<link rel="stylesheet" href="assets/styles.css?v=30a90be14f">
 <style>
   .chead{padding:22px 24px}
   .chead h1{margin:6px 0 4px;font:700 clamp(22px,3vw,30px)/1.2 var(--body);color:var(--bone)}
@@ -51,7 +51,7 @@
 
 <script src="assets/vendor/supabase-2.118.0.js?v=8795eb1487"></script>
 <script src="config.js?v=e763b77801"></script>
-<script src="assets/app.js?v=a9d2c41a7a"></script>
+<script src="assets/app.js?v=3b8a32deaf"></script>
 <script src="assets/track.js?v=c458497b3e"></script>
 <script>
 (async () => {
@@ -114,7 +114,9 @@
   }
 
   const price = (c) => Number(c.price_paise || 0);
-  const rupees = (p) => '₹' + (p / 100).toLocaleString('en-IN');
+  const rupees = (p) => FL.rs(p);
+  // fix-44: direct certification has its own price (empty = the same as the course)
+  const directPrice = (c) => Number(c.direct_price_paise ?? c.price_paise ?? 0);
   // the syllabus grouped into modules (chapters = the daily lessons)
   const MODULES = {
     'fitness-coaching-mastery': [
@@ -130,22 +132,22 @@
     [`Module ${i + 1}`, i * 5 + 1, Math.min(c.total_days, i * 5 + 5)]);
 
   function buyBox(c) {
-    const p = rupees(price(c));
+    const p = rupees(price(c)), dp = rupees(directPrice(c));
     return `<div class="buy">
       <div class="buy-opt main"><div class="eyebrow" style="font-size:10px">Learn + certify</div><h3>Full course</h3><div class="price">${p}</div>
         <ul><li>All ${c.total_days} daily chapters in ${modulesFor(c).length} modules</li><li>Checks and assignments every day</li><li>Final exam after Day ${c.total_days} — the Course Completion certificate</li></ul>
         <button class="pill solid" data-buy="full">Buy full course — ${p}</button></div>
-      <div class="buy-opt"><div class="eyebrow" style="font-size:10px">Already experienced?</div><h3>Direct certification</h3><div class="price">${p}</div>
+      <div class="buy-opt"><div class="eyebrow" style="font-size:10px">Already experienced?</div><h3>Direct certification</h3><div class="price">${dp}</div>
         <ul><li>Skip the lessons — take the exam right away</li><li>The same ${c.exam_question_count}-question exam, same ${c.pass_percentage}% pass mark</li><li>${c.exam_seconds_per_question || 60} seconds a question, no going back</li><li>Pass for the Direct Certification certificate</li></ul>
-        <button class="pill" data-buy="direct">Buy direct certification — ${p}</button></div>
+        <button class="pill" data-buy="direct">Buy direct certification — ${dp}</button></div>
     </div>
     <p class="t-xs muted" style="margin:10px 0 0">One-time payment via Razorpay — UPI, cards, net banking. Lifetime access. ${c.max_attempts} exam attempts included.</p>`;
   }
 
-  // a course member who hasn't finished can still take the exam now: direct certification is its own ₹99 product
+  // a course member who hasn't finished can still take the exam now: direct certification is its own product, with its own price
   function certifyOffer(c, e, s) {
     if (!e || e.track !== 'full' || e.exam_unlocked_at || s.allDone || s.cert || s.passed || !price(c)) return '';
-    const p = rupees(price(c));
+    const p = rupees(directPrice(c));
     return `<div class="certify" id="certify">
       <div><div class="eyebrow" style="font-size:10px">Direct certification · ${p}</div><h3>Want to certify now?</h3>
         <p>Take the exam today without finishing the days — pass and you earn the <b>Direct Certification</b> certificate. Finish all ${c.total_days} days first and the exam is included, with the <b>Course Completion</b> certificate. Your course stays open either way.</p></div>
@@ -204,6 +206,7 @@
         ${e ? `<div class="cprog" style="margin-top:14px"><span class="progress"><i style="width:${s.pct}%"></i></span><span class="t-sm"><b>${s.doneCount}/${c.total_days}</b> days · ${s.pct}%</span></div>` : ''}
         ${e ? `<div class="cta-row">${ctaFor(c, s)}</div>` : price(c) ? buyBox(c) : `<div class="cta-row"><button class="pill solid lg" id="btnEnroll">Enroll — free</button></div>`}
         ${certifyOffer(c, e, s)}
+        ${FL.canEditPrices(me) ? `<div class="notice" style="margin:14px 0 0;align-items:center;flex-wrap:wrap">${FL.icon('rupee', 18)}<div style="flex:1;min-width:180px"><b>Prices</b> · full course ${price(c) ? rupees(price(c)) : 'free'} · direct certification ${price(c) ? rupees(directPrice(c)) : 'free'}<div class="t-xs muted">Only you and your payments team see this.</div></div><button class="pill solid sm" id="btnPrices" type="button">Edit prices</button></div>` : ''}
         <div class="stats3">${stt.enrolled_count != null ? `<span><b>${stt.enrolled_count}</b> enrolled</span><span><b>${stt.completed_count}</b> completed</span><span><b>${stt.in_progress_count}</b> in progress</span>` : ''}</div>
         ${c.description ? `<p class="desc">${esc(c.description)}</p>` : ''}
       </div></div>
@@ -247,6 +250,8 @@
     const be = $('btnEnroll');
     if (be) be.onclick = () => enroll(c, be);
     $('main').querySelectorAll('[data-buy]').forEach((b) => { b.onclick = () => buy(c, b.dataset.buy, b); });
+    const bp = $('btnPrices');
+    if (bp) bp.onclick = () => FL.editCoursePrices(c, () => location.reload());   // fix-44
     const offer = $('certify');
     if (offer && location.hash === '#certify') { offer.scrollIntoView({ block: 'center' }); offer.classList.add('flash'); setTimeout(() => offer.classList.remove('flash'), 2600); }
     side(c);
