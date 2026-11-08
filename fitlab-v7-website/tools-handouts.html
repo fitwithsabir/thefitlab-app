@@ -103,7 +103,7 @@
   if ($('pSel')) $('pSel').onchange = () => pickPatient($('pSel').value);
   $('pName').oninput = () => { P.name = $('pName').value.trim(); if ($('pSel') && P.id && P.name !== (P.client || {}).full_name) { $('pSel').value = ''; P.id = null; P.client = null; P.notes = []; P.measures = []; drawActions(); } draw(); };
   $('pAge').oninput = () => { P.age = $('pAge').value; draw(); };
-  const patLine = () => [P.name || 'Patient', P.age ? `${P.age} years` : ''].filter(Boolean).join(', ');
+  const patLine = () => [P.name || '____________________', P.age ? `${P.age} years` : ''].filter(Boolean).join(', ');
 
   // ---------------------------------------------------------------- your details on letters (kept on this device)
   const firstReg = async () => { if (!me) return ''; try { const { data } = await sb.from('credentials').select('credential_id').eq('user_id', me.id).not('credential_id', 'is', null).limit(1); return (data && data[0] && data[0].credential_id) || ''; } catch (_) { return ''; } };
