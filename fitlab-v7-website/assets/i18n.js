@@ -24,7 +24,7 @@
   };
 
   // ---------------------------------------------------------------- languages
-  var VERSION = '2026-11-08b';            // built-in packs; bump when /i18n/*.json change
+  var VERSION = '2026-11-08c';            // built-in packs; bump when /i18n/*.json change
   var COMMON = ['en', 'hi', 'te', 'ur', 'ar'];
   // languages whose packs ship with the site (/i18n/<code>.json) — a language is added here once it is fully
   // translated and reviewed; until then it comes from the database like a download ("Being translated")
