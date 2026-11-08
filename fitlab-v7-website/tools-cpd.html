@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>CPD and licence tracker — The Fit Lab</title>
+<meta name="description" content="Free CPD and licence tracker for health and fitness professionals: log courses, workshops and conferences, keep certificates in one place, get reminders before a licence expires and download your CPD record as a PDF.">
+<script src="assets/theme.js?v=891b5cdc5d"></script>
+<script src="assets/i18n.js?v=e52fbfef46"></script>
+<link rel="icon" href="assets/favicon.png">
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="assets/styles.css?v=9ccf3156e5">
+<link rel="stylesheet" href="assets/tools.css?v=4aaf2813a8">
+</head>
+<body data-page="tools">
+<div id="nav"></div>
+<main class="page tools">
+  <header class="tl-hero">
+    <div class="eyebrow">CPD &amp; licences</div>
+    <h1>Stay licensed, stay current</h1>
+    <p class="muted">Keep every licence and certificate in one place, log your courses, workshops and conferences, and get a reminder 30 days and 7 days before anything expires. Download your CPD record for your council, employer or insurer.</p>
+    <nav class="tl-tabs" id="tlTabs" aria-label="Tools">
+      <a href="tools" data-tab="calc">Calculators</a>
+      <a href="tools-health" data-tab="health">Health tools</a>
+      <a href="tools-cpd" class="on" data-tab="cpd">CPD &amp; licences</a>
+      <a href="tools-diet" data-tab="diet">Diet plans</a>
+      <a href="tools-workout" data-tab="workout">Workout plans</a>
+      <a href="tools-ai" data-tab="ai">Coach AI</a>
+    </nav>
+  </header>
+
+  <div id="app"><div class="box box-pad tl-empty">Loading…</div></div>
+</main>
+
+<script src="config.js?v=e763b77801"></script>
+<script src="assets/vendor/supabase-2.118.0.js?v=8795eb1487"></script>
+<script src="assets/app.js?v=b353be1615"></script>
+<script src="assets/tools-pdf.js?v=2ec115e31f"></script>
+<script>
+(async () => {
+  const $ = (id) => document.getElementById(id), esc = FL.esc, I = FL.icon;
+  let me = null;
+  try { if (await FL.session()) me = await FL.getProfile(); } catch (_) {}
+  FL.renderHeader(me && me.profile_completed ? me : null);
+  if (!me) {
+    $('app').innerHTML = `<section class="box tl-gate"><div class="tl-cta-in">${I('award', 26)}<div><b>Join free to track your CPD and licences</b>
+      <span>Your licences, CPD hours and certificates in one private place, with expiry reminders by notification and email. Free for every member.</span></div>
+      <a class="pill solid" href="/?next=tools-cpd">Join free</a></div></section>`;
+    return;
+  }
+  if (!me.profile_completed) return location.replace('register');
+
+  const KINDS = { course: 'Course', conference: 'Conference', workshop: 'Workshop', webinar: 'Webinar or online', reading: 'Reading or journal club',
+    teaching: 'Teaching or presenting', research: 'Research', supervision: 'Supervision or mentoring', other: 'Other' };
+  const BUCKET = 'cpd-certificates';
+  let creds = [], acts = [], year = String(new Date().getFullYear());
+  const today = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
+  const D = (s) => s ? new Date(s + 'T00:00:00') : null;
+  const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const fmt = (s, opt = { day: 'numeric', month: 'short', year: 'numeric' }) => s ? D(s).toLocaleDateString('en-IN', opt) : '';
+  const daysTo = (s) => Math.round((D(s) - today()) / 86400000);
+  const h1 = (n) => { const v = Math.round((+n || 0) * 10) / 10; return v.toLocaleString('en-IN'); };
+  const must = (r) => { if (r && r.error) throw r.error; return r ? r.data : null; };
+
+  $('app').innerHTML = `
+    <div class="tl-stats cpd-stats" id="stats"></div>
+    <section class="box cpd-box">
+      <div class="box-head"><div><h2>Licences and certificates</h2><div class="sub">These also show on your profile under Licenses &amp; certifications.</div></div>
+        <button class="pill sm solid" type="button" id="addLic">${I('plus', 15)} Add</button></div>
+      <div id="lics"></div>
+    </section>
+    <section class="box cpd-box">
+      <div class="box-head cpd-loghead"><div><h2>CPD log</h2><div class="sub">Private to you. Your total for the year shows on your profile as CE hours.</div></div>
+        <div class="cpd-tools"><select id="yearSel" aria-label="Year"></select>
+          <button class="pill sm ghost" type="button" id="btnCsv">${I('download', 14)} CSV</button>
+          <button class="pill sm ghost" type="button" id="btnPdf">${I('file', 14)} PDF record</button>
+          <button class="pill sm solid" type="button" id="addAct">${I('plus', 15)} Log CPD</button></div></div>
+      <div id="kinds"></div>
+      <div id="log"></div>
+    </section>`;
+
+  async function load() {
+    const [c, a] = await Promise.all([
+      sb.from('credentials').select('*').eq('user_id', me.id).order('expiry_date', { ascending: true, nullsFirst: false }),
+      sb.from('cpd_activities').select('*').eq('user_id', me.id).order('activity_date', { ascending: false }).order('created_at', { ascending: false }),
+    ]);
+    if (c.error || a.error) { FL.toast(FL.friendly(c.error || a.error), 'err'); }
+    creds = c.data || []; acts = a.data || [];
+    draw();
+  }
+
+  // ---------------------------------------------------------------- licences
+  const since = (c) => c.cpd_from || c.issue_date || null;
+  const done = (c) => acts.filter((a) => a.credential_id === c.id && (!since(c) || a.activity_date >= since(c))).reduce((s, a) => s + (+a.hours || 0), 0);
+  function status(c) {
+    if (!c.expiry_date) return { k: 'info', t: 'Doesn\'t expire' };
+    const d = daysTo(c.expiry_date);
+    if (d < 0) return { k: 'bad', t: `Expired on ${fmt(c.expiry_date)}` };
+    if (d === 0) return { k: 'bad', t: 'Expires today' };
+    if (d <= 30) return { k: 'warn', t: `Expires in ${d} day${d === 1 ? '' : 's'} · ${fmt(c.expiry_date)}` };
+    return { k: 'good', t: `Valid until ${fmt(c.expiry_date)}` };
+  }
+  const BADGE = { good: 'k-normal', warn: 'k-over', bad: 'k-obese1', info: 'k-info' };
+  function drawLics() {
+    if (!creds.length) { $('lics').innerHTML = `<div class="box-pad tl-empty">No licences or certificates yet. Add your registration, licence or certification and its expiry date to get renewal reminders.</div>`; return; }
+    $('lics').innerHTML = creds.map((c) => {
+      const s = status(c), req = +c.cpd_required || 0, got = done(c), pct = req ? Math.min(100, got / req * 100) : 0;
+      return `<div class="cpd-lic" data-id="${c.id}">
+        <div class="cpd-lic-h"><div class="cpd-lic-n"><b>${esc(c.name)}</b><span>${esc(c.issuer)}${c.credential_id ? ` · ID ${esc(c.credential_id)}` : ''}</span></div>
+          <span class="tl-badge ${BADGE[s.k]}">${esc(s.t)}</span></div>
+        ${req ? `<div class="cpd-prog"><div class="cpd-bar"><i style="width:${pct}%"></i></div><span><b>${h1(got)} of ${h1(req)}</b> CPD hours for this renewal${since(c) ? ` · since ${fmt(since(c))}` : ''}${got >= req ? ' — done' : ''}</span></div>` : ''}
+        <div class="cpd-lic-a">
+          ${c.expiry_date && c.renew_remind === false ? `<span class="t-xs muted">${I('bell', 13)} Reminders off</span>` : ''}
+          <button class="txt-btn" type="button" data-edit>Edit</button>${c.expiry_date ? '<button class="txt-btn" type="button" data-renew>Renewed</button>' : ''}</div>
+      </div>`;
+    }).join('');
+    $('lics').querySelectorAll('[data-edit]').forEach((b) => { b.onclick = () => editLic(b.closest('[data-id]').dataset.id); });
+    $('lics').querySelectorAll('[data-renew]').forEach((b) => { b.onclick = () => renewLic(b.closest('[data-id]').dataset.id); });
+  }
+  function editLic(id) {
+    const x = creds.find((c) => c.id === id) || { renew_remind: true };
+    FL.form({ title: id ? 'Edit licence or certificate' : 'Add a licence or certificate', wide: true,
+      values: { ...x, renew_remind: x.renew_remind !== false },
+      fields: [
+        { k: 'name', label: 'Name', req: true, max: 150, ph: 'e.g. Registered Physiotherapist, ACE Certified Personal Trainer' },
+        { k: 'issuer', label: 'Issued by', req: true, max: 150, ph: 'e.g. State council, IAP, ACE, NASM' },
+        { k: 'credential_id', label: 'Licence or registration number', max: 80, half: true },
+        { k: 'issue_date', label: 'Issued on', type: 'date', half: true },
+        { k: 'expiry_date', label: 'Expires on', type: 'date', half: true, help: 'Leave empty if it doesn\'t expire.' },
+        { k: 'cpd_required', label: 'CPD hours needed to renew', type: 'number', min: 0, maxv: 2000, half: true, help: 'If your council or certifier asks for any.' },
+        { k: 'cpd_from', label: 'Count CPD from', type: 'date', half: true, help: 'Start of the current renewal period. Empty = the issue date.' },
+        { k: 'renew_remind', label: 'Remind me 30 days and 7 days before it expires', type: 'checkbox' }],
+      onSave: async (v) => {
+        const req = v.cpd_required !== '' && v.cpd_required != null ? Math.max(0, Math.min(2000, +v.cpd_required)) : null;
+        if (v.issue_date && v.expiry_date && v.expiry_date < v.issue_date) throw new Error('The expiry date is before the issue date.');
+        const row = { name: v.name, issuer: v.issuer, credential_id: v.credential_id || null, issue_date: v.issue_date || null, expiry_date: v.expiry_date || null,
+          cpd_required: req || null, cpd_from: v.cpd_from || null, renew_remind: !!v.renew_remind };
+        must(id ? await sb.from('credentials').update(row).eq('id', id) : await sb.from('credentials').insert({ ...row, user_id: me.id }));
+        FL.toast(id ? 'Saved' : 'Added — it shows on your profile too', 'ok');
+        await load();
+      },
+      onDelete: id ? async () => { must(await sb.from('credentials').delete().eq('id', id)); FL.toast('Removed', 'ok'); await load(); } : null,
+    });
+  }
+  function renewLic(id) {
+    const x = creds.find((c) => c.id === id); if (!x) return;
+    FL.form({ title: `Renewed: ${x.name}`, saveLabel: 'Save renewal', note: '',
+      values: { expiry_date: '', cpd_from: iso(today()) },
+      fields: [
+        { k: 'expiry_date', label: 'New expiry date', type: 'date', req: true },
+        { k: 'cpd_from', label: 'Count CPD from', type: 'date', help: 'CPD logged from this date counts towards the next renewal.' }],
+      onSave: async (v) => {
+        if (x.expiry_date && v.expiry_date <= x.expiry_date) throw new Error('The new expiry date should be after the old one.');
+        must(await sb.from('credentials').update({ expiry_date: v.expiry_date, cpd_from: v.cpd_from || null }).eq('id', id));
+        FL.toast('Renewal saved', 'ok'); await load();
+      } });
+  }
+  $('addLic').onclick = () => editLic(null);
+
+  // ---------------------------------------------------------------- CPD log
+  const years = () => { const ys = new Set(acts.map((a) => a.activity_date.slice(0, 4))); ys.add(String(new Date().getFullYear())); return [...ys].sort().reverse(); };
+  const inYear = (a) => year === 'all' || a.activity_date.startsWith(year);
+  const credName = (id) => { const c = creds.find((x) => x.id === id); return c ? c.name : ''; };
+  function drawLog() {
+    const ys = years(); if (year !== 'all' && !ys.includes(year)) year = ys[0];
+    $('yearSel').innerHTML = ys.map((y) => `<option value="${y}" ${y === year ? 'selected' : ''}>${y}</option>`).join('') + `<option value="all" ${year === 'all' ? 'selected' : ''}>All years</option>`;
+    const list = acts.filter(inYear);
+    const byKind = {}; list.forEach((a) => { byKind[a.kind] = (byKind[a.kind] || 0) + (+a.hours || 0); });
+    const total = list.reduce((s, a) => s + (+a.hours || 0), 0);
+    $('kinds').innerHTML = list.length ? `<div class="cpd-kinds"><span class="cpd-total"><b>${h1(total)}</b> hours · ${list.length} ${list.length === 1 ? 'activity' : 'activities'}</span>${Object.entries(byKind).sort((a, b) => b[1] - a[1]).map(([k, h]) => `<span class="cpd-kind">${esc(KINDS[k] || k)} · ${h1(h)} h</span>`).join('')}</div>` : '';
+    if (!list.length) { $('log').innerHTML = `<div class="box-pad tl-empty">${year === 'all' ? 'Nothing logged yet.' : `Nothing logged for ${year} yet.`} Add each course, workshop, conference, webinar or journal club as you do it — it takes a few seconds.</div>`; return; }
+    $('log').innerHTML = `<div class="cpd-list">${list.map((a) => `<div class="cpd-row" data-id="${a.id}">
+        <div class="cpd-date"><b>${esc(fmt(a.activity_date, { day: 'numeric' }))}</b><span>${esc(fmt(a.activity_date, { month: 'short', year: year === 'all' ? '2-digit' : undefined }))}</span></div>
+        <div class="cpd-what"><b>${esc(a.title)}</b><span>${[KINDS[a.kind], a.provider, credName(a.credential_id) ? 'for ' + credName(a.credential_id) : ''].filter(Boolean).map(esc).join(' · ')}</span>${a.notes ? `<em>${esc(a.notes)}</em>` : ''}</div>
+        <div class="cpd-hrs"><b>${h1(a.hours)}</b><span>${+a.hours === 1 ? 'hour' : 'hours'}</span></div>
+        <div class="cpd-act">${a.certificate_path ? `<button class="icon-btn" type="button" data-cert title="Open certificate" aria-label="Open certificate">${I('file', 17)}</button>` : ''}<button class="icon-btn" type="button" data-edit title="Edit" aria-label="Edit">${I('edit', 17)}</button></div>
+      </div>`).join('')}</div>`;
+    $('log').querySelectorAll('[data-edit]').forEach((b) => { b.onclick = () => editAct(b.closest('[data-id]').dataset.id); });
+    $('log').querySelectorAll('[data-cert]').forEach((b) => { b.onclick = () => openCert(acts.find((a) => a.id === b.closest('[data-id]').dataset.id)); });
+  }
+  $('yearSel').onchange = () => { year = $('yearSel').value; drawLog(); };
+
+  async function openCert(a) {
+    if (!a || !a.certificate_path) return;
+    const w = window.open('', '_blank');
+    const { data, error } = await sb.storage.from(BUCKET).createSignedUrl(a.certificate_path, 300);
+    if (error || !data) { if (w) w.close(); return FL.toast(FL.friendly(error || new Error('Couldn\'t open the certificate.')), 'err'); }
+    if (w) w.location = data.signedUrl; else location.href = data.signedUrl;
+  }
+  function editAct(id) {
+    const x = acts.find((a) => a.id === id) || {};
+    const withReq = creds.filter((c) => +c.cpd_required > 0);
+    const defCred = x.id ? (x.credential_id || '') : (withReq.length === 1 ? withReq[0].id : '');
+    const m = FL.form({ title: id ? 'Edit CPD activity' : 'Log CPD', wide: true,
+      values: { ...x, activity_date: x.activity_date || iso(today()), credential_id: defCred, kind: x.kind || 'course' },
+      fields: [
+        { k: 'title', label: 'What did you do?', req: true, max: 200, ph: 'e.g. Shoulder rehabilitation workshop' },
+        { k: 'provider', label: 'Provider or organiser', max: 200, half: true, ph: 'e.g. IAP, ACSM, a hospital' },
+        { k: 'kind', label: 'Type', type: 'select', half: true, options: Object.entries(KINDS) },
+        { k: 'activity_date', label: 'Date', type: 'date', req: true, half: true },
+        { k: 'hours', label: 'Hours', type: 'number', req: true, min: 0.25, maxv: 500, half: true, ph: 'e.g. 3' },
+        { k: 'credential_id', label: 'Counts towards', type: 'select', options: [['', 'No particular licence'], ...creds.map((c) => [c.id, c.name])] },
+        { html: `<div class="field"><label for="cpdFile">Certificate <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:500">optional · PDF or photo, up to 6 MB</span></label>
+            <input id="cpdFile" type="file" accept="application/pdf,image/jpeg,image/png,image/webp">${x.certificate_path ? '<span class="help">A certificate is saved. Choose a new file to replace it.</span>' : ''}</div>` },
+        { k: 'notes', label: 'Notes or reflection', type: 'textarea', max: 1000, rows: 80, ph: 'What you learnt and how you\'ll use it — many councils ask for this.' }],
+      onSave: async (v) => {
+        const hrs = +v.hours;
+        if (!(hrs > 0 && hrs <= 500)) throw new Error('Enter the hours (more than 0).');
+        if (v.activity_date > iso(today())) throw new Error('The date can\'t be in the future.');
+        let path = x.certificate_path || null;
+        const f = m.q('#cpdFile').files[0];
+        if (f) {
+          if (f.size > 6 * 1024 * 1024) throw new Error('The certificate is bigger than 6 MB.');
+          if (!/^(application\/pdf|image\/(jpeg|png|webp))$/.test(f.type)) throw new Error('Use a PDF, JPG, PNG or WebP file.');
+          const ext = f.type === 'application/pdf' ? 'pdf' : f.type.split('/')[1].replace('jpeg', 'jpg');
+          const np = `${me.id}/${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+          const up = await sb.storage.from(BUCKET).upload(np, f, { contentType: f.type, upsert: false });
+          if (up.error) throw up.error;
+          path = np;
+        }
+        const row = { title: v.title, provider: v.provider || null, kind: v.kind || 'course', activity_date: v.activity_date, hours: Math.round(hrs * 100) / 100,
+          credential_id: v.credential_id || null, notes: v.notes || null, certificate_path: path };
+        try { must(id ? await sb.from('cpd_activities').update(row).eq('id', id) : await sb.from('cpd_activities').insert(row)); }
+        catch (e) { if (f && path !== x.certificate_path) await sb.storage.from(BUCKET).remove([path]); throw e; }
+        if (f && x.certificate_path && x.certificate_path !== path) await sb.storage.from(BUCKET).remove([x.certificate_path]);
+        FL.toast(id ? 'Saved' : 'Logged', 'ok');
+        if (!id) year = v.activity_date.slice(0, 4);
+        await load();
+      },
+      onDelete: id ? async () => {
+        must(await sb.from('cpd_activities').delete().eq('id', id));
+        if (x.certificate_path) await sb.storage.from(BUCKET).remove([x.certificate_path]);
+        FL.toast('Deleted', 'ok'); await load();
+      } : null,
+    });
+  }
+  $('addAct').onclick = () => editAct(null);
+
+  // ---------------------------------------------------------------- the numbers at the top
+  function drawStats() {
+    const y = String(new Date().getFullYear()), thisYear = acts.filter((a) => a.activity_date.startsWith(y));
+    const hrs = thisYear.reduce((s, a) => s + (+a.hours || 0), 0);
+    const next = creds.filter((c) => c.expiry_date && daysTo(c.expiry_date) >= 0).sort((a, b) => a.expiry_date.localeCompare(b.expiry_date))[0];
+    const expired = creds.filter((c) => c.expiry_date && daysTo(c.expiry_date) < 0).length;
+    const st = (v, unit, lbl, cls = '') => `<div class="tl-stat ${cls}"><b>${v}<small>${unit}</small></b><span>${lbl}</span></div>`;
+    $('stats').innerHTML = st(h1(hrs), 'h', `CPD in ${y}`, 'hl') + st(thisYear.length, '', thisYear.length === 1 ? 'Activity this year' : 'Activities this year')
+      + (!next ? st('—', '', 'No renewal dates yet') : daysTo(next.expiry_date) <= 99
+        ? st(daysTo(next.expiry_date), daysTo(next.expiry_date) === 1 ? 'day' : 'days', `Until ${esc(next.name)} expires`, daysTo(next.expiry_date) <= 30 ? 'bad' : '')
+        : st(esc(fmt(next.expiry_date, { month: 'short', year: 'numeric' })), '', `Next renewal — ${esc(next.name)}`))
+      + st(creds.length, '', expired ? `Licences and certificates · ${expired} expired` : 'Licences and certificates', expired ? 'bad' : '');
+  }
+  function draw() { drawStats(); drawLics(); drawLog(); }
+
+  // ---------------------------------------------------------------- exports
+  const rowsFor = () => acts.filter(inYear).slice().sort((a, b) => a.activity_date.localeCompare(b.activity_date));
+  const label = () => year === 'all' ? 'All years' : `1 January – 31 December ${year}`;
+  $('btnCsv').onclick = () => {
+    const list = rowsFor(); if (!list.length) return FL.toast('Nothing to export for this year yet.');
+    const q = (s) => `"${String(s == null ? '' : s).replace(/"/g, '""')}"`;
+    const lines = [['Date', 'Activity', 'Provider', 'Type', 'Hours', 'Counts towards', 'Notes'].map(q).join(',')]
+      .concat(list.map((a) => [a.activity_date, a.title, a.provider, KINDS[a.kind] || a.kind, a.hours, credName(a.credential_id), a.notes].map(q).join(',')));
+    const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const u = URL.createObjectURL(blob), el = document.createElement('a');
+    el.href = u; el.download = `CPD-${year === 'all' ? 'all-years' : year}-${(me.full_name || 'record').replace(/[^A-Za-z0-9]+/g, '-')}.csv`; document.body.appendChild(el); el.click(); el.remove();
+    setTimeout(() => URL.revokeObjectURL(u), 2000);
+  };
+  $('btnPdf').onclick = async (e) => {
+    const list = rowsFor(), btn = e.currentTarget;
+    FL.busy(btn, true, 'Making PDF…');
+    try {
+      const access = (await sb.rpc('tools_access')).data || {};
+      const P = window.FLPdf;
+      const ctx = await P.start({ title: 'CPD record', subtitle: label(), coach: access.coach || { name: me.full_name, unique_id: me.unique_id } });
+      if (creds.length) {
+        P.heading(ctx, 'Licences and certificates');
+        P.table(ctx, ['Name', 'Issued by', 'Number', 'Expires', 'CPD this renewal'], creds.map((c) => [c.name, c.issuer, c.credential_id || '—', c.expiry_date ? fmt(c.expiry_date) : 'No expiry',
+          +c.cpd_required ? `${h1(done(c))} of ${h1(c.cpd_required)} h` : '—']), { columnStyles: { 4: { halign: 'right' } } });
+      }
+      const total = list.reduce((s, a) => s + (+a.hours || 0), 0);
+      P.heading(ctx, 'CPD activities', `${h1(total)} hours · ${list.length} ${list.length === 1 ? 'activity' : 'activities'}`);
+      if (list.length) P.table(ctx, ['Date', 'Activity', 'Type', 'Provider', 'Hours'], list.map((a) => [fmt(a.activity_date), a.title + (a.notes ? `\n${a.notes}` : ''), KINDS[a.kind] || a.kind, a.provider || '—', h1(a.hours)]),
+        { columnStyles: { 0: { cellWidth: 24 }, 2: { cellWidth: 30 }, 4: { halign: 'right', cellWidth: 16 } } });
+      else P.paragraph(ctx, 'No CPD logged for this period.');
+      const byKind = {}; list.forEach((a) => { byKind[a.kind] = (byKind[a.kind] || 0) + (+a.hours || 0); });
+      if (list.length) { P.heading(ctx, 'Hours by type'); P.table(ctx, ['Type', 'Hours'], Object.entries(byKind).sort((a, b) => b[1] - a[1]).map(([k, hh]) => [KINDS[k] || k, h1(hh)]).concat([[{ content: 'Total', styles: { fontStyle: 'bold' } }, { content: h1(total), styles: { fontStyle: 'bold' } }]]), { columnStyles: { 1: { halign: 'right' } }, tableWidth: 90 }); }
+      P.heading(ctx, 'Declaration');
+      P.paragraph(ctx, 'I confirm that this is a true record of my continuing professional development, and that I can show evidence for each activity if asked.', { color: P.COLORS.INK });
+      ctx.y += 10; ctx.doc.setDrawColor(...P.COLORS.ASH); ctx.doc.line(14, ctx.y, 90, ctx.y); ctx.doc.line(120, ctx.y, ctx.W - 14, ctx.y);
+      ctx.doc.setFontSize(8.5); ctx.doc.setTextColor(...P.COLORS.ASH); ctx.doc.text('Signature', 14, ctx.y + 4.5); ctx.doc.text('Date', 120, ctx.y + 4.5);
+      P.footer(ctx.doc, 'CPD record made with The Fit Lab · thefitlab.in');
+      P.save(ctx.doc, `CPD record ${year === 'all' ? 'all years' : year} ${me.full_name || ''}`);
+    } catch (ex) { FL.toast(FL.friendly(ex), 'err'); }
+    finally { FL.busy(btn, false); }
+  };
+
+  await load();
+  if (location.hash === '#log') editAct(null);
+})();
+</script>
+</body>
+</html>

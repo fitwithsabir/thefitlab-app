@@ -533,7 +533,7 @@
       <div class="t-sm">${esc(c.issuer)}</div>${c.issue_date ? `<div class="ent-meta">Issued ${FL.fmtMonth(c.issue_date)}${c.expiry_date ? ' · Expires ' + FL.fmtMonth(c.expiry_date) : ''}</div>` : ''}
       ${c.credential_id ? `<div class="ent-meta">Credential ID ${esc(c.credential_id)}</div>` : ''}${c.ce_hours ? `<div class="ent-meta">${c.ce_hours} CE hours</div>` : ''}
       ${c.credential_url ? `<div class="ent-act"><a class="pill ghost sm" href="${esc(c.credential_url)}" target="_blank" rel="noopener nofollow">Show credential ${I('link', 14)}</a></div>` : ''}</div>${editBtn('cred', c.id)}</div>`).join('');
-    return `<div class="box sec-box"><div class="box-head"><div><h2>Licenses &amp; certifications</h2>${p.ce_hours_year > 0 ? `<div class="sub">${p.ce_hours_year} CE hours this year</div>` : ''}</div><span class="sec-tools">${addBtn('cred', 'Add license or certification')}</span></div>
+    return `<div class="box sec-box"><div class="box-head"><div><h2>Licenses &amp; certifications</h2>${p.ce_hours_year > 0 ? `<div class="sub">${p.ce_hours_year} CE hours this year</div>` : ''}</div><span class="sec-tools">${isSelf() ? `<a class="icon-btn" href="tools-cpd" aria-label="CPD and renewal tracker" title="CPD and renewal tracker">${I('calendar', 19)}</a>` : ''}${addBtn('cred', 'Add license or certification')}</span></div>
       ${flRows + extRows || '<p class="t-sm muted" style="padding:0 20px 18px;margin:0">Add certifications like ACE, NASM, ACSM, K11, first-aid / CPR. Fit Lab certificates appear here automatically.</p>'}</div>`;
   }
 
