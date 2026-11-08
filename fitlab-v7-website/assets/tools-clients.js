@@ -8,6 +8,15 @@
   const ALLERGIES = [['dairy', 'Milk / lactose'], ['gluten', 'Gluten (wheat)'], ['peanut', 'Peanut'], ['treenut', 'Tree nuts'], ['soy', 'Soy'], ['egg', 'Egg'], ['fish', 'Fish'], ['shellfish', 'Shellfish']];
   const DIETS = [['veg', 'Vegetarian'], ['egg', 'Eggetarian'], ['nonveg', 'Non-vegetarian'], ['vegan', 'Vegan'], ['jain', 'Jain']];
   const CUISINES = [['mixed', 'All-India mix'], ['north', 'North Indian'], ['south', 'South Indian']];
+  // health screening — the same keys the diet builder knows
+  const CONDITIONS = [
+    ['diabetes', 'Diabetes (on treatment)'], ['prediabetes', 'Prediabetes / high sugar'], ['hypertension', 'High blood pressure'],
+    ['cholesterol', 'High cholesterol / triglycerides'], ['thyroid', 'Thyroid condition'], ['pcos', 'PCOS / PCOD'],
+    ['kidney', 'Kidney disease'], ['heart', 'Heart disease'], ['liver', 'Fatty liver'], ['pregnant', 'Pregnant'],
+    ['breastfeeding', 'Breastfeeding'], ['eating_disorder', 'Eating disorder (now or before)'], ['gut', 'IBS / acidity / gut issues'],
+    ['osteoporosis', 'Osteoporosis / osteopenia'], ['arthritis', 'Arthritis / joint replacement'], ['asthma', 'Asthma / COPD'],
+    ['surgery', 'Recent surgery or injury'], ['cancer', 'Cancer (now or before)'],
+  ];
   const thisYear = new Date().getFullYear();
   const age = (c) => c && c.birth_year ? thisYear - c.birth_year : null;
   // allergies are kept in the allergies text as "dairy, gluten" plus any free text after a semicolon
@@ -26,7 +35,7 @@
   // add or edit a client in a dialog; resolves with the saved row (or null)
   function form(existing = null, { access } = {}) {
     const c = existing || { sex: 'female', activity: 'light', goal: 'fat_loss', diet: 'veg', cuisine: 'mixed', conditions: [] };
-    const conds = (root.FLDiet && root.FLDiet.CONDITIONS) || [];
+    const conds = CONDITIONS;
     const allergies = parseAllergies(c.allergies);
     const chip = (name, val, label, on) => `<label class="tl-chip"><input type="checkbox" name="${name}" value="${val}" ${on ? 'checked' : ''}><span>${esc(label)}</span></label>`;
     return new Promise((resolve) => {
@@ -67,6 +76,7 @@
         const uid = (await FL.session()).user.id;
         const { data: files } = await sb.storage.from('client-reports').list(`${uid}/${existing.id}`, { limit: 100 });
         if ((files || []).length) await sb.storage.from('client-reports').remove(files.map((f) => `${uid}/${existing.id}/${f.name}`));
+        await eraseFiles(uid, existing.id);
         const { error } = await sb.from('coach_clients').delete().eq('id', existing.id);
         if (error) return err(FL.friendly(error));
         cache = null; done = true; m.close(); FL.toast('Client and their data deleted', 'ok'); resolve({ archived: true, deleted: true });
@@ -98,9 +108,17 @@
     });
   }
 
+  // a patient's own files (reports, scans, letters) — removed when the client is deleted for good
+  async function eraseFiles(uid, clientId) {
+    const { data } = await sb.storage.from('patient-files').list(`${uid}/${clientId}`, { limit: 1000 });
+    if ((data || []).length) await sb.storage.from('patient-files').remove(data.map((f) => `${uid}/${clientId}/${f.name}`));
+  }
+  // enough details to work out calories and training loads
+  const ready = (c) => !!(c && Number(c.height_cm) > 0 && Number(c.weight_kg) > 0 && c.birth_year);
+
   // a client as calculator inputs
   const toPerson = (c) => ({ sex: c.sex, age: age(c) || 30, weightKg: Number(c.weight_kg), heightCm: Number(c.height_cm), activity: c.activity || 'light',
     goal: c.goal || 'maintain', bodyFatPct: c.body_fat ? Number(c.body_fat) : null });
 
-  root.FLClients = { list, form, age, toPerson, parseAllergies, ALLERGIES, DIETS, CUISINES, reset: () => { cache = null; } };
+  root.FLClients = { list, form, age, ready, toPerson, parseAllergies, extraAllergies, eraseFiles, ALLERGIES, DIETS, CUISINES, CONDITIONS, reset: () => { cache = null; } };
 })(window);

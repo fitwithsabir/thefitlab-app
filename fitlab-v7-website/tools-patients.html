@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Patient and client records — The Fit Lab</title>
+<meta name="description" content="Private patient and client records for health and fitness professionals: intake with consent, SOAP session notes, outcome scores tracked over time, reports and scans, and a PDF record — deleted for good when a patient asks.">
+<script src="assets/theme.js?v=891b5cdc5d"></script>
+<script src="assets/i18n.js?v=e52fbfef46"></script>
+<link rel="icon" href="assets/favicon.png">
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="assets/styles.css?v=9ccf3156e5">
+<link rel="stylesheet" href="assets/tools.css?v=121c77d8d9">
+</head>
+<body data-page="tools">
+<div id="nav"></div>
+<main class="page tools">
+  <header class="tl-hero">
+    <div class="eyebrow">Clients &amp; patients</div>
+    <h1>Records that keep you professional</h1>
+    <p class="muted">Intake with consent, session notes in SOAP format, outcome scores tracked over time, and reports and scans — private to you, and deleted for good when a patient asks.</p>
+    <nav class="tl-tabs" id="tlTabs" aria-label="Tools">
+      <a href="tools" data-tab="calc">Calculators</a>
+      <a href="tools-health" data-tab="health">Health tools</a>
+      <a href="tools-patients" class="on" data-tab="patients">Patients</a>
+      <a href="tools-cpd" data-tab="cpd">CPD &amp; licences</a>
+      <a href="tools-diet" data-tab="diet">Diet plans</a>
+      <a href="tools-workout" data-tab="workout">Workout plans</a>
+      <a href="tools-ai" data-tab="ai">Coach AI</a>
+    </nav>
+  </header>
+  <div id="gate"></div>
+  <div id="app"><div class="box box-pad tl-empty">Loading…</div></div>
+</main>
+
+<script src="config.js?v=e763b77801"></script>
+<script src="assets/vendor/supabase-2.118.0.js?v=8795eb1487"></script>
+<script src="assets/app.js?v=b353be1615"></script>
+<script src="assets/tools-calc.js?v=626f571566"></script>
+<script src="assets/tools-clients.js?v=a89ada897b"></script>
+<script src="assets/tools-pdf.js?v=2ec115e31f"></script>
+<script>
+(async () => {
+  const $ = (id) => document.getElementById(id), esc = FL.esc, I = FL.icon, CL = window.FLClients;
+  let me = null;
+  try { if (await FL.session()) me = await FL.getProfile(); } catch (_) {}
+  FL.renderHeader(me && me.profile_completed ? me : null);
+  if (!me) {
+    $('app').innerHTML = `<section class="box tl-gate"><div class="tl-cta-in">${I('clipboard', 26)}<div><b>Join free to keep patient records</b>
+      <span>Intake and consent, SOAP notes, progress charts and files for every client and patient — included with Premium and Coach AI.</span></div>
+      <a class="pill solid" href="/?next=tools-patients">Join free</a></div></section>`;
+    return;
+  }
+  if (!me.profile_completed) return location.replace('register');
+
+  let access = (await sb.rpc('tools_access')).data || { can_build: false };
+  const qs = new URLSearchParams(location.search);
+  let clients = [], sel = qs.get('c'), tab = qs.get('t') || 'notes', notes = [], measures = [], files = [], query = '';
+  const FILES = 'patient-files';
+  const thisYear = new Date().getFullYear();
+  const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  const fmt = (s, o = { day: 'numeric', month: 'short', year: 'numeric' }) => s ? new Date(String(s).slice(0, 10) + 'T00:00:00').toLocaleDateString('en-IN', o) : '';
+  const must = (r) => { if (r && r.error) throw r.error; return r ? r.data : null; };
+  const n1 = (v) => (Math.round(+v * 10) / 10).toLocaleString('en-IN');
+  const cur = () => clients.find((c) => c.id === sel) || null;
+  const COND = Object.fromEntries(CL.CONDITIONS);
+  const NOTE_KINDS = { initial: 'Initial assessment', soap: 'Treatment session', progress: 'Progress review', phone: 'Phone or video call', discharge: 'Discharge summary', note: 'Other note' };
+  const CONSENT = { written: 'Signed form', verbal: 'Spoken, recorded in notes', digital: 'Online form or message' };
+  // outcome measures: key, name, unit, which way is better
+  const MEASURES = [
+    ['pain', 'Pain (0–10)', '', 'down'], ['weight', 'Weight', 'kg', ''], ['waist', 'Waist', 'cm', 'down'], ['bodyfat', 'Body fat', '%', 'down'],
+    ['bp_sys', 'Blood pressure — systolic', 'mmHg', 'down'], ['bp_dia', 'Blood pressure — diastolic', 'mmHg', 'down'], ['rhr', 'Resting heart rate', 'bpm', 'down'],
+    ['walk6', 'Six-minute walk', 'm', 'up'], ['tug', 'Timed Up and Go', 's', 'down'], ['chair30', '30-second chair stand', 'stands', 'up'],
+    ['grip', 'Grip strength', 'kg', 'up'], ['gait', 'Gait speed', 'm/s', 'up'], ['rom', 'Range of motion', '°', 'up'],
+    ['hba1c', 'HbA1c', '%', 'down'], ['fbs', 'Fasting glucose', 'mg/dL', 'down'], ['custom', 'Something else', '', ''],
+  ];
+  const MDEF = Object.fromEntries(MEASURES.map(([k, l, u, d]) => [k, { k, l, u, d }]));
+
+  // ---------------------------------------------------------------- shell
+  $('app').innerHTML = `<div class="pt-grid">
+      <section class="box pt-list" id="listBox">
+        <div class="box-head"><div><h2>Clients &amp; patients</h2><div class="sub" id="limitTxt"></div></div><button class="pill sm solid" type="button" id="btnNew">${I('plus', 15)} New</button></div>
+        <div class="pt-search"><input id="q" type="search" placeholder="Search by name, phone or complaint" aria-label="Search clients"></div>
+        <div id="list"></div>
+      </section>
+      <div id="detail" class="pt-detail"></div>
+    </div>`;
+  const showGate = () => {
+    $('gate').innerHTML = access.can_build ? '' : `<section class="box tl-gate" style="margin-bottom:16px"><div class="tl-cta-in">${I('crown', 26)}<div><b>Patient records come with Premium</b>
+      <span>Any Premium plan — including the free 14-day trial — gives you records for up to 10 clients: intake and consent, SOAP notes, progress charts, files and a PDF record. Coach AI adds more clients. ${clients.length ? 'You can still read, download and delete the records you have.' : ''}</span></div>
+      <a class="pill solid" href="premium">See Premium</a></div></section>`;
+    $('limitTxt').textContent = access.can_build ? `${access.clients_used ?? clients.length} of ${access.clients_limit} on your plan` : '';
+  };
+
+  async function loadClients() {
+    const { data, error } = await sb.from('coach_clients').select('*').is('archived_at', null).order('updated_at', { ascending: false });
+    if (error) FL.toast(FL.friendly(error), 'err');
+    clients = data || [];
+    showGate(); drawList();
+    if (sel && !cur()) sel = null;
+    if (!sel && clients.length && matchMedia('(min-width:900px)').matches) sel = clients[0].id;
+    await openClient(sel, false);
+  }
+  function drawList() {
+    const q = query.toLowerCase();
+    const list = clients.filter((c) => !q || [c.full_name, c.phone, c.complaint, c.referred_by].some((x) => String(x || '').toLowerCase().includes(q)));
+    $('list').innerHTML = list.length ? list.map((c) => `<button type="button" class="pt-item ${c.id === sel ? 'on' : ''}" data-id="${c.id}">
+        <span class="pt-av">${esc((c.full_name || '?').trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase())}</span>
+        <span class="pt-iw"><b>${esc(c.full_name)}</b><span>${[c.sex === 'male' ? 'Male' : 'Female', CL.age(c) ? CL.age(c) + ' y' : '', c.complaint].filter(Boolean).map(esc).join(' · ')}</span></span></button>`).join('')
+      : `<div class="box-pad tl-empty">${clients.length ? 'No one matches that search.' : access.can_build ? 'No clients yet. Add your first patient or client — it takes a minute.' : 'No records yet.'}</div>`;
+    $('list').querySelectorAll('.pt-item').forEach((b) => { b.onclick = () => openClient(b.dataset.id); });
+  }
+  $('q').oninput = () => { query = $('q').value.trim(); drawList(); };
+  $('btnNew').onclick = () => intake(null);
+
+  async function openClient(id, scroll = true) {
+    sel = id || null;
+    const u = new URL(location.href); if (sel) { u.searchParams.set('c', sel); u.searchParams.set('t', tab); } else { u.searchParams.delete('c'); u.searchParams.delete('t'); }
+    history.replaceState(null, '', u.pathname + u.search);
+    document.querySelector('.pt-grid').classList.toggle('has-sel', !!sel);
+    drawList();
+    const c = cur();
+    if (!c) { $('detail').innerHTML = clients.length ? `<div class="box box-pad tl-empty pt-pick">Choose someone on the list to see their record.</div>` : ''; return; }
+    $('detail').innerHTML = `<div class="box box-pad tl-empty">Loading…</div>`;
+    const [n, m, f] = await Promise.all([
+      sb.from('coach_notes').select('*').eq('client_id', c.id).order('session_date', { ascending: false }).order('created_at', { ascending: false }),
+      sb.from('coach_measures').select('*').eq('client_id', c.id).order('measured_on', { ascending: true }).order('created_at', { ascending: true }),
+      sb.storage.from(FILES).list(`${me.id}/${c.id}`, { limit: 200, sortBy: { column: 'created_at', order: 'desc' } }),
+    ]);
+    notes = n.data || []; measures = m.data || []; files = (f.data || []).filter((x) => x.name && !x.name.startsWith('.'));
+    drawDetail();
+    if (scroll && !matchMedia('(min-width:900px)').matches) $('detail').scrollIntoView({ block: 'start' });
+  }
+
+  // ---------------------------------------------------------------- the record
+  function drawDetail() {
+    const c = cur(); if (!c) return;
+    const consent = c.health_consent_at ? `<span class="tl-badge k-normal">${I('check', 12)} Consent · ${esc(CONSENT[c.consent_method] || 'recorded')} · ${esc(fmt(c.health_consent_at))}</span>` : `<span class="tl-badge k-over">No consent recorded</span>`;
+    const meta = [c.sex === 'male' ? 'Male' : 'Female', CL.age(c) ? `${CL.age(c)} years` : '', c.height_cm ? `${n1(c.height_cm)} cm` : '', c.weight_kg ? `${n1(c.weight_kg)} kg` : '', c.referred_by ? `Referred by ${c.referred_by}` : ''].filter(Boolean);
+    $('detail').innerHTML = `<section class="box pt-head">
+        <div class="pt-head-top"><button class="icon-btn pt-back" type="button" id="btnBack" aria-label="Back to the list">${I('back', 20)}</button>
+          <div class="pt-who"><h2>${esc(c.full_name)}</h2><span>${meta.map(esc).join(' · ')}</span>
+            <span class="pt-contact">${c.phone ? `<a href="tel:${esc(c.phone.replace(/[^\d+]/g, ''))}">${I('phone', 14)} ${esc(c.phone)}</a>` : ''}${c.email ? `<a href="mailto:${esc(c.email)}">${I('mail', 14)} ${esc(c.email)}</a>` : ''}</span></div>
+          <div class="pt-btns"><button class="pill sm ghost" type="button" id="btnPdf">${I('file', 14)} PDF</button><button class="pill sm" type="button" id="btnIntake">${I('edit', 14)} Intake</button></div></div>
+        <div class="pt-intake">
+          ${c.complaint ? `<div><em>Main complaint</em><p>${esc(c.complaint)}</p></div>` : ''}
+          ${c.history ? `<div><em>Medical history</em><p>${esc(c.history)}</p></div>` : ''}
+          ${c.medications ? `<div><em>Medicines</em><p>${esc(c.medications)}</p></div>` : ''}
+          ${c.allergies ? `<div><em>Allergies</em><p>${esc(allergyText(c.allergies))}</p></div>` : ''}
+          ${(c.conditions || []).length ? `<div><em>Screening</em><p>${c.conditions.map((k) => esc(COND[k] || k)).join(', ')}</p></div>` : ''}
+          ${!c.complaint && !c.history && !c.medications ? `<p class="t-sm muted" style="margin:0">Add the main complaint, history and medicines in <b>Intake</b>.</p>` : ''}
+        </div>
+        <div class="pt-foot">${consent}<span class="t-xs muted">Added ${esc(fmt(c.created_at))}</span></div>
+      </section>
+      <nav class="pt-tabs" role="tablist">${[['notes', 'Notes', notes.length], ['progress', 'Progress', new Set(measures.map(seriesKey)).size + (notes.some((x) => x.pain != null) ? 1 : 0)], ['files', 'Files', files.length]]
+        .map(([k, l, n]) => `<button type="button" role="tab" data-tab="${k}" class="${tab === k ? 'on' : ''}" aria-selected="${tab === k}">${l}${n ? ` <span>${n}</span>` : ''}</button>`).join('')}</nav>
+      <div id="tabBody"></div>`;
+    $('btnBack').onclick = () => openClient(null);
+    $('btnIntake').onclick = () => intake(c);
+    $('btnPdf').onclick = (e) => recordPdf(e.currentTarget);
+    $('detail').querySelectorAll('.pt-tabs button').forEach((b) => { b.onclick = () => { tab = b.dataset.tab; openTab(); }; });
+    openTab();
+  }
+  function openTab() {
+    const u = new URL(location.href); u.searchParams.set('t', tab); history.replaceState(null, '', u.pathname + u.search);
+    $('detail').querySelectorAll('.pt-tabs button').forEach((b) => { const on = b.dataset.tab === tab; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+    ({ notes: drawNotes, progress: drawProgress, files: drawFiles })[tab]();
+  }
+  const allergyText = (txt) => { const keys = CL.parseAllergies(txt), names = keys.map((k) => (CL.ALLERGIES.find((a) => a[0] === k) || [k, k])[1]); const x = CL.extraAllergies(txt); return names.concat(x ? [x] : []).join(', ') || txt; };
+
+  // ---------------------------------------------------------------- intake
+  function intake(existing) {
+    if (!existing && !access.can_build) return FL.upsell('Patient records', 'Keeping patient records needs Premium or Coach AI. Start the free 14-day trial to add your first patient.');
+    const c = existing || { sex: 'female', conditions: [] };
+    const algs = CL.parseAllergies(c.allergies);
+    const chip = (name, val, label, on) => `<label class="tl-chip"><input type="checkbox" name="${name}" value="${val}" ${on ? 'checked' : ''}><span>${esc(label)}</span></label>`;
+    const ta = (id, label, v, max, ph, rows = 70) => `<div class="field"><label for="${id}">${label}</label><textarea id="${id}" maxlength="${max}" placeholder="${esc(ph)}" style="min-height:${rows}px">${esc(v || '')}</textarea></div>`;
+    const m = FL.modal({ title: existing ? `Intake — ${c.full_name}` : 'New patient or client', wide: true,
+      body: `<div class="tl-form">
+        <div class="row2"><div class="field"><label class="req" for="iName">Name</label><input id="iName" maxlength="80" value="${esc(c.full_name || '')}"></div>
+          <div class="row2"><div class="field"><label for="iSex">Sex</label><select id="iSex"><option value="female" ${c.sex === 'female' ? 'selected' : ''}>Female</option><option value="male" ${c.sex === 'male' ? 'selected' : ''}>Male</option></select></div>
+            <div class="field"><label class="req" for="iAge">Age</label><input id="iAge" type="number" inputmode="numeric" min="1" max="105" value="${esc(CL.age(c) ?? '')}"></div></div></div>
+        <div class="row3"><div class="field"><label for="iPhone">Phone</label><input id="iPhone" type="tel" maxlength="30" value="${esc(c.phone || '')}"></div>
+          <div class="field"><label for="iEmail">Email</label><input id="iEmail" type="email" maxlength="120" value="${esc(c.email || '')}"></div>
+          <div class="field"><label for="iRef">Referred by</label><input id="iRef" maxlength="150" value="${esc(c.referred_by || '')}" placeholder="e.g. Dr Rao, self"></div></div>
+        ${ta('iComplaint', 'Main complaint or reason for visit', c.complaint, 1000, 'e.g. Right knee pain on stairs for 3 months')}
+        ${ta('iHistory', 'Medical history', c.history, 3000, 'Past illnesses, operations, injuries, scans, family history')}
+        ${ta('iMeds', 'Medicines and supplements', c.medications, 1500, 'Name, dose and how often')}
+        <div class="field"><label>Allergies and intolerances</label><div class="tl-chips">${CL.ALLERGIES.map(([k, l]) => chip('alg', k, l, algs.includes(k))).join('')}</div>
+          <input id="iAlgX" maxlength="120" placeholder="Anything else, such as medicines or latex" value="${esc(CL.extraAllergies(c.allergies))}" style="margin-top:8px"></div>
+        <div class="field"><label>Health screening</label><div class="tl-chips">${CL.CONDITIONS.map(([k, l]) => chip('cond', k, l, (c.conditions || []).includes(k))).join('')}</div></div>
+        <details class="tl-more" ${c.height_cm || c.weight_kg ? 'open' : ''}><summary>Height, weight and waist <span class="muted">(needed for diet and workout plans)</span></summary>
+          <div class="row3"><div class="field"><label for="iH">Height (cm)</label><input id="iH" type="number" inputmode="decimal" min="100" max="250" step="0.1" value="${esc(c.height_cm ?? '')}"></div>
+            <div class="field"><label for="iW">Weight (kg)</label><input id="iW" type="number" inputmode="decimal" min="20" max="350" step="0.1" value="${esc(c.weight_kg ?? '')}"></div>
+            <div class="field"><label for="iWaist">Waist (cm)</label><input id="iWaist" type="number" inputmode="decimal" min="30" max="250" step="0.5" value="${esc(c.waist_cm ?? '')}"></div></div></details>
+        ${ta('iNotes', 'Private notes', c.notes, 2000, 'Anything else worth remembering', 60)}
+        <div class="pt-consent"><label class="check"><input type="checkbox" id="iConsent" ${c.health_consent_at ? 'checked' : ''}><span>The patient agreed that I can keep these health records to treat or train them, and knows they can see them or ask me to delete them at any time.</span></label>
+          <div class="field" style="margin:8px 0 0"><label for="iConsentHow">How they agreed</label><select id="iConsentHow">${Object.entries(CONSENT).map(([k, l]) => `<option value="${k}" ${c.consent_method === k ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></div></div>
+        <div class="err" id="iErr" hidden></div></div>`,
+      foot: `${existing ? '<button class="pill ghost red-o" type="button" data-archive>Archive</button><button class="txt-btn" type="button" data-erase>Delete for good</button><span style="flex:1"></span>' : ''}<button class="pill ghost" type="button" data-no>Cancel</button><button class="pill solid" type="button" data-ok>${existing ? 'Save' : 'Add'}</button>` });
+    const q = m.q, err = (t) => { const e = q('#iErr'); e.textContent = t; e.hidden = !t; if (t) e.scrollIntoView({ block: 'nearest' }); };
+    q('[data-no]').onclick = m.close;
+    const num = (id) => { const v = parseFloat(q(id).value); return isFinite(v) ? v : null; };
+    q('[data-ok]').onclick = async (e) => {
+      err('');
+      const nm = q('#iName').value.trim(), a = parseInt(q('#iAge').value, 10), h = num('#iH'), w = num('#iW'), waist = num('#iWaist');
+      if (!nm) return err('Add the name.');
+      if (!(a >= 1 && a <= 105)) return err('Add the age (1 to 105).');
+      if (h != null && !(h >= 100 && h <= 250)) return err('Height must be between 100 and 250 cm.');
+      if (w != null && !(w >= 20 && w <= 350)) return err('Weight must be between 20 and 350 kg.');
+      if (waist != null && !(waist >= 30 && waist <= 250)) return err('Waist must be between 30 and 250 cm.');
+      const email = q('#iEmail').value.trim();
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return err('That email address doesn\'t look right.');
+      const conditions = [...m.el.querySelectorAll('input[name=cond]:checked')].map((x) => x.value);
+      const al = [...m.el.querySelectorAll('input[name=alg]:checked')].map((x) => x.value), alx = q('#iAlgX').value.trim().replace(/;/g, ',');
+      const clinical = q('#iComplaint').value.trim() || q('#iHistory').value.trim() || q('#iMeds').value.trim() || conditions.length || al.length || alx;
+      const consent = q('#iConsent').checked;
+      if (clinical && !consent) return err('Tick the consent box before saving health details.');
+      const row = { full_name: nm, sex: q('#iSex').value, birth_year: Math.max(1920, thisYear - a), phone: q('#iPhone').value.trim() || null, email: email || null,
+        referred_by: q('#iRef').value.trim() || null, complaint: q('#iComplaint').value.trim() || null, history: q('#iHistory').value.trim() || null,
+        medications: q('#iMeds').value.trim() || null, allergies: (al.join(', ') + (alx ? '; ' + alx : '')) || null, conditions,
+        height_cm: h, weight_kg: w, waist_cm: waist, notes: q('#iNotes').value.trim() || null,
+        health_consent_at: consent ? (c.health_consent_at || new Date().toISOString()) : null, consent_method: consent ? q('#iConsentHow').value : null };
+      FL.busy(e.target, true, 'Saving…');
+      try {
+        const saved = must(existing ? await sb.from('coach_clients').update(row).eq('id', existing.id).select().single()
+                                    : await sb.from('coach_clients').insert({ ...row, coach_id: me.id, activity: 'light', goal: 'health' }).select().single());
+        m.close(); CL.reset();
+        access = (await sb.rpc('tools_access')).data || access;
+        FL.toast(existing ? 'Saved' : 'Added', 'ok');
+        sel = saved.id; if (!existing) tab = 'notes';
+        await loadClients();
+      } catch (ex) { err(FL.friendly(ex)); } finally { FL.busy(e.target, false); }
+    };
+    const arch = q('[data-archive]');
+    if (arch) arch.onclick = async () => {
+      if (!(await FL.confirm('Archive this record?', 'It leaves your list and frees up a place on your plan. Nothing is deleted.', 'Archive'))) return;
+      try { must(await sb.from('coach_clients').update({ archived_at: new Date().toISOString() }).eq('id', existing.id)); m.close(); CL.reset(); sel = null; access = (await sb.rpc('tools_access')).data || access; await loadClients(); FL.toast('Archived', 'ok'); }
+      catch (ex) { err(FL.friendly(ex)); }
+    };
+    const erase = q('[data-erase]');
+    if (erase) erase.onclick = async () => {
+      if (!(await FL.confirm(`Delete ${c.full_name} for good?`, 'The intake, every note, progress score, plan, report and file are deleted and can\'t be brought back. Use this when the patient asks you to delete their data.', 'Delete everything', true))) return;
+      try {
+        await CL.eraseFiles(me.id, existing.id);
+        const { data: rf } = await sb.storage.from('client-reports').list(`${me.id}/${existing.id}`, { limit: 100 });
+        if ((rf || []).length) await sb.storage.from('client-reports').remove(rf.map((f) => `${me.id}/${existing.id}/${f.name}`));
+        must(await sb.from('coach_clients').delete().eq('id', existing.id));
+        m.close(); CL.reset(); sel = null; access = (await sb.rpc('tools_access')).data || access; await loadClients(); FL.toast('Record and files deleted', 'ok');
+      } catch (ex) { err(FL.friendly(ex)); }
+    };
+  }
+
+  // ---------------------------------------------------------------- notes
+  const SOAP = [['subjective', 'S', 'Subjective', 'What the patient tells you — symptoms, pain, function, goals, how they responded to the last session'],
+    ['objective', 'O', 'Objective', 'What you measure and observe — tests, range of motion, strength, vitals, posture'],
+    ['assessment', 'A', 'Assessment', 'Your clinical impression — diagnosis or working diagnosis, progress, problems'],
+    ['plan', 'P', 'Plan', 'Treatment given, home programme, advice, referrals and the next review']];
+  function drawNotes() {
+    const body = $('tabBody');
+    body.innerHTML = `<div class="pt-bar"><button class="pill sm solid" type="button" id="btnNote">${I('plus', 15)} New note</button>${notes.length ? `<span class="t-xs muted">${notes.length} ${notes.length === 1 ? 'note' : 'notes'}</span>` : ''}</div>
+      ${notes.length ? notes.map((n) => `<article class="box pt-note" data-id="${n.id}">
+          <header><div><b>${esc(fmt(n.session_date, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }))}</b><span class="tl-badge k-info">${esc(NOTE_KINDS[n.kind] || 'Note')}</span>
+            ${n.pain != null ? `<span class="pt-pain">Pain ${n1(n.pain)}/10</span>` : ''}${n.minutes ? `<span class="t-xs muted">${n.minutes} min</span>` : ''}</div>
+            <button class="icon-btn" type="button" data-edit aria-label="Edit note" title="Edit">${I('edit', 17)}</button></header>
+          ${SOAP.filter(([k]) => n[k]).map(([k, s, l]) => `<div class="pt-soap"><span title="${l}">${s}</span><p>${esc(n[k])}</p></div>`).join('')}
+        </article>`).join('') : `<div class="box box-pad tl-empty">No notes yet. Start with an initial assessment — the SOAP format keeps every note clear for you, the patient and anyone you refer to.</div>`}`;
+    $('btnNote').onclick = () => noteForm(null);
+    body.querySelectorAll('[data-edit]').forEach((b) => { b.onclick = () => noteForm(b.closest('[data-id]').dataset.id); });
+  }
+  function noteForm(id) {
+    const c = cur(); if (!c) return;
+    if (!id && !access.can_build) return FL.upsell('Patient records', 'Writing notes needs Premium or Coach AI.');
+    const x = notes.find((n) => n.id === id) || { session_date: today(), kind: notes.length ? 'soap' : 'initial' };
+    const last = notes[0];
+    const m = FL.modal({ title: id ? 'Edit note' : `New note — ${c.full_name}`, wide: true,
+      body: `<div class="tl-form">
+        <div class="row3"><div class="field"><label for="nDate" class="req">Date</label><input id="nDate" type="date" max="${today()}" value="${esc(x.session_date)}"></div>
+          <div class="field"><label for="nKind">Type</label><select id="nKind">${Object.entries(NOTE_KINDS).map(([k, l]) => `<option value="${k}" ${x.kind === k ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></div>
+          <div class="row2"><div class="field"><label for="nPain">Pain 0–10</label><input id="nPain" type="number" inputmode="decimal" min="0" max="10" step="0.5" value="${esc(x.pain ?? '')}"></div>
+            <div class="field"><label for="nMin">Minutes</label><input id="nMin" type="number" inputmode="numeric" min="1" max="600" value="${esc(x.minutes ?? '')}"></div></div></div>
+        ${SOAP.map(([k, s, l, ph]) => `<div class="field"><label for="n_${k}"><span class="pt-s">${s}</span> ${l}</label><textarea id="n_${k}" maxlength="4000" placeholder="${esc(ph)}" style="min-height:${k === 'subjective' || k === 'plan' ? 90 : 76}px">${esc(x[k] || '')}</textarea></div>`).join('')}
+        ${!id && last && last.plan ? `<button class="txt-btn" type="button" id="nCopy">${I('back', 13)} Copy the plan from ${esc(fmt(last.session_date))}</button>` : ''}
+        <div class="err" id="nErr" hidden></div></div>`,
+      foot: `${id ? '<button class="pill ghost left" type="button" data-del style="color:var(--danger-text)">Delete</button><span style="flex:1"></span>' : ''}<button class="pill ghost" type="button" data-no>Cancel</button><button class="pill solid" type="button" data-ok>Save note</button>` });
+    const q = m.q, err = (t) => { const e = q('#nErr'); e.textContent = t; e.hidden = !t; };
+    q('[data-no]').onclick = m.close;
+    if (q('#nCopy')) q('#nCopy').onclick = () => { q('#n_plan').value = last.plan; q('#nCopy').remove(); };
+    q('[data-ok]').onclick = async (e) => {
+      const v = (k) => q('#n_' + k).value.trim();
+      const pain = q('#nPain').value === '' ? null : +q('#nPain').value, mins = q('#nMin').value === '' ? null : parseInt(q('#nMin').value, 10);
+      if (!q('#nDate').value) return err('Add the date.');
+      if (q('#nDate').value > today()) return err('The date can\'t be in the future.');
+      if (!SOAP.some(([k]) => v(k))) return err('Write at least one section of the note.');
+      if (pain != null && !(pain >= 0 && pain <= 10)) return err('Pain must be between 0 and 10.');
+      if (mins != null && !(mins >= 1 && mins <= 600)) return err('Minutes must be between 1 and 600.');
+      const row = { client_id: c.id, session_date: q('#nDate').value, kind: q('#nKind').value, pain, minutes: mins,
+        subjective: v('subjective') || null, objective: v('objective') || null, assessment: v('assessment') || null, plan: v('plan') || null };
+      FL.busy(e.target, true, 'Saving…');
+      try { must(id ? await sb.from('coach_notes').update(row).eq('id', id) : await sb.from('coach_notes').insert(row)); m.close(); FL.toast('Note saved', 'ok'); tab = 'notes'; await openClient(c.id, false); }
+      catch (ex) { err(FL.friendly(ex)); } finally { FL.busy(e.target, false); }
+    };
+    const del = q('[data-del]');
+    if (del) del.onclick = async () => {
+      if (!(await FL.confirm('Delete this note?', 'It will be removed from the record for good.', 'Delete', true))) return;
+      try { must(await sb.from('coach_notes').delete().eq('id', id)); m.close(); FL.toast('Note deleted', 'ok'); await openClient(c.id, false); } catch (ex) { err(FL.friendly(ex)); }
+    };
+  }
+
+  // ---------------------------------------------------------------- progress
+  const seriesKey = (x) => (x.measure === 'rom' || x.measure === 'custom') ? `${x.measure}:${(x.label || '').toLowerCase()}` : x.measure;
+  function series() {
+    const by = new Map();
+    measures.forEach((x) => { const k = seriesKey(x); if (!by.has(k)) by.set(k, { key: k, def: MDEF[x.measure] || MDEF.custom, label: x.label, unit: x.unit, pts: [] }); by.get(k).pts.push({ id: x.id, d: x.measured_on, v: +x.value, note: x.note }); });
+    const pn = notes.filter((n) => n.pain != null).map((n) => ({ d: n.session_date, v: +n.pain, fromNote: true })).sort((a, b) => a.d.localeCompare(b.d));
+    if (pn.length) {
+      const s = by.get('pain') || { key: 'pain', def: MDEF.pain, pts: [] };
+      s.pts = s.pts.concat(pn).sort((a, b) => a.d.localeCompare(b.d)); by.set('pain', s);
+    }
+    return [...by.values()];
+  }
+  function spark(pts, dir) {
+    const W = 260, Hh = 64, P = 6;
+    if (pts.length < 2) return '';
+    const xs = pts.map((p) => new Date(p.d + 'T00:00:00').getTime()), ys = pts.map((p) => p.v);
+    const x0 = Math.min(...xs), x1 = Math.max(...xs) || x0 + 1, y0 = Math.min(...ys), y1 = Math.max(...ys);
+    const sx = (x) => P + (x1 === x0 ? 0.5 : (x - x0) / (x1 - x0)) * (W - 2 * P), sy = (y) => Hh - P - (y1 === y0 ? 0.5 : (y - y0) / (y1 - y0)) * (Hh - 2 * P);
+    const d = pts.map((p, i) => `${i ? 'L' : 'M'}${sx(xs[i]).toFixed(1)},${sy(p.v).toFixed(1)}`).join(' ');
+    return `<svg class="pt-spark" viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke"/>
+      ${pts.map((p, i) => `<circle cx="${sx(xs[i]).toFixed(1)}" cy="${sy(p.v).toFixed(1)}" r="2.6"/>`).join('')}</svg>`;
+  }
+  function drawProgress() {
+    const body = $('tabBody'), list = series();
+    body.innerHTML = `<div class="pt-bar"><button class="pill sm solid" type="button" id="btnMeasure">${I('plus', 15)} Add a result</button><span class="t-xs muted">Pain scores from your notes are added automatically.</span></div>
+      ${list.length ? `<div class="pt-series">${list.map((s) => {
+        const first = s.pts[0], last = s.pts[s.pts.length - 1], diff = last.v - first.v, unit = s.def.k === 'custom' || s.def.k === 'rom' ? (s.unit || '') : s.def.u;
+        const better = !s.def.d || !diff ? '' : (s.def.d === 'up') === (diff > 0) ? 'good' : 'bad';
+        const name = s.def.k === 'rom' ? `${s.label || 'Range of motion'}` : s.def.k === 'custom' ? (s.label || 'Result') : s.def.l;
+        return `<section class="box pt-ser ${better}"><header><b>${esc(name)}</b><span>${s.pts.length} ${s.pts.length === 1 ? 'result' : 'results'}</span></header>
+          <div class="pt-ser-v"><b>${n1(last.v)}<small>${esc(unit)}</small></b>${s.pts.length > 1 ? `<span class="pt-chg ${better}">${diff > 0 ? '+' : diff < 0 ? '−' : ''}${n1(Math.abs(diff))} since ${esc(fmt(first.d, { day: 'numeric', month: 'short' }))}</span>` : `<span class="t-xs muted">${esc(fmt(last.d))}</span>`}</div>
+          ${spark(s.pts, s.def.d)}
+          <details><summary>All results</summary><table class="tl-table"><tbody>${s.pts.slice().reverse().map((p) => `<tr><td>${esc(fmt(p.d))}</td><td>${n1(p.v)} ${esc(unit)}${p.note ? `<div class="t-xs muted">${esc(p.note)}</div>` : ''}</td><td>${p.fromNote ? '<span class="t-xs muted">from a note</span>' : `<button class="txt-btn" type="button" data-mdel="${p.id}">Delete</button>`}</td></tr>`).join('')}</tbody></table></details>
+        </section>`; }).join('')}</div>` : `<div class="box box-pad tl-empty">No results yet. Record outcome measures — pain, range of motion, walk tests, strength, blood pressure, weight — at the first visit and at each review to show progress.</div>`}`;
+    $('btnMeasure').onclick = () => measureForm();
+    body.querySelectorAll('[data-mdel]').forEach((b) => { b.onclick = async () => {
+      if (!(await FL.confirm('Delete this result?', 'It will be removed from the progress chart.', 'Delete', true))) return;
+      try { must(await sb.from('coach_measures').delete().eq('id', b.dataset.mdel)); FL.toast('Deleted', 'ok'); tab = 'progress'; await openClient(sel, false); } catch (ex) { FL.toast(FL.friendly(ex), 'err'); }
+    }; });
+  }
+  function measureForm() {
+    const c = cur(); if (!c) return;
+    if (!access.can_build) return FL.upsell('Patient records', 'Recording results needs Premium or Coach AI.');
+    const m = FL.modal({ title: `Add a result — ${c.full_name}`,
+      body: `<div class="tl-form">
+        <div class="field"><label for="mKey">Measure</label><select id="mKey">${MEASURES.map(([k, l, u]) => `<option value="${k}">${esc(l)}${u ? ` (${esc(u)})` : ''}</option>`).join('')}</select></div>
+        <div class="row2" id="mCustom" hidden><div class="field"><label for="mLabel" class="req">Name</label><input id="mLabel" maxlength="80" placeholder="e.g. Knee flexion — right"></div>
+          <div class="field"><label for="mUnit">Unit</label><input id="mUnit" maxlength="20" placeholder="e.g. °, cm, reps"></div></div>
+        <div class="row2"><div class="field"><label for="mVal" class="req">Result</label><input id="mVal" type="number" inputmode="decimal" step="any"></div>
+          <div class="field"><label for="mDate" class="req">Date</label><input id="mDate" type="date" max="${today()}" value="${today()}"></div></div>
+        <div class="field"><label for="mNote">Note</label><input id="mNote" maxlength="300" placeholder="Optional — e.g. with a walking stick, after warm-up"></div>
+        <div class="err" id="mErr" hidden></div></div>`,
+      foot: `<button class="pill ghost" type="button" data-no>Cancel</button><button class="pill solid" type="button" data-ok>Save</button>` });
+    const q = m.q, err = (t) => { const e = q('#mErr'); e.textContent = t; e.hidden = !t; };
+    const sync = () => { const k = q('#mKey').value; q('#mCustom').hidden = !(k === 'rom' || k === 'custom'); if (k === 'rom') { q('#mUnit').value = '°'; q('#mLabel').placeholder = 'e.g. Knee flexion — right'; } else if (k === 'custom') { q('#mLabel').placeholder = 'e.g. Single-leg stance'; } };
+    q('#mKey').onchange = sync; sync();
+    q('[data-no]').onclick = m.close;
+    q('[data-ok]').onclick = async (e) => {
+      const k = q('#mKey').value, val = parseFloat(q('#mVal').value), d = MDEF[k];
+      if (!isFinite(val)) return err('Enter the result as a number.');
+      if (k === 'pain' && !(val >= 0 && val <= 10)) return err('Pain must be between 0 and 10.');
+      if ((k === 'rom' || k === 'custom') && !q('#mLabel').value.trim()) return err('Name what you measured.');
+      if (!q('#mDate').value || q('#mDate').value > today()) return err('Choose a date that isn\'t in the future.');
+      const row = { client_id: c.id, measure: k, value: val, measured_on: q('#mDate').value, note: q('#mNote').value.trim() || null,
+        label: (k === 'rom' || k === 'custom') ? q('#mLabel').value.trim() : null, unit: (k === 'rom' || k === 'custom') ? (q('#mUnit').value.trim() || null) : (d.u || null) };
+      FL.busy(e.target, true, 'Saving…');
+      try { must(await sb.from('coach_measures').insert(row)); m.close(); FL.toast('Result saved', 'ok'); tab = 'progress'; await openClient(c.id, false); }
+      catch (ex) { err(FL.friendly(ex)); } finally { FL.busy(e.target, false); }
+    };
+  }
+
+  // ---------------------------------------------------------------- files
+  const prettyName = (n) => n.replace(/^[0-9a-z]+-/, '').replace(/_/g, ' ');
+  function drawFiles() {
+    const body = $('tabBody');
+    body.innerHTML = `<div class="pt-bar"><label class="pill sm solid pt-up">${I('upload', 15)} Add a file<input type="file" id="fileIn" accept="application/pdf,image/jpeg,image/png,image/webp" hidden></label><span class="t-xs muted">Reports, scans, referral letters, signed consent forms · PDF or photo, up to 10 MB</span></div>
+      ${files.length ? `<div class="box pt-files">${files.map((f) => `<div class="pt-file" data-name="${esc(f.name)}"><span class="pt-fi">${I(/\.pdf$/i.test(f.name) ? 'file' : 'image', 18)}</span>
+          <div><b>${esc(prettyName(f.name))}</b><span>${esc(fmt(f.created_at))}${f.metadata && f.metadata.size ? ` · ${Math.max(1, Math.round(f.metadata.size / 1024))} KB` : ''}</span></div>
+          <button class="txt-btn" type="button" data-open>Open</button><button class="txt-btn" type="button" data-del>Delete</button></div>`).join('')}</div>` : `<div class="box box-pad tl-empty">No files yet.</div>`}`;
+    $('fileIn').onchange = async () => {
+      const f = $('fileIn').files[0]; if (!f) return;
+      if (!access.can_build) return FL.upsell('Patient records', 'Adding files needs Premium or Coach AI.');
+      if (f.size > 10 * 1024 * 1024) return FL.toast('That file is bigger than 10 MB.', 'err');
+      if (!/^(application\/pdf|image\/(jpeg|png|webp))$/.test(f.type)) return FL.toast('Use a PDF, JPG, PNG or WebP file.', 'err');
+      const safe = f.name.replace(/\.[^.]+$/, '').replace(/[^A-Za-z0-9 _-]+/g, '').trim().replace(/\s+/g, '_').slice(0, 60) || 'file';
+      const ext = f.type === 'application/pdf' ? 'pdf' : f.type.split('/')[1].replace('jpeg', 'jpg');
+      FL.toast('Uploading…');
+      const { error } = await sb.storage.from(FILES).upload(`${me.id}/${sel}/${Date.now().toString(36)}-${safe}.${ext}`, f, { contentType: f.type, upsert: false });
+      if (error) return FL.toast(FL.friendly(error), 'err');
+      FL.toast('File added', 'ok'); tab = 'files'; await openClient(sel, false);
+    };
+    body.querySelectorAll('[data-open]').forEach((b) => { b.onclick = async () => {
+      const w = window.open('', '_blank');
+      const { data, error } = await sb.storage.from(FILES).createSignedUrl(`${me.id}/${sel}/${b.closest('[data-name]').dataset.name}`, 300);
+      if (error || !data) { if (w) w.close(); return FL.toast(FL.friendly(error || new Error('Couldn\'t open the file.')), 'err'); }
+      if (w) w.location = data.signedUrl; else location.href = data.signedUrl;
+    }; });
+    body.querySelectorAll('[data-del]').forEach((b) => { b.onclick = async () => {
+      if (!(await FL.confirm('Delete this file?', 'It will be removed for good.', 'Delete', true))) return;
+      const { error } = await sb.storage.from(FILES).remove([`${me.id}/${sel}/${b.closest('[data-name]').dataset.name}`]);
+      if (error) return FL.toast(FL.friendly(error), 'err');
+      FL.toast('Deleted', 'ok'); await openClient(sel, false);
+    }; });
+  }
+
+  // ---------------------------------------------------------------- the full record as a PDF (for the patient, a referral or your own files)
+  async function recordPdf(btn) {
+    const c = cur(); if (!c) return;
+    FL.busy(btn, true, 'Making PDF…');
+    try {
+      const P = window.FLPdf;
+      const ctx = await P.start({ title: 'Patient record', subtitle: 'Confidential', coach: access.coach || { name: me.full_name, unique_id: me.unique_id }, certificate: access.certificate, client: c.full_name });
+      P.heading(ctx, 'Details');
+      P.table(ctx, null, [['Name', c.full_name], ['Sex · age', `${c.sex === 'male' ? 'Male' : 'Female'}${CL.age(c) ? ' · ' + CL.age(c) + ' years' : ''}`],
+        ...(c.phone || c.email ? [['Contact', [c.phone, c.email].filter(Boolean).join('  ·  ')]] : []), ...(c.referred_by ? [['Referred by', c.referred_by]] : []),
+        ...(c.height_cm || c.weight_kg ? [['Height · weight', [c.height_cm ? n1(c.height_cm) + ' cm' : '', c.weight_kg ? n1(c.weight_kg) + ' kg' : ''].filter(Boolean).join('  ·  ')]] : []),
+        ...(c.complaint ? [['Main complaint', c.complaint]] : []), ...(c.history ? [['Medical history', c.history]] : []), ...(c.medications ? [['Medicines', c.medications]] : []),
+        ...(c.allergies ? [['Allergies', allergyText(c.allergies)]] : []), ...((c.conditions || []).length ? [['Screening', c.conditions.map((k) => COND[k] || k).join(', ')]] : []),
+        ['Consent', c.health_consent_at ? `${CONSENT[c.consent_method] || 'Recorded'} · ${fmt(c.health_consent_at)}` : 'Not recorded']], { columnStyles: { 0: { cellWidth: 38, fontStyle: 'bold' } } });
+      const sl = series();
+      if (sl.length) {
+        P.heading(ctx, 'Progress');
+        P.table(ctx, ['Measure', 'First', 'Latest', 'Change'], sl.map((s) => { const f = s.pts[0], l = s.pts[s.pts.length - 1], u = s.def.k === 'rom' || s.def.k === 'custom' ? (s.unit || '') : s.def.u;
+          return [s.def.k === 'rom' || s.def.k === 'custom' ? (s.label || s.def.l) : s.def.l, `${n1(f.v)} ${u} (${fmt(f.d)})`, `${n1(l.v)} ${u} (${fmt(l.d)})`, s.pts.length > 1 ? `${l.v - f.v > 0 ? '+' : ''}${n1(l.v - f.v)} ${u}` : '—']; }));
+      }
+      if (notes.length) {
+        P.heading(ctx, 'Session notes', `${notes.length} ${notes.length === 1 ? 'note' : 'notes'}`);
+        notes.slice().reverse().forEach((n) => {
+          P.paragraph(ctx, `${fmt(n.session_date, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })} — ${NOTE_KINDS[n.kind] || 'Note'}${n.pain != null ? ` · pain ${n1(n.pain)}/10` : ''}${n.minutes ? ` · ${n.minutes} min` : ''}`, { size: 10, bold: true, color: P.COLORS.INK });
+          SOAP.filter(([k]) => n[k]).forEach(([k, s, l]) => P.paragraph(ctx, `${l}: ${n[k]}`, { indent: 3 }));
+          ctx.y += 1.5;
+        });
+      }
+      P.footer(ctx.doc, 'Confidential patient record · made with The Fit Lab · thefitlab.in');
+      P.save(ctx.doc, `Patient record ${c.full_name}`);
+    } catch (ex) { FL.toast(FL.friendly(ex), 'err'); } finally { FL.busy(btn, false); }
+  }
+
+  await loadClients();
+})();
+</script>
+</body>
+</html>

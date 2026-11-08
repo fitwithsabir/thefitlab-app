@@ -273,6 +273,8 @@
     ['cholesterol', 'High cholesterol / triglycerides'], ['thyroid', 'Thyroid condition'], ['pcos', 'PCOS / PCOD'],
     ['kidney', 'Kidney disease'], ['heart', 'Heart disease'], ['liver', 'Fatty liver'], ['pregnant', 'Pregnant'],
     ['breastfeeding', 'Breastfeeding'], ['eating_disorder', 'Eating disorder (now or before)'], ['gut', 'IBS / acidity / gut issues'],
+    ['osteoporosis', 'Osteoporosis / osteopenia'], ['arthritis', 'Arthritis / joint replacement'], ['asthma', 'Asthma / COPD'],
+    ['surgery', 'Recent surgery or injury'], ['cancer', 'Cancer (now or before)'],
   ];
   const REFER = ['diabetes', 'kidney', 'heart', 'pregnant', 'breastfeeding', 'eating_disorder'];
   function notesFor(ctx, t) {

@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="assets/styles.css?v=9ccf3156e5">
-<link rel="stylesheet" href="assets/tools.css?v=4aaf2813a8">
+<link rel="stylesheet" href="assets/tools.css?v=121c77d8d9">
 </head>
 <body data-page="tools">
 <div id="nav"></div>
@@ -23,6 +23,7 @@
     <nav class="tl-tabs" id="tlTabs" aria-label="Tools">
       <a href="tools" data-tab="calc">Calculators</a>
       <a href="tools-health" data-tab="health">Health tools</a>
+      <a href="tools-patients" data-tab="patients">Patients</a>
       <a href="tools-cpd" data-tab="cpd">CPD &amp; licences</a>
       <a href="tools-diet" data-tab="diet">Diet plans</a>
       <a href="tools-workout" data-tab="workout">Workout plans</a>
@@ -89,9 +90,9 @@
 <script src="assets/app.js?v=b353be1615"></script>
 <script src="assets/tools-calc.js?v=626f571566"></script>
 <script src="assets/foods.js?v=505be4ce22"></script>
-<script src="assets/tools-diet.js?v=b65d9bb881"></script>
+<script src="assets/tools-diet.js?v=53b1191931"></script>
 <script src="assets/tools-markers.js?v=c90e66a528"></script>
-<script src="assets/tools-clients.js?v=08a3ddc950"></script>
+<script src="assets/tools-clients.js?v=a89ada897b"></script>
 <script>
 (async () => {
   const $ = (id) => document.getElementById(id), esc = FL.esc, I = FL.icon, C = FLCalc, M = FLMarkers;
@@ -231,6 +232,7 @@
   $('btnEdit').onclick = async () => { if (!client) return; const c = await FLClients.form(client, { access }); if (!c) return; access = (await sb.rpc('tools_access')).data || access; showLimit(); await loadClients(c.archived ? null : c.id); if (c.archived) pick(null); };
   const showLimit = () => { $('limitChip').textContent = `${access.clients_used || 0} of ${access.clients_limit || 0} clients`; };
   function pick(c) {
+    if (c && c.id && !FLClients.ready(c)) { $('clientSel').value = ''; FL.toast(`Add ${c.full_name}'s age, height and weight first.`); FLClients.form(c, { access }).then((r) => loadClients(r && r.id ? r.id : null)); c = null; }
     client = c;
     $('btnEdit').disabled = !c; $('btnAddReport').disabled = !c; $('makeBox').hidden = !c;
     if (!c) { $('clientCard').hidden = true; $('reports').innerHTML = '<div class="box-pad muted t-sm">Choose a client to see their reports.</div>'; return; }
