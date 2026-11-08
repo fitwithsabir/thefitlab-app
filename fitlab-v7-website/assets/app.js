@@ -518,6 +518,17 @@
     },
     inr(rupees) { return '₹' + Number(rupees || 0).toLocaleString('en-IN'); },
     paise(p) { return '₹' + (Number(p || 0) / 100).toLocaleString('en-IN', { maximumFractionDigits: 0 }); },
+    // fix-45: "you@gamil.com" → "you@gmail.com" (null when the address looks fine). Same list as email_domain_fix() in the database.
+    emailTypo(email) {
+      const m = /^([^@\s]+)@([^@\s]+)$/.exec(String(email || '').trim().toLowerCase()); if (!m) return null;
+      const FIX = { gmail: 'gamil gmial gmai gmal gnail gmaill gmali gimal gmeil gmaul gmil gamail gmail.co gmail.con gmail.cm gmail.om gmail.cmo gmail.comm gmail.in gmail.co.in gmailcom gmail.c gmail.ocm',
+        yahoo: 'yahooo yaho yahoo.con yhoo yahoo.co yahho', hotmail: 'hotmial hotmal hotmail.con hotmai', outlook: 'outlok outlook.con outllook',
+        icloud: 'iclod icloud.con iclould', rediffmail: 'redifmail rediffmail.con rediffmial' };
+      for (const [good, bad] of Object.entries(FIX)) {
+        if (bad.split(' ').some((b) => m[2] === (b.includes('.') ? b : b + '.com'))) return `${m[1]}@${good}.com`;
+      }
+      return null;
+    },
     // ₹149 or ₹129.50 (paise kept when there are any)
     rs(p) { const r = Number(p || 0) / 100; return '₹' + r.toLocaleString('en-IN', { minimumFractionDigits: r % 1 ? 2 : 0, maximumFractionDigits: 2 }); },
     // fix-44: course and certification prices come from the database, so a price changed in Admin shows
@@ -1190,7 +1201,8 @@
           <button class="lnk" type="button" data-ask>${icon('sparkles', 18)}Ask The Fit Lab</button>
           <a href="mailto:${esc(cfg.SUPPORT_EMAIL || '')}">${icon('help', 18)}Help</a></div>
         <div class="me-sec"><h6>For gyms &amp; studios</h6><a href="hire">${icon('hire', 18)}Hire a coach</a>
-          ${(profile.is_admin || profile.is_owner) ? `<a href="admin">${icon('shield', 18)}Admin control room</a>` : ''}</div>
+          ${(profile.is_admin || profile.is_owner) ? `<a href="admin">${icon('shield', 18)}Admin control room</a>` : ''}
+          ${this.canEditPrices(profile) ? `<a href="admin#prices">${icon('rupee', 18)}Course &amp; certification prices</a>` : ''}</div>
         <div class="me-sec"><button class="lnk" type="button" id="btnSignOut">${icon('logout', 18)}Sign out</button></div>`;
       document.body.appendChild(menu);
 

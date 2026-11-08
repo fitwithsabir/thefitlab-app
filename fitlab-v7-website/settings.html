@@ -49,7 +49,7 @@
 
 <script src="assets/vendor/supabase-2.118.0.js?v=8795eb1487"></script>
 <script src="config.js?v=e763b77801"></script>
-<script src="assets/app.js?v=83f0680e83"></script>
+<script src="assets/app.js?v=3b8a32deaf"></script>
 <script>
 (async () => {
   const $ = (id) => document.getElementById(id);
@@ -84,7 +84,7 @@
       <div class="set-row"><div><b>Always sent</b><div class="t-sm">Your welcome email, payment receipts and certificates.</div></div></div></div>
 
     <div class="box" id="account"><div class="box-head"><h2>Account</h2></div>
-      <div class="set-row"><div><b>Email</b><div class="t-sm">${esc(me.email || session.user.email || '')} · used to sign in. Only the Academy can see it.</div></div></div>
+      <div class="set-row"><div><b>Email</b><div class="t-sm"><span id="myEmail">${esc(session.user.email || me.email || '')}</span> · used to sign in and for receipts. Only The Fit Lab team can see it.</div></div><button class="pill sm" id="btnEmail" type="button">Change</button></div>
       <div class="set-row"><div><b>Username</b><div class="t-sm">@${esc(me.username || '')} — you can sign in with this too.</div></div><a class="pill sm" href="profile?edit=1">Change</a></div>
       <div class="set-row"><div><b>Password</b><div class="t-sm">At least 8 characters.</div></div><button class="pill sm" id="btnPw">Change password</button></div>
       <div class="set-row"><div><b>Member ID</b><div class="t-sm mono">${esc(me.unique_id || '')}</div></div></div>
@@ -191,6 +191,58 @@
     if (!r) e.target.checked = !e.target.checked; else FL.toast(e.target.checked ? 'Update emails are on' : 'Update emails are off — receipts and certificates still come by email', 'ok');
   };
   pushUI();
+  // fix-45: change the sign-in email — a 6-digit code goes to the new address first
+  $('btnEmail').onclick = () => {
+    const m = FL.modal({ title: 'Change your email', body: `
+      <div id="emStep1"><p class="t-sm muted" style="margin:0 0 12px">We'll send a 6-digit code to the new address. Your email changes once you enter it.</p>
+        <div class="field"><label for="em1">New email</label><input id="em1" type="email" autocomplete="email" inputmode="email" placeholder="you@gmail.com"></div></div>
+      <div id="emStep2" class="hidden"><p class="t-sm" style="margin:0 0 12px">Enter the code we sent to <b id="emTo"></b>. It works for 15 minutes — check spam if you can't see it.</p>
+        <div class="field"><label for="emCode">6-digit code</label><input id="emCode" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="123456"></div>
+        <button class="txt-btn" id="emBack" type="button" style="padding-left:0">Use a different email</button></div>
+      <div class="err hidden" id="emErr"></div>`,
+      foot: `<button class="pill solid" id="emGo">Send code</button>` });
+    const err = m.q('#emErr'), go = m.q('#emGo');
+    const say = (html) => { err.innerHTML = html; err.classList.toggle('hidden', !html); };
+    let step = 1;
+    const send = async (email) => {
+      FL.busy(go, true, 'Sending…');
+      const { data, error } = await sb.rpc('request_email_change', { p_email: email });
+      FL.busy(go, false);
+      if (error) return say(FL.esc(FL.friendly(error)));
+      if (!data || !data.ok) {
+        if (data && data.code === 'typo') {
+          say(`${FL.esc(data.message)} <button class="txt-btn" type="button" id="emUse">Use ${FL.esc(data.suggest)}</button>`);
+          m.q('#emUse').onclick = () => { m.q('#em1').value = data.suggest; say(''); };
+          return;
+        }
+        return say(FL.esc((data && data.message) || 'Something went wrong. Please try again.'));
+      }
+      step = 2; say('');
+      m.q('#emTo').textContent = data.email;
+      m.q('#emStep1').classList.add('hidden'); m.q('#emStep2').classList.remove('hidden');
+      go.textContent = 'Confirm'; setTimeout(() => m.q('#emCode').focus(), 50);
+    };
+    m.q('#emBack').onclick = () => { step = 1; say(''); m.q('#emStep2').classList.add('hidden'); m.q('#emStep1').classList.remove('hidden'); go.textContent = 'Send code'; };
+    go.onclick = async () => {
+      if (step === 1) {
+        const email = m.q('#em1').value.trim();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return say('Enter a valid email address.');
+        return send(email);
+      }
+      const code = m.q('#emCode').value.replace(/\D/g, '');
+      if (code.length !== 6) return say('Enter the 6-digit code from the email.');
+      FL.busy(go, true, 'Checking…');
+      const { data, error } = await sb.rpc('confirm_email_change', { p_code: code });
+      FL.busy(go, false);
+      if (error) return say(FL.esc(FL.friendly(error)));
+      if (!data || !data.ok) return say(FL.esc((data && data.message) || 'That didn\'t work. Please try again.'));
+      try { await sb.auth.refreshSession(); } catch (_) { /* the new email shows after the next sign-in */ }
+      $('myEmail').textContent = data.email;
+      m.close(); FL.toast('Email changed to ' + data.email, 'ok');
+    };
+  };
+  if (location.hash === '#account') setTimeout(() => { const a = $('account'); if (a) a.scrollIntoView({ block: 'start' }); }, 200);
+
   $('btnPw').onclick = () => {
     const m = FL.modal({ title: 'Change password', body: `<div class="field"><label for="pw1">New password</label><input id="pw1" type="password" autocomplete="new-password" minlength="8"></div>
       <div class="field"><label for="pw2">Confirm new password</label><input id="pw2" type="password" autocomplete="new-password"></div><div class="err hidden" id="pwErr"></div>`,

@@ -148,6 +148,9 @@
     if (needAccount) {
       if (v.name.length < 2 || !/[a-z]/i.test(v.name)) return 'Enter your full name.';
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email)) return 'Enter a valid email address.';
+      // fix-45: a misspelt domain is caught once; tapping again keeps the address as typed
+      const fix = FL.emailTypo(v.email);
+      if (fix && $('fEmail').dataset.keep !== v.email) { $('fEmail').dataset.keep = v.email; return `Did you mean ${fix}? Fix your email, or tap again to keep ${v.email}.`; }
       if (!phoneOk(v.phone)) return 'Enter a 10-digit Indian mobile number.';
       if (v.pass.length < 8) return 'Choose a password with at least 8 characters.';
     }

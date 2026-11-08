@@ -462,7 +462,7 @@
 
 <script src="config.js?v=e763b77801"></script>
 <script src="assets/vendor/supabase-2.118.0.js?v=8795eb1487"></script>
-<script src="assets/app.js?v=83f0680e83"></script>
+<script src="assets/app.js?v=3b8a32deaf"></script>
 <script src="assets/track.js?v=c458497b3e"></script>
 <script>
 (async function () {
@@ -606,6 +606,14 @@
     const name = $('suName').value.trim(), email = $('suEmail').value.trim(), pass = $('suPass').value;
     if (name.length < 2) return say('Enter your full name.');
     if (pass.length < 8) return say('Password must be at least 8 characters.');
+    // fix-45: catch misspelt email domains before the account is made (tap again to keep the address as typed)
+    const fix = FL.emailTypo(email);
+    if (fix && $('suEmail').dataset.keep !== email) {
+      $('suEmail').dataset.keep = email;
+      say(`Did you mean <b>${FL.esc(fix)}</b>? <button class="txt-btn" type="button" id="suUseFix">Use ${FL.esc(fix)}</button> — or tap Create account again to keep ${FL.esc(email)}.`);
+      const u = $('suUseFix'); if (u) u.onclick = () => { $('suEmail').value = fix; clear(); };
+      return;
+    }
     const btn = e.submitter; FL.busy(btn, true, 'Creating…');
     const { data, error } = await sb.auth.signUp({ email, password: pass, options: { data: { full_name: name }, emailRedirectTo: location.href.split('#')[0] } });
     FL.busy(btn, false);
