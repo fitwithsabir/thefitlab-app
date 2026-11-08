@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Health tools for physios, dietitians, doctors and yoga therapists — The Fit Lab</title>
+<meta name="description" content="Free clinical tools for health professionals: six-minute walk, Timed Up and Go, chair stand, sarcopenia, range of motion, back-pain red flags, eGFR, Indian Diabetes Risk Score, blood pressure, HbA1c, CKD protein, MUST, pregnancy weight gain, exercise screening, yoga cautions and a breathing pacer — each with its cut-offs and references.">
+<script src="assets/theme.js?v=891b5cdc5d"></script>
+<script src="assets/i18n.js?v=e52fbfef46"></script>
+<link rel="icon" href="assets/favicon.png">
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="assets/styles.css?v=9ccf3156e5">
+<link rel="stylesheet" href="assets/tools.css?v=e820182fb6">
+</head>
+<body data-page="tools">
+<div id="nav"></div>
+<main class="page tools">
+  <header class="tl-hero">
+    <div class="eyebrow">Health tools</div>
+    <h1>Clinical tools in one place</h1>
+    <p class="muted">Assessments, screening scores and calculators for physiotherapists, dietitians, doctors and yoga therapists. Every result shows its cut-offs and the research behind it — free for every member.</p>
+    <nav class="tl-tabs" id="tlTabs" aria-label="Tools">
+      <a href="tools" data-tab="calc">Calculators</a>
+      <a href="tools-health" class="on" data-tab="health">Health tools</a>
+      <a href="tools-diet" data-tab="diet">Diet plans</a>
+      <a href="tools-workout" data-tab="workout">Workout plans</a>
+      <a href="tools-ai" data-tab="ai">Coach AI</a>
+    </nav>
+  </header>
+
+  <div class="hl-bar">
+    <div class="hl-filter" id="hlFilter" role="group" aria-label="Show tools for">
+      <button type="button" data-prof="all">All tools</button>
+      <button type="button" data-prof="physio">Physiotherapy</button>
+      <button type="button" data-prof="diet">Nutrition</button>
+      <button type="button" data-prof="doctor">Medicine</button>
+      <button type="button" data-prof="yoga">Yoga &amp; wellness</button>
+    </div>
+    <select id="hlJump" aria-label="Jump to a tool"></select>
+  </div>
+
+  <div class="tl-grid">
+    <section class="box tl-person hl-person" aria-label="Patient details">
+      <div class="box-head"><h2>Patient</h2><button class="txt-btn" type="button" id="btnReset">Clear all</button></div>
+      <div class="box-pad">
+        <div class="tl-seg" role="radiogroup" aria-label="Sex">
+          <button type="button" data-sex="male" class="on" role="radio" aria-checked="true">Male</button>
+          <button type="button" data-sex="female" role="radio" aria-checked="false">Female</button>
+        </div>
+        <div class="tl-row">
+          <div class="field"><label for="iAge">Age</label><input id="iAge" type="number" inputmode="numeric" min="1" max="110"></div>
+          <div class="field"><label for="iWeight">Weight (kg)</label><input id="iWeight" type="number" inputmode="decimal" min="2" max="300" step="0.1"></div>
+        </div>
+        <div class="field">
+          <label for="iHeight">Height</label>
+          <div class="tl-height">
+            <input id="iHeight" type="number" inputmode="decimal" min="40" max="230" step="0.1" aria-label="Height in centimetres"><span>cm</span>
+            <input id="iFt" type="number" inputmode="numeric" min="1" max="7" aria-label="Feet"><span>ft</span>
+            <input id="iIn" type="number" inputmode="decimal" min="0" max="11.9" step="0.5" aria-label="Inches"><span>in</span>
+          </div>
+        </div>
+        <div class="field"><label for="iWaist">Waist (cm) <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:500">optional</span></label><input id="iWaist" type="number" inputmode="decimal" min="40" max="200" step="0.5" placeholder="at the navel"></div>
+        <div class="hl-pbmi" id="pBmi"></div>
+        <p class="help" style="margin:4px 0 0">Enter the patient once — every tool uses these details. Saved on this device only; nothing you type on this page is sent anywhere.</p>
+      </div>
+    </section>
+
+    <div class="tl-col" id="hlCards"></div>
+  </div>
+
+  <section class="box tl-cta" id="cta"></section>
+
+  <section class="box tl-refs" aria-labelledby="refsH">
+    <div class="box-head"><h2 id="refsH">References</h2></div>
+    <ol class="box-pad" id="refs"></ol>
+    <p class="box-pad help" style="padding-top:0">These tools support a qualified professional's judgement. They are not a diagnosis on their own. Check every result against the patient's history, examination and local guidelines, and refer when in doubt.</p>
+  </section>
+</main>
+
+<script src="config.js?v=e763b77801"></script>
+<script src="assets/vendor/supabase-2.118.0.js?v=8795eb1487"></script>
+<script src="assets/app.js?v=b353be1615"></script>
+<script src="assets/tools-health.js?v=59c8ad87c7"></script>
+<script>
+(async () => {
+  const H = window.FLHealth, $ = (id) => document.getElementById(id), esc = FL.esc, I = FL.icon;
+  let me = null;
+  try { if (await FL.session()) me = await FL.getProfile(); } catch (_) {}
+  FL.renderHeader(me && me.profile_completed ? me : null);
+
+  // ---------------------------------------------------------------- the patient (shared with the fitness calculators)
+  const PKEYS = ['iAge', 'iWeight', 'iHeight', 'iWaist'];
+  let sex = 'male';
+  const num = (id) => { const el = $(id); if (!el) return null; const v = parseFloat(el.value); return isFinite(v) ? v : null; };
+  const readP = () => { try { return JSON.parse(localStorage.getItem('fl:tools:person') || 'null') || {}; } catch (_) { return {}; } };
+  const loadP = () => { const s = readP(); PKEYS.forEach((k) => { if (s[k] != null && s[k] !== '') $(k).value = s[k]; }); if (s.sex) setSex(s.sex, false); };
+  const saveP = () => { try { const s = readP(); s.sex = sex; PKEYS.forEach((k) => { s[k] = $(k).value; }); localStorage.setItem('fl:tools:person', JSON.stringify(s)); } catch (_) {} };
+  function setSex(v, go = true) {
+    sex = v;
+    document.querySelectorAll('[data-sex]').forEach((b) => { const on = b.dataset.sex === v; b.classList.toggle('on', on); b.setAttribute('aria-checked', on ? 'true' : 'false'); });
+    if (go) { saveP(); drawOuts(); }
+  }
+  document.querySelectorAll('[data-sex]').forEach((b) => { b.onclick = () => setSex(b.dataset.sex); });
+  const syncFt = () => { const cm = num('iHeight'); if (!cm) { $('iFt').value = ''; $('iIn').value = ''; return; } const tin = cm / 2.54; $('iFt').value = Math.floor(tin / 12); $('iIn').value = Math.round((tin % 12) * 2) / 2; };
+  const fromFt = () => { const ft = num('iFt') || 0, inch = num('iIn') || 0; if (ft) { $('iHeight').value = Math.round((ft * 12 + inch) * 2.54 * 10) / 10; saveP(); drawOuts(); } };
+  $('iFt').oninput = fromFt; $('iIn').oninput = fromFt;
+  $('iHeight').addEventListener('input', syncFt);
+  PKEYS.forEach((k) => $(k).addEventListener('input', () => { saveP(); drawOuts(); }));
+  const P = () => {
+    const p = { sex, age: num('iAge'), w: num('iWeight'), h: num('iHeight'), waist: num('iWaist') };
+    if (!(p.age > 0 && p.age <= 110)) p.age = null;
+    if (!(p.w >= 2 && p.w <= 300)) p.w = null;
+    if (!(p.h >= 40 && p.h <= 230)) p.h = null;
+    if (!(p.waist >= 40 && p.waist <= 200)) p.waist = null;
+    p.bmi = p.w && p.h ? p.w / ((p.h / 100) ** 2) : null;
+    return p;
+  };
+
+  // ---------------------------------------------------------------- what each tool's own inputs hold (this device only)
+  let S = {};
+  try { S = JSON.parse(localStorage.getItem('fl:health:in') || '{}') || {}; } catch (_) { S = {}; }
+  const saveS = () => { try { localStorage.setItem('fl:health:in', JSON.stringify(S)); } catch (_) {} };
+  const val = (t, n) => S[t + '.' + n];
+  const nv = (t, n) => { const x = parseFloat(S[t + '.' + n]); return isFinite(x) ? x : null; };
+  $('btnReset').onclick = () => { try { localStorage.removeItem('fl:tools:person'); localStorage.removeItem('fl:health:in'); } catch (_) {} location.reload(); };
+
+  // ---------------------------------------------------------------- small builders
+  const fid = (t, n) => `h-${t}-${n}`;
+  const attr = (o) => ['min', 'max', 'step'].filter((k) => o[k] != null).map((k) => `${k}="${o[k]}"`).join(' ');
+  const fNum = (t, n, label, o = {}) => `<div class="field"><label for="${fid(t, n)}">${label}</label><input id="${fid(t, n)}" data-k="${t}.${n}" type="number" inputmode="decimal" ${attr(o)} placeholder="${esc(o.ph || '')}" value="${esc(val(t, n) ?? '')}"></div>`;
+  const fSel = (t, n, label, opts, def, wide) => { const cur = val(t, n) ?? def; return `<div class="field${wide ? ' hl-wide' : ''}"><label for="${fid(t, n)}">${label}</label><select id="${fid(t, n)}" data-k="${t}.${n}">${opts.map(([v, l]) => `<option value="${v}" ${String(v) === String(cur) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></div>`; };
+  const fDate = (t, n, label) => `<div class="field"><label for="${fid(t, n)}">${label}</label><input id="${fid(t, n)}" data-k="${t}.${n}" type="date" value="${esc(val(t, n) || '')}"></div>`;
+  const fChk = (t, n, label) => `<label class="check"><input type="checkbox" data-k="${t}.${n}" ${val(t, n) ? 'checked' : ''}><span>${label}</span></label>`;
+  const fYN = (t, n, label, help) => { const cur = val(t, n) || ''; return `<div class="field hl-yn"><span class="hl-lbl" id="${fid(t, n)}">${label}</span>${help ? `<span class="help">${help}</span>` : ''}
+      <div class="tl-seg" role="radiogroup" aria-labelledby="${fid(t, n)}">${[['yes', 'Yes'], ['no', 'No']].map(([v, l]) => `<button type="button" role="radio" data-k="${t}.${n}" data-v="${v}" class="${cur === v ? 'on' : ''}" aria-checked="${cur === v}">${l}</button>`).join('')}</div></div>`; };
+  const f0 = (n) => (n == null || !isFinite(n)) ? '—' : Math.round(n).toLocaleString('en-IN');
+  const f1 = (n) => (n == null || !isFinite(n)) ? '—' : (Math.round(n * 10) / 10).toLocaleString('en-IN');
+  const f2 = (n) => (n == null || !isFinite(n)) ? '—' : (Math.round(n * 100) / 100).toLocaleString('en-IN');
+  const stat = (v, unit, lbl, cls = '') => `<div class="tl-stat ${cls}"><b>${v}<small>${unit}</small></b><span>${lbl}</span></div>`;
+  const BADGE = { good: 'k-normal', warn: 'k-over', bad: 'k-obese1', info: 'k-info' };
+  const badge = (text, kind = 'info') => `<span class="tl-badge ${BADGE[kind]}">${esc(text)}</span>`;
+  const verdict = (kind, title, text = '') => `<div class="hl-verdict k-${kind}">${I(kind === 'good' ? 'check' : kind === 'info' ? 'help' : 'flag', 18)}<div><b>${title}</b>${text ? `<span>${text}</span>` : ''}</div></div>`;
+  const warn = (t) => `<div class="tl-warn">${I('flag', 15)}<span>${t}</span></div>`;
+  const WORD = { age: 'age', w: 'weight', h: 'height', waist: 'waist' };
+  const need = (p, ...keys) => { const miss = keys.filter((k) => !p[k]); if (!miss.length) return ''; return `<p class="t-sm muted hl-need">${I('help', 14)}<span>Add the patient's ${miss.map((k) => WORD[k]).join(', ').replace(/, ([^,]*)$/, ' and $1')} in Patient details.</span></p>`; };
+  const fmtDate = (d) => d.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  // ---------------------------------------------------------------- references, numbered in the order the tools on screen use them
+  let order = [], refsDirty = false;
+  const cite = (...keys) => `<sup class="ref">${keys.map((k) => { let i = order.indexOf(k); if (i < 0) { order.push(k); i = order.length - 1; refsDirty = true; } return `<a href="#ref-${k}">${i + 1}</a>`; }).join(',')}</sup>`;
+  const drawRefs = () => { $('refs').innerHTML = order.map((k) => `<li id="ref-${k}">${esc(H.REFS[k] || k)}</li>`).join(''); refsDirty = false; };
+
+  // ================================================================ THE TOOLS
+  const GROUPS = { physio: 'Physiotherapy and rehab', diet: 'Nutrition and dietetics', doctor: 'Medicine', yoga: 'Yoga and wellness' };
+  const TOOLS = [
+    // ------------------------------------------------------------ physiotherapy
+    { id: 'walk', prof: ['physio', 'doctor'], icon: 'activity', title: 'Six-minute walk test', refs: ['enright', 'ats6mwt'],
+      form: (t) => `<div class="hl-in">${fNum(t, 'm', 'Distance walked (m)', { min: 0, max: 1200, step: 1, ph: 'e.g. 450' })}</div>`,
+      out: (t, p) => {
+        const miss = need(p, 'age', 'w', 'h'); if (miss) return miss;
+        const r = H.sixMinuteWalk(p.sex, p.age, p.h, p.w, nv(t, 'm'));
+        return `<div class="tl-stats">${stat(f0(r.predicted), 'm', 'Predicted distance' + cite('enright'), r.walked ? '' : 'hl')}${stat(f0(r.lln), 'm', 'Lower limit of normal')}${r.walked ? stat(f0(r.pct), '%', 'Of predicted', r.belowLLN ? 'bad' : 'hl') : ''}</div>
+          ${r.walked ? (r.belowLLN ? verdict('bad', 'Below the lower limit of normal', `${f0(r.walked)} m is ${f0(r.lln - r.walked)} m short of the normal limit for this patient — look for heart, lung, muscle or joint causes.`) : verdict('good', 'Within normal limits', `${f0(r.walked)} m is above the lower limit for this patient's age, sex and size.`)) : '<p class="t-sm muted">Enter the distance walked to compare it with the prediction.</p>'}
+          ${r.inRange ? '' : warn('The equation was made for adults aged 40 to 80 — outside that range, treat it as a rough guide.')}`;
+      },
+      how: () => `Men: 7.57 × height (cm) − 5.02 × age − 1.76 × weight (kg) − 309 m. Women: 2.11 × height − 2.29 × weight − 5.78 × age + 667 m. The lower limit of normal is 153 m (men) or 139 m (women) below the predicted distance. Walk a flat 30-metre corridor for 6 minutes with the standard phrases of encouragement, and record oxygen saturation, heart rate and breathlessness before and after${cite('ats6mwt')}.` },
+
+    { id: 'tug', prof: ['physio', 'yoga', 'doctor'], icon: 'clock', title: 'Timed Up and Go', refs: ['steadi_tug'],
+      form: (t) => `<div class="hl-in">${fNum(t, 's', 'Time taken (seconds)', { min: 0, max: 120, step: 0.1, ph: 'e.g. 10.5' })}</div>`,
+      out: (t) => {
+        const r = H.timedUpGo(nv(t, 's'));
+        if (!r) return '<p class="t-sm muted">Enter the time to see the fall-risk result.</p>';
+        return `<div class="tl-big"><b>${f1(r.seconds)}</b><span>seconds</span></div>
+          ${r.risk ? verdict('warn', 'Higher risk of falling', 'Check leg strength, balance, medicines, eyesight, feet and footwear, and hazards at home.') : verdict('good', 'Fall risk not raised by this test', 'Keep an eye on gait — an unsteady, slow or shuffling walk adds to the risk even under 12 seconds.')}
+          <p class="t-sm muted">12 seconds or more means a higher risk of falling${cite('steadi_tug')}.</p>`;
+      },
+      how: () => 'The patient sits back in a standard chair. On "Go", they stand up, walk 3 metres (10 feet) at their normal pace to a line on the floor, turn, walk back and sit down. Time from "Go" until they are seated. They use their usual walking aid and footwear.' },
+
+    { id: 'chair', prof: ['physio', 'yoga'], icon: 'activity', title: '30-second chair stand', refs: ['steadi_chair'],
+      form: (t) => `<div class="hl-in">${fNum(t, 'n', 'Full stands in 30 seconds', { min: 0, max: 60, step: 1, ph: 'e.g. 11' })}</div>`,
+      out: (t, p) => {
+        const miss = need(p, 'age'); if (miss) return miss;
+        const r = H.chairStand(p.sex, p.age, nv(t, 'n'));
+        if (!r.inRange) return '<p class="t-sm muted">The norms are for adults aged 60 to 94. Use the count to track this patient\'s own progress.</p>';
+        return `<div class="tl-stats">${stat(r.cutoff, '', `Below average if fewer — ${p.sex === 'male' ? 'men' : 'women'} aged ${r.band}${cite('steadi_chair')}`)}${r.reps != null ? stat(r.reps, '', 'Stands done', r.below ? 'bad' : 'good') : ''}</div>
+          ${r.reps == null ? '<p class="t-sm muted">Enter the number of stands.</p>' : r.below ? verdict('warn', 'Below average for age — higher fall risk', 'Weak legs. Start strength and balance training and check the other STEADI risk factors.') : verdict('good', 'Average or better for age')}`;
+      },
+      how: () => 'Use a chair with no arms (seat about 43 cm / 17 in high) placed against a wall. Arms crossed over the chest, the patient stands up fully and sits down again as many times as they can in 30 seconds. If they are more than halfway up at 30 seconds, count it. A score of 0 if they need their arms to stand.' },
+
+    { id: 'sarc', prof: ['physio', 'diet', 'doctor'], icon: 'dumbbell', title: 'Sarcopenia check (AWGS 2019)', refs: ['awgs'],
+      form: (t) => `<div class="hl-in">${fNum(t, 'grip', 'Grip strength (kg)', { min: 0, max: 90, step: 0.5, ph: 'best of both hands' })}${fNum(t, 'gait', 'Gait speed (m/s)', { min: 0, max: 3, step: 0.01, ph: 'usual pace, 6 m' })}
+        ${fNum(t, 'chair', '5 chair stands (seconds)', { min: 0, max: 120, step: 0.1, ph: 'optional' })}${fNum(t, 'calf', 'Calf (cm)', { min: 15, max: 60, step: 0.5, ph: 'optional' })}
+        ${fNum(t, 'asmi', 'Muscle mass ASMI (kg/m²)', { min: 2, max: 15, step: 0.1, ph: 'if scanned' })}${fSel(t, 'meth', 'Measured by', [['dxa', 'DXA scan'], ['bia', 'Body composition (BIA)']], 'dxa')}</div>`,
+      out: (t, p) => {
+        const r = H.sarcopenia(p.sex, { grip: nv(t, 'grip'), gait: nv(t, 'gait'), chair5: nv(t, 'chair'), calf: nv(t, 'calf'), asmi: nv(t, 'asmi'), asmiMethod: val(t, 'meth') || 'dxa' });
+        const row = (lbl, v, unit, low, cut) => v == null ? '' : `<tr><td>${lbl}</td><td>${f1(v)} ${unit}</td><td>${cut}</td><td>${low ? badge('Low', 'warn') : badge('Normal', 'good')}</td></tr>`;
+        const rows = [row('Grip strength', nv(t, 'grip'), 'kg', r.lowStrength, `under ${r.cut.grip} kg`),
+          row('Gait speed', nv(t, 'gait'), 'm/s', nv(t, 'gait') < r.cut.gait, `under ${r.cut.gait.toFixed(1)} m/s`),
+          row('5 chair stands', nv(t, 'chair'), 's', nv(t, 'chair') >= r.cut.chair5, `${r.cut.chair5} s or more`),
+          row('Calf', nv(t, 'calf'), 'cm', r.lowCalf, `under ${r.cut.calf} cm`),
+          row('Muscle mass', nv(t, 'asmi'), 'kg/m²', r.lowMass, `under ${r.cut.asmi.toFixed(1)}`)].join('');
+        const v = { none: ['info', 'Enter grip strength or a performance test'], normal: ['good', r.label], possible: ['warn', r.label], sarcopenia: ['bad', r.label], severe: ['bad', r.label] }[r.verdict];
+        const advice = { possible: 'Start progressive resistance training and review protein intake. Confirm with a DXA or body-composition scan if one is available.', sarcopenia: 'Refer for full assessment. Resistance exercise and enough protein are the main treatment.', severe: 'Low mass, low strength and low function together — refer for full assessment and a falls review.' }[r.verdict] || '';
+        return `${verdict(v[0], v[1], advice)}${rows ? `<table class="tl-table"><thead><tr><th>Measure</th><th>Result</th><th>Low if</th><th></th></tr></thead><tbody>${rows}</tbody></table>` : ''}
+          ${p.age && p.age < 60 ? warn('These cut-offs are for adults aged 60 and over.') : ''}${r.lowCalf ? '<p class="t-sm muted">A small calf flags people to test — it doesn\'t diagnose sarcopenia on its own.</p>' : ''}
+          <p class="t-sm muted">Cut-offs for Asian adults${cite('awgs')}.</p>`;
+      },
+      how: () => 'Grip: hand dynamometer, the best of two tries with each hand. Gait speed: the patient\'s usual pace over 6 metres. Five chair stands: time to stand up fully five times, arms crossed. Calf: the widest part of the calf. Muscle mass (ASMI): arm and leg muscle ÷ height², from a DXA or body-composition (BIA) scan. Possible sarcopenia = low strength or low function; sarcopenia = low muscle mass plus either; severe = all three.' },
+
+    { id: 'rom', prof: ['physio'], icon: 'target', title: 'Range of motion', refs: ['aaos'],
+      form: (t) => { const cur = val(t, 'mv') || 'kn_flex';
+        return `<div class="hl-in"><div class="field hl-wide"><label for="${fid(t, 'mv')}">Movement</label><select id="${fid(t, 'mv')}" data-k="${t}.mv">${H.ROM.map(([j, list]) => `<optgroup label="${esc(j)}">${list.map(([k, m, n]) => `<option value="${k}" ${k === cur ? 'selected' : ''}>${esc(H.romLabel(k))} · ${n}°</option>`).join('')}</optgroup>`).join('')}</select></div>
+        ${fNum(t, 'a', 'Measured side (°)', { min: 0, max: 200, step: 1 })}${fNum(t, 'b', 'Other side (°)', { min: 0, max: 200, step: 1, ph: 'optional' })}</div>`; },
+      out: (t) => {
+        const r = H.romCheck(val(t, 'mv') || 'kn_flex', nv(t, 'a'), nv(t, 'b'));
+        if (!r) return '';
+        const list = H.ROM.find(([j]) => j === r.joint)[1];
+        return `<div class="tl-stats">${stat(r.normal, '°', `Normal ${esc(H.romLabel(r.key).toLowerCase())}${cite('aaos')}`)}${r.measured != null ? stat(f0(r.pctNormal), '%', `Of normal — ${f0(r.deficit)}° short`, r.pctNormal >= 90 ? 'good' : 'hl') : ''}${r.symmetry != null ? stat(f0(r.symmetry), '%', 'Of the other side', r.symmetry >= 90 ? 'good' : 'hl') : ''}</div>
+          <table class="tl-table"><thead><tr><th>${esc(r.joint)}</th><th>Normal</th></tr></thead><tbody>${list.map(([k, m, n]) => `<tr${k === r.key ? ' class="on"' : ''}><td>${esc(m)}</td><td>${n}°</td></tr>`).join('')}</tbody></table>
+          <p class="t-sm muted">Range varies with age and between people — the other side is often the best comparison.</p>`;
+      },
+      how: () => 'Measure with a goniometer from the standard starting position and record active and passive range separately. The values are the average adult ranges published by the American Academy of Orthopaedic Surgeons.' },
+
+    { id: 'pain', prof: ['physio', 'yoga', 'doctor'], icon: 'chart', title: 'Pain score change', refs: ['farrar', 'immpact'],
+      form: (t) => `<div class="hl-in">${fNum(t, 'a', 'First score (0–10)', { min: 0, max: 10, step: 0.5 })}${fNum(t, 'b', 'Score now (0–10)', { min: 0, max: 10, step: 0.5 })}</div>`,
+      out: (t) => {
+        const r = H.painChange(nv(t, 'a'), nv(t, 'b'));
+        if (!r) return '<p class="t-sm muted">Enter both scores on the 0–10 scale (0 = no pain, 10 = worst pain imaginable).</p>';
+        const sign = r.diff > 0 ? '−' : r.diff < 0 ? '+' : '';
+        const v = { substantial: ['good', 'Substantial improvement', '50% or more less pain.'], important: ['good', 'Clinically important improvement', 'Patients notice a change of this size.'],
+          small: ['info', 'Small improvement', 'Below the size patients usually feel as important.'], none: ['info', 'No change', ''], worse: ['warn', 'Pain is worse', 'Review the plan and look for a new cause.'] }[r.level];
+        return `<div class="tl-big"><b>${sign}${f1(Math.abs(r.diff))}</b><span>points (${sign}${f0(Math.abs(r.pct))}%)</span></div>${verdict(v[0], v[1], v[2])}
+          <p class="t-sm muted">About 2 points or 30% is the smallest change patients feel as important${cite('farrar')}; 50% or more is a substantial improvement${cite('immpact')}.</p>`;
+      },
+      how: () => 'Use the same 0–10 numeric rating scale and the same question each time (for example, "average pain over the last 24 hours"). Percentage change = (first − now) ÷ first.' },
+
+    { id: 'flags', prof: ['physio', 'doctor', 'yoga'], icon: 'flag', title: 'Back pain red flags', refs: ['finucane', 'nice_lbp'],
+      form: (t) => { const g = (tier) => H.RED_FLAGS.filter((f) => f.tier === tier).map((f) => fChk(t, f.key, esc(f.text))).join('');
+        return `<div class="hl-checks"><b class="hl-sub">Nerve compression — cauda equina</b>${g('emergency')}<b class="hl-sub">A possible serious cause</b>${g('urgent')}<b class="hl-sub">A possible inflammatory cause</b>${g('review')}</div>`; },
+      out: (t) => {
+        const checked = {}; H.RED_FLAGS.forEach((f) => { checked[f.key] = !!val(t, f.key); });
+        const r = H.redFlags(checked);
+        const urgent = r.on.filter((f) => f.tier === 'urgent');
+        if (r.tier === 'emergency') return verdict('bad', 'Same-day emergency referral', 'Possible cauda equina syndrome or worsening nerve damage. Don\'t treat — send the patient to an emergency department today.');
+        if (r.tier === 'urgent') return urgent.length >= 2 || checked.cancer
+          ? verdict('warn', 'Medical review before treatment', `${urgent.length} sign${urgent.length > 1 ? 's' : ''} ticked${checked.cancer ? ', including a history of cancer' : ''}. Refer to a doctor — blood tests or a scan may be needed to rule out a serious cause.`)
+          : verdict('info', 'Keep it in mind', 'One sign on its own is common and rarely serious. Look at the whole picture, recheck at each visit, and refer if more signs appear or the pain doesn\'t settle.');
+        if (r.tier === 'review') return verdict('info', 'Consider an inflammatory cause', 'Long morning stiffness that eases with movement in a younger adult can be axial spondyloarthritis — refer to a doctor for assessment.');
+        return verdict('good', 'No red flags ticked', 'Carry on with the assessment, and ask again at every visit — red flags can appear later.') + `<p class="t-sm muted">Based on the international red-flags framework${cite('finucane')} and NICE${cite('nice_lbp')}.</p>`;
+      },
+      how: () => 'Red flags are signs that back pain may come from a serious cause such as cauda equina syndrome, cancer, infection or a fracture. Most are weak on their own, so weigh them together and against the history. Cauda equina signs always need same-day emergency care.' },
+
+    // ------------------------------------------------------------ nutrition and dietetics
+    { id: 'ckd', prof: ['diet', 'doctor'], icon: 'target', title: 'Protein in kidney disease', refs: ['kdoqi2020', 'kdigo2024'],
+      form: (t) => `<div class="hl-in">${fSel(t, 'st', 'Kidney disease stage', Object.entries(H.CKD_PROTEIN).map(([k, v]) => [k, v.label]), 'g35', true)}${fNum(t, 'w', 'Weight to use (kg)', { min: 20, max: 250, step: 0.1, ph: 'patient\'s weight' })}</div>`,
+      out: (t, p) => {
+        const w = nv(t, 'w') || p.w; if (!w) return need(p, 'w');
+        const r = H.ckdProtein(val(t, 'st') || 'g35', w);
+        return `<div class="tl-big"><b>${f0(r.gLo)}–${f0(r.gHi)}</b><span>g protein a day · ${r.lo}–${r.hi} g/kg${cite(r.ref)}</span></div>
+          <p class="t-sm">${esc(r.note)}</p>${!nv(t, 'w') && p.bmi >= 30 ? warn('BMI is 30 or more — use an adjusted or standard body weight, not the actual weight.') : ''}`;
+      },
+      how: () => `Protein is reduced as kidney function falls, to slow the damage and limit waste build-up, and goes up on dialysis. Ranges are for adults whose condition is stable${cite('kdoqi2020')}. Use the dry weight if the patient holds fluid, and an adjusted weight if they are obese. Keep energy intake at 25–35 kcal/kg so protein isn't burnt for fuel.` },
+
+    { id: 'fluid', prof: ['diet', 'doctor'], icon: 'drop', title: 'Daily fluid needs', refs: ['holliday', 'espen_ger'],
+      form: (t) => `<div class="hl-in">${fNum(t, 'w', 'Weight to use (kg)', { min: 2, max: 250, step: 0.1, ph: 'patient\'s weight' })}</div>`,
+      out: (t, p) => {
+        const w = nv(t, 'w') || p.w; if (!w) return need(p, 'w');
+        const r = H.hollidaySegar(w);
+        return `<div class="tl-stats">${stat(f1(r.mlDay / 1000), 'L', 'A day — Holliday–Segar' + cite('holliday'), 'hl')}${stat(f0(r.mlHour), 'mL', 'An hour')}</div>
+          ${p.age >= 65 ? `<p class="t-sm">Older adults: at least <b>${p.sex === 'male' ? '2.0' : '1.6'} L</b> of drinks a day${cite('espen_ger')}.</p>` : ''}
+          ${warn('Heart failure, dialysis, liver disease with fluid build-up and low sodium often need a fluid limit — follow the medical team.')}`;
+      },
+      how: () => '100 mL per kg for the first 10 kg, 50 mL per kg for the next 10 kg, then 20 mL for each kg over 20 kg. This covers normal needs only — add for fever, sweating, diarrhoea, vomiting or drains.' },
+
+    { id: 'preg', prof: ['diet', 'doctor', 'yoga'], icon: 'heart', title: 'Pregnancy weight gain', refs: ['iom2009'],
+      form: (t) => `<div class="hl-in">${fNum(t, 'pre', 'Weight before pregnancy (kg)', { min: 30, max: 200, step: 0.1 })}${fNum(t, 'wk', 'Weeks pregnant', { min: 0, max: 42, step: 1 })}
+        ${fNum(t, 'now', 'Weight now (kg)', { min: 30, max: 220, step: 0.1, ph: 'optional' })}${fSel(t, 'n', 'Babies', [['1', 'One'], ['2', 'Twins']], '1')}</div>`,
+      out: (t, p) => {
+        if (p.sex === 'male') return '<p class="t-sm muted">Set the patient to Female in Patient details.</p>';
+        const miss = need(p, 'h'); if (miss) return miss;
+        const pre = nv(t, 'pre'); if (!pre) return '<p class="t-sm muted">Enter the weight before pregnancy.</p>';
+        const twins = val(t, 'n') === '2';
+        const r = H.pregnancyGain(pre, p.h, nv(t, 'wk'), nv(t, 'now'), twins);
+        if (twins && !r.total) return `<p class="t-sm">BMI before pregnancy <b>${f1(r.bmi)}</b> — ${esc(r.label.toLowerCase())}.</p>${verdict('info', 'No range set', 'There isn\'t enough evidence for a twin range when underweight — plan the gain with the obstetric team.')}`;
+        const st = r.status ? { below: ['warn', 'Below the expected gain'], within: ['good', 'Within the expected gain'], above: ['warn', 'Above the expected gain'] }[r.status] : null;
+        return `<div class="tl-stats">${stat(f1(r.bmi), '', `BMI before pregnancy — ${esc(r.label.toLowerCase())}`)}${stat(`${f1(r.total[0])}–${f1(r.total[1])}`, 'kg', `Total gain to aim for${twins ? ' (twins)' : ''}${cite('iom2009')}`, 'hl')}${twins ? '' : stat(`${f2(r.rate[0])}–${f2(r.rate[1])}`, 'kg', 'A week in the 2nd and 3rd trimesters')}</div>
+          ${r.expected ? `<p class="t-sm">By week ${f0(r.week)}: about <b>${f1(r.expected[0])}–${f1(r.expected[1])} kg</b> gained.</p>` : ''}
+          ${r.gained != null ? `<p class="t-sm">Gained so far: <b>${r.gained >= 0 ? '' : '−'}${f1(Math.abs(r.gained))} kg</b>.</p>` : ''}${st ? verdict(st[0], st[1]) : ''}`;
+      },
+      how: () => 'The Institute of Medicine (2009) ranges depend on the BMI before pregnancy (WHO groups). About 0.5–2 kg is expected in the first trimester, then the weekly rate shown. Twin ranges are provisional. Weigh at the same time of day in similar clothing.' },
+
+    { id: 'edd', prof: ['diet', 'doctor', 'yoga'], icon: 'calendar', title: 'Due date and pregnancy week', refs: ['acog_edd'],
+      form: (t) => `<div class="hl-in">${fDate(t, 'lmp', 'First day of last period')}${fNum(t, 'cyc', 'Usual cycle (days)', { min: 20, max: 45, step: 1, ph: '28' })}</div>`,
+      out: (t) => {
+        const r = H.dueDate(val(t, 'lmp'), nv(t, 'cyc') || 28);
+        if (!r) return '<p class="t-sm muted">Enter the first day of the last period.</p>';
+        return `<div class="tl-big"><b>${esc(fmtDate(r.edd))}</b><span>due date</span></div>
+          ${r.gaWeeks != null ? `<p class="t-sm">Today: <b>${r.gaWeeks} weeks ${r.gaDays} days</b> · trimester ${r.trimester}.</p>` : '<p class="t-sm muted">That date is outside a current pregnancy.</p>'}
+          <p class="t-sm muted">An ultrasound in the first trimester is more accurate — use its date when the two differ by more than 5–7 days${cite('acog_edd')}.</p>`;
+      },
+      how: () => 'Naegele\'s rule: first day of the last menstrual period + 280 days (40 weeks), moved later or earlier by the number of days the usual cycle is longer or shorter than 28.' },
+
+    { id: 'must', prof: ['diet', 'doctor'], icon: 'clipboard', title: 'Malnutrition screening (\'MUST\')', refs: ['must', 'espen_ger'],
+      form: (t) => `<div class="hl-in">${fNum(t, 'prev', 'Weight 3–6 months ago (kg)', { min: 20, max: 300, step: 0.1, ph: 'if known' })}</div>
+        <div class="hl-checks">${fChk(t, 'acute', 'Acutely ill and has had — or is likely to have — no food for more than 5 days')}</div>`,
+      out: (t, p) => {
+        const miss = need(p, 'w', 'h'); if (miss) return miss;
+        const prev = nv(t, 'prev'), loss = prev ? (prev - p.w) / prev * 100 : null;
+        const r = H.mustScore(p.bmi, loss, !!val(t, 'acute'));
+        const v = { low: ['good', 'Low risk', 'Routine care. Screen again weekly in hospital, monthly in care homes and yearly in the community for adults over 75.'],
+          medium: ['warn', 'Medium risk', 'Observe: record food and drink for 3 days. Repeat the screen weekly in hospital and monthly in the community.'],
+          high: ['bad', 'High risk', 'Treat: refer to a dietitian or nutrition team, raise overall intake and review progress regularly.'] }[r.risk];
+        return `<div class="tl-big"><b>${r.total}</b><span>'MUST' score${cite('must')}</span></div>${verdict(v[0], v[1], v[2])}
+          <table class="tl-table"><tbody><tr><td>BMI ${f1(p.bmi)}</td><td>${r.sBmi}</td></tr><tr><td>Weight loss ${loss == null ? '(not entered)' : f1(Math.max(0, loss)) + '%'}</td><td>${r.sWl}</td></tr><tr><td>Acute illness</td><td>${r.sAcute}</td></tr></tbody></table>
+          ${r.risk !== 'low' ? `<p class="t-sm">A starting target for older adults: about <b>${f0(30 * p.w)} kcal</b> and at least <b>${f0(1.0 * p.w)} g protein</b> a day${cite('espen_ger')}.</p>` : ''}`;
+      },
+      how: () => 'Three scores added together. BMI: over 20 = 0, 18.5–20 = 1, under 18.5 = 2. Unplanned weight loss in the last 3–6 months: under 5% = 0, 5–10% = 1, over 10% = 2. Acute illness with no food for over 5 days = 2. Total 0 = low, 1 = medium, 2 or more = high risk. If height or weight can\'t be measured, use recalled values or the other measures in the full \'MUST\' guide.' },
+
+    // ------------------------------------------------------------ medicine
+    { id: 'kidney', prof: ['doctor', 'diet'], icon: 'steth', title: 'Kidney function (eGFR)', refs: ['ckdepi2021', 'kdigo2012', 'cockcroft'],
+      form: (t) => `<div class="hl-in">${fNum(t, 'cr', 'Serum creatinine', { min: 0, max: 2000, step: 0.01 })}${fSel(t, 'u', 'Unit', [['mg', 'mg/dL'], ['um', 'µmol/L']], 'mg')}
+        ${fNum(t, 'acr', 'Urine ACR (mg/g)', { min: 0, max: 10000, step: 1, ph: 'optional' })}</div>`,
+      out: (t, p) => {
+        const miss = need(p, 'age'); if (miss) return miss;
+        if (p.age < 18) return '<p class="t-sm muted">These equations are for adults (18 and over).</p>';
+        let cr = nv(t, 'cr'); if (!cr) return '<p class="t-sm muted">Enter the creatinine result.</p>';
+        if (val(t, 'u') === 'um') cr /= H.UMOL_PER_MGDL;
+        const e = H.egfr2021(p.sex, p.age, cr), g = H.gfrStage(e), a = H.albuminuria(nv(t, 'acr')), cg = p.w ? H.cockcroftGault(p.sex, p.age, p.w, cr) : null;
+        return `<div class="tl-stats">${stat(f0(e), 'mL/min/1.73m²', `eGFR — CKD-EPI 2021${cite('ckdepi2021')}`, 'hl')}${stat(g.g, '', esc(g.label) + cite('kdigo2012'), g.risk >= 2 ? 'bad' : '')}${a ? stat(a.a, '', esc(a.label), a.a === 'A1' ? '' : 'bad') : ''}</div>
+          ${cg ? `<p class="t-sm">Creatinine clearance (Cockcroft–Gault, for drug doses): <b>${f0(cg)} mL/min</b>${cite('cockcroft')}${p.bmi >= 30 ? ' — on actual weight; many pharmacists use the adjusted weight when obese' : ''}.</p>` : '<p class="t-sm muted">Add weight for the Cockcroft–Gault creatinine clearance.</p>'}
+          ${e < 60 || (a && a.a !== 'A1') ? warn('Chronic kidney disease needs these results for more than 3 months. Repeat the test — illness, dehydration, a big meat meal and muscle mass all move creatinine.') : ''}`;
+      },
+      how: () => `CKD-EPI 2021, without a race term: 142 × min(Scr/κ, 1)^α × max(Scr/κ, 1)^−1.200 × 0.9938^age × 1.012 if female; κ = 0.7 (women) or 0.9 (men), α = −0.241 (women) or −0.302 (men); creatinine in mg/dL (µmol/L ÷ 88.4). Cockcroft–Gault: (140 − age) × weight (kg) ÷ (72 × creatinine), × 0.85 for women.` },
+
+    { id: 'dose', prof: ['doctor', 'diet'], icon: 'star', title: 'Dosing weights', refs: ['devine', 'pai', 'janma'],
+      form: () => '',
+      out: (t, p) => {
+        const miss = need(p, 'w', 'h'); if (miss) return miss;
+        const r = H.dosingWeights(p.sex, p.w, p.h);
+        return `<div class="tl-stats">${stat(f1(r.ibw), 'kg', 'Ideal body weight — Devine' + cite('devine'))}${stat(f1(r.abw), 'kg', 'Adjusted body weight' + cite('pai'), r.useAdjusted ? 'hl' : '')}${stat(f1(r.lbw), 'kg', 'Lean body weight' + cite('janma'))}</div>
+          <p class="t-sm">Actual weight is <b>${f0(r.pctIbw)}%</b> of ideal.${r.useAdjusted ? ' Above 120% — drugs dosed on weight often use the adjusted weight; check the drug\'s own guidance.' : ''}</p>
+          ${r.short ? warn('Under 152 cm (5 ft) the ideal-weight formula is unreliable.') : ''}`;
+      },
+      how: () => 'Ideal (Devine): 50 kg (men) or 45.5 kg (women) + 2.3 kg for each inch over 5 feet. Adjusted: ideal + 0.4 × (actual − ideal). Lean (Janmahasatian): 9,270 × weight ÷ (6,680 + 216 × BMI) for men, or ÷ (8,780 + 244 × BMI) for women.' },
+
+    { id: 'idrs', prof: ['doctor', 'diet'], icon: 'chart', title: 'Indian Diabetes Risk Score', refs: ['idrs'],
+      form: (t) => `<div class="hl-in">${fSel(t, 'act', 'Physical activity', [['both', 'Regular exercise and a physically hard job'], ['one', 'Regular exercise or a physically hard job'], ['none', 'No exercise and a desk job']], 'none', true)}
+        ${fSel(t, 'fam', 'Parents with diabetes', [['none', 'Neither'], ['one', 'One parent'], ['both', 'Both parents']], 'none', true)}</div>`,
+      out: (t, p) => {
+        const miss = need(p, 'age', 'waist'); if (miss) return miss;
+        const r = H.idrs(p.sex, p.age, p.waist, val(t, 'act') || 'none', val(t, 'fam') || 'none');
+        const v = { high: ['bad', 'High risk', 'Test now: fasting glucose, HbA1c or a glucose tolerance test.'], moderate: ['warn', 'Moderate risk', 'Lifestyle advice — more activity and a smaller waist — and consider testing.'], low: ['good', 'Low risk', 'Repeat the score every few years, or sooner if weight goes up.'] }[r.risk];
+        return `<div class="tl-big"><b>${r.total}</b><span>out of 100${cite('idrs')}</span></div>${verdict(v[0], v[1], v[2])}
+          <table class="tl-table"><tbody><tr><td>Age ${f0(p.age)}</td><td>${r.sAge}</td></tr><tr><td>Waist ${f0(p.waist)} cm</td><td>${r.sWaist}</td></tr><tr><td>Physical activity</td><td>${r.sAct}</td></tr><tr><td>Family history</td><td>${r.sFam}</td></tr></tbody></table>`;
+      },
+      how: () => 'Age: under 35 = 0, 35–49 = 20, 50 or more = 30. Waist: women under 80 cm = 0, 80–89 = 10, 90 or more = 20; men under 90 cm = 0, 90–99 = 10, 100 or more = 20. Activity: exercise and hard work = 0, one of them = 20, neither = 30. Parents with diabetes: none = 0, one = 10, both = 20. Under 30 = low, 30–50 = moderate, 60 or more = high risk. Made and tested in Indian adults.' },
+
+    { id: 'bp', prof: ['doctor', 'physio', 'yoga'], icon: 'heart', title: 'Blood pressure', refs: ['ish2020', 'aha2017', 'acsm_gl'],
+      form: (t) => `<div class="hl-in">${fNum(t, 's1', 'Systolic', { min: 50, max: 300, step: 1, ph: 'mmHg' })}${fNum(t, 'd1', 'Diastolic', { min: 30, max: 200, step: 1, ph: 'mmHg' })}
+        ${fNum(t, 's2', '2nd systolic', { min: 50, max: 300, step: 1, ph: 'optional' })}${fNum(t, 'd2', '2nd diastolic', { min: 30, max: 200, step: 1, ph: 'optional' })}</div>`,
+      out: (t) => {
+        let s = nv(t, 's1'), d = nv(t, 'd1');
+        if (!s || !d) return '<p class="t-sm muted">Enter a reading. Add a second one taken a minute later for an average.</p>';
+        const two = nv(t, 's2') && nv(t, 'd2'); if (two) { s = (s + nv(t, 's2')) / 2; d = (d + nv(t, 'd2')) / 2; }
+        const r = H.bpCategory(Math.round(s), Math.round(d));
+        const kind = (k) => ['n'].includes(k) ? 'good' : ['hn', 'el', 's1', 'g1'].includes(k) ? 'warn' : 'bad';
+        return `<div class="tl-big"><b>${f0(r.sys)}/${f0(r.dia)}</b><span>mmHg${two ? ' (average of 2)' : ''}</span></div>
+          <table class="tl-table"><tbody><tr><td>International (ISH 2020)${cite('ish2020')}</td><td>${badge(r.ish.label, kind(r.ish.k))}</td></tr><tr><td>American (ACC/AHA 2017)${cite('aha2017')}</td><td>${badge(r.aha.label, kind(r.aha.k))}</td></tr></tbody></table>
+          ${r.severe ? verdict('bad', 'Above 180/120', 'Needs urgent medical assessment — straight away if there is chest pain, breathlessness, a severe headache, vision change, confusion or weakness.') : ''}
+          ${r.noHardExercise ? warn('Resting blood pressure over 200/110: no exercise test or hard training today' + cite('acsm_gl') + '.') : ''}
+          <p class="t-sm muted">One visit can't diagnose high blood pressure — confirm with readings on other days or home readings.</p>`;
+      },
+      how: () => 'Seated with the back supported, feet flat and the arm resting at heart level, after 5 minutes\' quiet rest, with the right cuff size and no talking. Take 2–3 readings a minute apart and average them. India and most of the world use the ISH grades (140/90 for high blood pressure); the American guideline starts at 130/80.' },
+
+    { id: 'a1c', prof: ['doctor', 'diet'], icon: 'drop', title: 'HbA1c and blood sugar', refs: ['adag', 'ada2025'],
+      form: (t) => `<div class="hl-in">${fNum(t, 'a', 'HbA1c (%)', { min: 3, max: 20, step: 0.1 })}${fNum(t, 'f', 'Fasting glucose (mg/dL)', { min: 20, max: 700, step: 1, ph: 'optional' })}</div>`,
+      out: (t) => {
+        const r = H.hba1c(nv(t, 'a')), fg = H.fastingGlucose(nv(t, 'f'));
+        if (!r && !fg) return '<p class="t-sm muted">Enter HbA1c, fasting glucose or both.</p>';
+        const kind = (k) => k === 'n' ? 'good' : k === 'pre' ? 'warn' : 'bad';
+        return `${r ? `<div class="tl-stats">${stat(f0(r.eagMgDl), 'mg/dL', `Average glucose (${f1(r.eagMmol)} mmol/L)${cite('adag')}`, 'hl')}${stat(f0(r.ifcc), 'mmol/mol', 'HbA1c in IFCC units')}</div>
+          <p class="t-sm">HbA1c ${f1(r.pct)}%: ${badge(r.cat.label, kind(r.cat.k))}${cite('ada2025')}</p>` : ''}
+          ${fg ? `<p class="t-sm">Fasting glucose ${f0(nv(t, 'f'))} mg/dL: ${badge(fg.label, fg.k === 'low' ? 'bad' : kind(fg.k))}</p>` : ''}
+          <p class="t-sm muted">A diagnosis needs two abnormal results, unless blood sugar is clearly very high with symptoms. HbA1c can mislead in anaemia, haemoglobin variants, pregnancy, kidney disease and after blood loss or a transfusion.</p>`;
+      },
+      how: () => 'Average glucose (mg/dL) = 28.7 × HbA1c − 46.7. IFCC (mmol/mol) = 10.929 × (HbA1c − 2.15). Prediabetes: HbA1c 5.7–6.4% or fasting glucose 100–125 mg/dL. Diabetes range: HbA1c 6.5% or more, or fasting glucose 126 mg/dL or more.' },
+
+    { id: 'acsm', prof: ['doctor', 'physio', 'yoga'], icon: 'shield', title: 'Exercise screening (ACSM)', refs: ['riebe'],
+      form: (t) => `${fYN(t, 'act', 'Exercising regularly now?', 'At least 30 minutes of moderate activity on 3 or more days a week, for the last 3 months.')}
+        ${fYN(t, 'dis', 'Known heart, metabolic or kidney disease?', 'Heart or blood-vessel disease, type 1 or type 2 diabetes, or kidney disease.')}
+        ${fYN(t, 'sym', 'Any signs or symptoms?', 'Chest, neck, jaw or arm pain; breathlessness at rest or with little effort; dizziness or fainting; breathlessness lying flat or waking at night; ankle swelling; a racing or irregular heartbeat; calf pain when walking; a known heart murmur; unusual tiredness.')}
+        <div class="hl-in">${fSel(t, 'int', 'Planned intensity', [['light', 'Light'], ['moderate', 'Moderate'], ['vigorous', 'Vigorous']], 'moderate')}</div>`,
+      out: (t) => {
+        const a = val(t, 'act'), d = val(t, 'dis'), s = val(t, 'sym');
+        if (!a || !d || !s) return '<p class="t-sm muted">Answer the three questions.</p>';
+        const r = H.acsmScreen(a === 'yes', d === 'yes', s === 'yes', val(t, 'int') || 'moderate');
+        return verdict(r.clearance === 'stop' ? 'bad' : r.clearance === 'yes' ? 'warn' : 'good', r.title, r.then) + `<p class="t-sm muted">ACSM pre-participation screening${cite('riebe')}.</p>`;
+      },
+      how: () => 'The 2015 ACSM screening looks at current activity, known disease and symptoms — not age or risk factors alone. Light = under 40% of heart-rate reserve; moderate = 40–59% (effort 12–13 of 20); vigorous = 60% or more (effort 14 or more).' },
+
+    // ------------------------------------------------------------ yoga and wellness
+    { id: 'caution', prof: ['yoga', 'physio'], icon: 'shield', title: 'Practice cautions by condition', refs: ['pescatello', 'jasien', 'acog2020', 'sinaki', 'nice_lbp', 'riebe', 'colberg'],
+      form: (t) => `<div class="hl-checks hl-cols">${H.CAUTIONS.map((c) => fChk(t, c.key, esc(c.label))).join('')}</div>`,
+      out: (t) => {
+        const list = H.cautions(H.CAUTIONS.filter((c) => val(t, c.key)).map((c) => c.key));
+        if (!list.length) return '<p class="t-sm muted">Tick the conditions the person has to see what to avoid, what to change and when to refer.</p>';
+        const IC = { avoid: ['close', 'k-warn', 'Avoid'], modify: ['edit', '', 'Adapt'], refer: ['flag', 'k-refer', 'Refer'] };
+        return list.map((c) => `<div class="hl-caut"><b>${esc(c.label)}${c.refs.length ? cite(...c.refs) : ''}</b><div class="tl-notes">${c.notes.map(([k, txt]) => `<div class="tl-note ${IC[k][1]}">${I(IC[k][0], 15)}<span><em>${IC[k][2]}:</em> ${esc(txt)}</span></div>`).join('')}</div></div>`).join('');
+      },
+      how: () => 'General cautions drawn from published guidance and studies. Fit them to the person in front of you, and get medical clearance whenever you\'re unsure.' },
+
+    { id: 'breath', prof: ['yoga', 'physio'], icon: 'wind', title: 'Breathing pacer', refs: ['russo', 'zaccaro'], live: true,
+      form: (t) => `<div class="hl-in">${fSel(t, 'pat', 'Pattern', Object.entries(H.BREATHS).map(([k, b]) => [k, b.label]), 'slow6', true)}${fSel(t, 'min', 'Length', [['1', '1 minute'], ['3', '3 minutes'], ['5', '5 minutes'], ['10', '10 minutes']], '5')}</div>`,
+      out: (t) => `<div class="hl-pacer"><i class="hl-orb" id="pcRing" aria-hidden="true"></i><div class="hl-ptxt"><span id="pcPhase">Ready</span><em id="pcCount"></em></div></div>
+          <div class="hl-pacer-c"><button class="pill solid" type="button" id="pcGo">Start</button><span class="t-sm muted" id="pcInfo">${f1(H.breathRate(val(t, 'pat') || 'slow6'))} breaths a minute · ${val(t, 'min') || 5} min</span></div>
+          <p class="t-sm muted">Slow breathing at about 6 breaths a minute steadies the heart rate and calms the stress response${cite('russo', 'zaccaro')}.</p>`,
+      how: () => 'Breathe through the nose, low into the belly, without forcing. Stop if the person feels dizzy or tingly. Skip the holds in pregnancy, high blood pressure and heart disease. Show the pacer on your screen during a session, or share it with the person to practise at home.' },
+  ];
+  const byId = Object.fromEntries(TOOLS.map((x) => [x.id, x]));
+
+  // ---------------------------------------------------------------- the breathing pacer
+  let pacer = null;
+  const stopPacer = () => { if (!pacer) return; clearInterval(pacer.iv); clearTimeout(pacer.to); pacer = null; const g = $('pcGo'); if (g) g.textContent = 'Start'; const ring = $('pcRing'); if (ring) { ring.style.transition = 'transform .6s ease'; ring.style.transform = ''; ring.className = 'hl-orb'; } if ($('pcPhase')) $('pcPhase').textContent = 'Ready'; if ($('pcCount')) $('pcCount').textContent = ''; };
+  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function startPacer() {
+    const b = H.BREATHS[val('breath', 'pat') || 'slow6'], total = (parseInt(val('breath', 'min'), 10) || 5) * 60;
+    const PH = [['in', 'Breathe in'], ['hold', 'Hold'], ['out', 'Breathe out'], ['hold', 'Hold']];
+    const started = Date.now(); let i = -1, phaseEnd = 0;
+    pacer = {};
+    const next = () => {
+      do { i = (i + 1) % 4; } while (!b.steps[i]);
+      const secs = b.steps[i], ring = $('pcRing'); if (!ring) return stopPacer();
+      phaseEnd = Date.now() + secs * 1000;
+      $('pcPhase').textContent = PH[i][1];
+      ring.className = 'hl-orb is-' + PH[i][0];
+      if (!reduce) { ring.style.transition = `transform ${secs}s ${PH[i][0] === 'hold' ? 'linear' : 'ease-in-out'}`; if (PH[i][0] !== 'hold') ring.style.transform = PH[i][0] === 'in' ? 'scale(1)' : 'scale(.62)'; }
+      pacer.to = setTimeout(() => { if ((Date.now() - started) / 1000 >= total && PH[i][0] !== 'in') { stopPacer(); $('pcPhase').textContent = 'Done'; FL.toast('Breathing session complete', 'ok'); return; } next(); }, secs * 1000);
+    };
+    pacer.iv = setInterval(() => { const c = $('pcCount'); if (!c) return; c.textContent = Math.max(1, Math.ceil((phaseEnd - Date.now()) / 1000)); const left = Math.max(0, total - (Date.now() - started) / 1000); $('pcInfo').textContent = `${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')} left`; }, 200);
+    $('pcGo').textContent = 'Stop';
+    const ring = $('pcRing'); ring.style.transition = 'none'; ring.style.transform = 'scale(.62)'; void ring.offsetWidth;
+    next();
+  }
+  const wirePacer = () => { const g = $('pcGo'); if (g) g.onclick = () => { if (pacer) { stopPacer(); drawOut('breath'); } else startPacer(); }; };
+
+  // ---------------------------------------------------------------- drawing
+  const DEFAULT_FOR = { physio: 'physio', chiropractor: 'physio', occupational: 'physio', massage: 'physio', recovery: 'physio', dietitian: 'diet', nutritionist: 'diet',
+    doctor: 'doctor', sports_doctor: 'doctor', orthopaedic: 'doctor', nurse: 'doctor', yoga: 'yoga', yoga_therapist: 'yoga', pilates: 'yoga', wellness_coach: 'yoga' };
+  let prof = 'all';
+  try { prof = localStorage.getItem('fl:health:prof') || (me && DEFAULT_FOR[me.profession]) || 'all'; } catch (_) {}
+  if (!['all', ...Object.keys(GROUPS)].includes(prof)) prof = 'all';
+  const visible = () => prof === 'all' ? TOOLS : [...TOOLS.filter((x) => x.prof[0] === prof), ...TOOLS.filter((x) => x.prof[0] !== prof && x.prof.includes(prof))];
+
+  function drawOut(id) {
+    const x = byId[id], el = $('o-' + id); if (!x || !el) return;
+    if (id === 'breath') stopPacer();
+    el.innerHTML = x.out(id, P());
+    if (id === 'breath') wirePacer();
+    if (refsDirty) drawRefs();
+  }
+  function drawOuts() {
+    const p = P();
+    $('pBmi').innerHTML = p.bmi ? `<span>BMI <b>${f1(p.bmi)}</b></span>` : '';
+    visible().forEach((x) => { if (!x.live) drawOut(x.id); });
+  }
+  const cardHtml = (x) => `<section class="box tl-card hl-card" id="t-${x.id}"><div class="tl-card-h">${I(x.icon, 20)}<h3>${x.title}</h3></div>
+      <div class="tl-card-b">${x.form(x.id)}<div class="hl-out" id="o-${x.id}" aria-live="polite"></div></div>
+      <details class="tl-how"><summary>How it works</summary><div>${x.how()}</div></details></section>`;
+  function drawAll() {
+    stopPacer();
+    const list = visible();
+    order = []; list.forEach((x) => x.refs.forEach((k) => { if (!order.includes(k)) order.push(k); }));
+    let html = '';
+    if (prof === 'all') Object.entries(GROUPS).forEach(([g, label]) => { html += `<h2 class="hl-group">${label}</h2><div class="tl-results">${list.filter((x) => x.prof[0] === g).map(cardHtml).join('')}</div>`; });
+    else html = `<h2 class="hl-group">For ${esc(GROUPS[prof].toLowerCase())}</h2><div class="tl-results">${list.map(cardHtml).join('')}</div>`;
+    $('hlCards').innerHTML = html;
+    document.querySelectorAll('#hlFilter button').forEach((b) => { const on = b.dataset.prof === prof; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+    $('hlJump').innerHTML = `<option value="">Jump to a tool…</option>` + list.map((x) => `<option value="${x.id}">${esc(x.title.replace(/<[^>]+>/g, ''))}</option>`).join('');
+    list.forEach((x) => drawOut(x.id));
+    $('pBmi').innerHTML = P().bmi ? `<span>BMI <b>${f1(P().bmi)}</b></span>` : '';
+    drawRefs();
+  }
+
+  // ---------------------------------------------------------------- events
+  const host = $('hlCards');
+  const onField = (e) => { const k = e.target.dataset && e.target.dataset.k; if (!k) return; S[k] = e.target.type === 'checkbox' ? e.target.checked : e.target.value; saveS(); drawOut(k.split('.')[0]); };
+  host.addEventListener('input', onField);
+  host.addEventListener('change', onField);
+  host.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-v]'); if (!b) return;
+    S[b.dataset.k] = b.dataset.v; saveS();
+    b.parentElement.querySelectorAll('button').forEach((x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-checked', on ? 'true' : 'false'); });
+    drawOut(b.dataset.k.split('.')[0]);
+  });
+  document.querySelectorAll('#hlFilter button').forEach((b) => { b.onclick = () => { prof = b.dataset.prof; try { localStorage.setItem('fl:health:prof', prof); } catch (_) {} drawAll(); }; });
+  $('hlJump').onchange = () => { const id = $('hlJump').value; $('hlJump').value = ''; const el = id && $('t-' + id); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1400); } };
+
+  // ---------------------------------------------------------------- call to action
+  $('cta').innerHTML = `<div class="tl-cta-in">${I('clipboard', 26)}<div><b>Turn an assessment into a plan</b>
+      <span>Build a home exercise programme from the exercise library or an Indian diet chart, and download it as a PDF with your name, Fit Lab ID and credentials.</span></div>
+      ${me ? '<div class="tl-cta-btns"><a class="pill solid" href="tools-workout">Exercise programme</a><a class="pill" href="tools-diet">Diet chart</a></div>' : '<a class="pill solid" href="/?next=tools-health">Join free</a>'}</div>`;
+
+  loadP(); syncFt(); drawAll();
+  if (location.hash && $('t-' + location.hash.slice(1))) setTimeout(() => $('t-' + location.hash.slice(1)).scrollIntoView({ block: 'start' }), 60);
+})();
+</script>
+</body>
+</html>

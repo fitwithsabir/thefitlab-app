@@ -98,6 +98,12 @@
     activity: '<path d="M3 12h4l3-7 4 14 3-7h4"/>',
     users: '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3 2.8-5 5.5-5s4.9 2 5.5 5"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.2c2.4.3 4.2 2.1 4.7 4.8"/>',
     hash: '<path d="M9 3 7 21M17 3l-2 18M4 8.5h17M3 15.5h17"/>',
+    heart: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
+    steth: '<path d="M6 3v6a5 5 0 0 0 10 0V3"/><path d="M11 14v1.5a4.5 4.5 0 0 0 9 0V13"/><circle cx="20" cy="11" r="2"/>',
+    wind: '<path d="M3 8h11a3 3 0 1 0-3-3"/><path d="M3 12h16a3 3 0 1 1-3 3"/><path d="M3 16h7"/>',
+    drop: '<path d="M12 3s6 6.4 6 11a6 6 0 0 1-12 0c0-4.6 6-11 6-11z"/>',
+    bone: '<path d="M8 8.5 15.5 16"/><path d="M7.5 9a2.6 2.6 0 1 1-1.8-4.3A2.6 2.6 0 1 1 9 6.5"/><path d="M16 15.5a2.6 2.6 0 1 1 1.8 4.3 2.6 2.6 0 1 1-3.3-1.8"/>',
+    clipboard: '<rect x="5" y="4.5" width="14" height="16.5" rx="2"/><path d="M9 4.5V3.5h6v1M9 10h6M9 14h6M9 18h3"/>',
     palette: '<path d="M12 3a9 9 0 1 0 0 18c1.2 0 1.7-1 1.2-1.9-.6-1.1 0-2.4 1.3-2.4H17a4 4 0 0 0 4-4c0-5.4-4-9.7-9-9.7z"/><circle cx="7.5" cy="11.5" r="1.3" fill="currentColor"/><circle cx="10" cy="7.3" r="1.3" fill="currentColor"/><circle cx="14.8" cy="7.3" r="1.3" fill="currentColor"/>',
   };
   const icon = (name, size = 22, extra = '') =>
