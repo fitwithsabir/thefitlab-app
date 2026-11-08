@@ -6,12 +6,12 @@
 <title>Patient and client records — The Fit Lab</title>
 <meta name="description" content="Private patient and client records for health and fitness professionals: intake with consent, SOAP session notes, outcome scores tracked over time, reports and scans, and a PDF record — deleted for good when a patient asks.">
 <script src="assets/theme.js?v=891b5cdc5d"></script>
-<script src="assets/i18n.js?v=e52fbfef46"></script>
+<script src="assets/i18n.js?v=cf2c5b19d2"></script>
 <link rel="icon" href="assets/favicon.png">
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="assets/styles.css?v=9ccf3156e5">
-<link rel="stylesheet" href="assets/tools.css?v=e2366ad476">
+<link rel="stylesheet" href="assets/tools.css?v=4ad01027d9">
 </head>
 <body data-page="tools">
 <div id="nav"></div>
@@ -61,7 +61,11 @@
   const FILES = 'patient-files';
   const thisYear = new Date().getFullYear();
   const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
-  const fmt = (s, o = { day: 'numeric', month: 'short', year: 'numeric' }) => s ? new Date(String(s).slice(0, 10) + 'T00:00:00').toLocaleDateString('en-IN', o) : '';
+  // dates on screen follow the chosen language; the PDF record stays in English
+  const DT = (s) => new Date(String(s).slice(0, 10) + 'T00:00:00');
+  const fmt = (s, o = { day: 'numeric', month: 'short', year: 'numeric' }) => s ? (window.FLI18N && FLI18N.date ? FLI18N.date(DT(s), o) : DT(s).toLocaleDateString('en-IN', o)) : '';
+  const fmtEn = (s, o = { day: 'numeric', month: 'short', year: 'numeric' }) => s ? DT(s).toLocaleDateString('en-IN', o) : '';
+  const keep = (t) => `<span translate="no">${esc(t)}</span>`;  // a date or a name inside a sentence
   const must = (r) => { if (r && r.error) throw r.error; return r ? r.data : null; };
   const n1 = (v) => (Math.round(+v * 10) / 10).toLocaleString('en-IN');
   const cur = () => clients.find((c) => c.id === sel) || null;
@@ -108,7 +112,7 @@
     const list = clients.filter((c) => !q || [c.full_name, c.phone, c.complaint, c.referred_by].some((x) => String(x || '').toLowerCase().includes(q)));
     $('list').innerHTML = list.length ? list.map((c) => `<button type="button" class="pt-item ${c.id === sel ? 'on' : ''}" data-id="${c.id}">
         <span class="pt-av">${esc((c.full_name || '?').trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase())}</span>
-        <span class="pt-iw"><b>${esc(c.full_name)}</b><span>${[c.sex === 'male' ? 'Male' : 'Female', CL.age(c) ? CL.age(c) + ' y' : '', c.complaint].filter(Boolean).map(esc).join(' · ')}</span></span></button>`).join('')
+        <span class="pt-iw"><b translate="no">${esc(c.full_name)}</b><span>${[c.sex === 'male' ? 'Male' : 'Female', CL.age(c) ? CL.age(c) + ' y' : ''].filter(Boolean).map((x) => `<span>${esc(x)}</span>`).concat(c.complaint ? [keep(c.complaint)] : []).join(' · ')}</span></span></button>`).join('')
       : `<div class="box-pad tl-empty">${clients.length ? 'No one matches that search.' : access.can_build ? 'No clients yet. Add your first patient or client — it takes a minute.' : 'No records yet.'}</div>`;
     $('list').querySelectorAll('.pt-item').forEach((b) => { b.onclick = () => openClient(b.dataset.id); });
   }
@@ -137,22 +141,23 @@
   // ---------------------------------------------------------------- the record
   function drawDetail() {
     const c = cur(); if (!c) return;
-    const consent = c.health_consent_at ? `<span class="tl-badge k-normal">${I('check', 12)} Consent · ${esc(CONSENT[c.consent_method] || 'recorded')} · ${esc(fmt(c.health_consent_at))}</span>` : `<span class="tl-badge k-over">No consent recorded</span>`;
-    const meta = [c.sex === 'male' ? 'Male' : 'Female', CL.age(c) ? `${CL.age(c)} years` : '', c.height_cm ? `${n1(c.height_cm)} cm` : '', c.weight_kg ? `${n1(c.weight_kg)} kg` : '', c.referred_by ? `Referred by ${c.referred_by}` : ''].filter(Boolean);
+    const consent = c.health_consent_at ? `<span class="tl-badge k-normal">${I('check', 12)}<span>Consent</span> · <span>${esc(CONSENT[c.consent_method] || 'recorded')}</span> · ${keep(fmt(c.health_consent_at))}</span>` : `<span class="tl-badge k-over">No consent recorded</span>`;
+    const meta = [c.sex === 'male' ? 'Male' : 'Female', CL.age(c) ? `${CL.age(c)} years` : '', c.height_cm ? `${n1(c.height_cm)} cm` : '', c.weight_kg ? `${n1(c.weight_kg)} kg` : ''].filter(Boolean).map((x) => `<span>${esc(x)}</span>`)
+      .concat(c.referred_by ? [`<span>Referred by ${keep(c.referred_by)}</span>`] : []);
     $('detail').innerHTML = `<section class="box pt-head">
         <div class="pt-head-top"><button class="icon-btn pt-back" type="button" id="btnBack" aria-label="Back to the list">${I('back', 20)}</button>
-          <div class="pt-who"><h2>${esc(c.full_name)}</h2><span>${meta.map(esc).join(' · ')}</span>
+          <div class="pt-who"><h2 translate="no">${esc(c.full_name)}</h2><span>${meta.join(' · ')}</span>
             <span class="pt-contact">${c.phone ? `<a href="tel:${esc(c.phone.replace(/[^\d+]/g, ''))}">${I('phone', 14)} ${esc(c.phone)}</a>` : ''}${c.email ? `<a href="mailto:${esc(c.email)}">${I('mail', 14)} ${esc(c.email)}</a>` : ''}</span></div>
           <div class="pt-btns"><a class="pill sm ghost" href="tools-handouts?c=${c.id}&doc=l_referral">${I('mail', 14)} Letter</a><button class="pill sm ghost" type="button" id="btnPdf">${I('file', 14)} PDF</button><button class="pill sm" type="button" id="btnIntake">${I('edit', 14)} Intake</button></div></div>
         <div class="pt-intake">
           ${c.complaint ? `<div><em>Main complaint</em><p>${esc(c.complaint)}</p></div>` : ''}
           ${c.history ? `<div><em>Medical history</em><p>${esc(c.history)}</p></div>` : ''}
           ${c.medications ? `<div><em>Medicines</em><p>${esc(c.medications)}</p></div>` : ''}
-          ${c.allergies ? `<div><em>Allergies</em><p>${esc(allergyText(c.allergies))}</p></div>` : ''}
-          ${(c.conditions || []).length ? `<div><em>Screening</em><p>${c.conditions.map((k) => esc(COND[k] || k)).join(', ')}</p></div>` : ''}
+          ${c.allergies ? `<div><em>Allergies</em><p>${allergyHtml(c.allergies)}</p></div>` : ''}
+          ${(c.conditions || []).length ? `<div><em>Screening</em><p>${c.conditions.map((k) => `<span>${esc(COND[k] || k)}</span>`).join(', ')}</p></div>` : ''}
           ${!c.complaint && !c.history && !c.medications ? `<p class="t-sm muted" style="margin:0">Add the main complaint, history and medicines in <b>Intake</b>.</p>` : ''}
         </div>
-        <div class="pt-foot">${consent}<span class="t-xs muted">Added ${esc(fmt(c.created_at))}</span></div>
+        <div class="pt-foot">${consent}<span class="t-xs muted">Added ${keep(fmt(c.created_at))}</span></div>
       </section>
       <nav class="pt-tabs" role="tablist">${[['notes', 'Notes', notes.length], ['progress', 'Progress', new Set(measures.map(seriesKey)).size + (notes.some((x) => x.pain != null) ? 1 : 0)], ['files', 'Files', files.length]]
         .map(([k, l, n]) => `<button type="button" role="tab" data-tab="${k}" class="${tab === k ? 'on' : ''}" aria-selected="${tab === k}">${l}${n ? ` <span>${n}</span>` : ''}</button>`).join('')}</nav>
@@ -168,6 +173,9 @@
     $('detail').querySelectorAll('.pt-tabs button').forEach((b) => { const on = b.dataset.tab === tab; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
     ({ notes: drawNotes, progress: drawProgress, files: drawFiles })[tab]();
   }
+  // one piece per allergy, so each one can be translated; free text stays as written
+  const allergyHtml = (txt) => { const keys = CL.parseAllergies(txt), x = CL.extraAllergies(txt);
+    const parts = keys.map((k) => `<span>${esc((CL.ALLERGIES.find((a) => a[0] === k) || [k, k])[1])}</span>`).concat(x ? [keep(x)] : []); return parts.join(', ') || keep(txt); };
   const allergyText = (txt) => { const keys = CL.parseAllergies(txt), names = keys.map((k) => (CL.ALLERGIES.find((a) => a[0] === k) || [k, k])[1]); const x = CL.extraAllergies(txt); return names.concat(x ? [x] : []).join(', ') || txt; };
 
   // ---------------------------------------------------------------- intake
@@ -177,7 +185,7 @@
     const algs = CL.parseAllergies(c.allergies);
     const chip = (name, val, label, on) => `<label class="tl-chip"><input type="checkbox" name="${name}" value="${val}" ${on ? 'checked' : ''}><span>${esc(label)}</span></label>`;
     const ta = (id, label, v, max, ph, rows = 70) => `<div class="field"><label for="${id}">${label}</label><textarea id="${id}" maxlength="${max}" placeholder="${esc(ph)}" style="min-height:${rows}px">${esc(v || '')}</textarea></div>`;
-    const m = FL.modal({ title: existing ? `Intake — ${c.full_name}` : 'New patient or client', wide: true,
+    const m = FL.modal({ titleHtml: existing ? `Intake — ${keep(c.full_name)}` : esc('New patient or client'), wide: true,
       body: `<div class="tl-form">
         <div class="row2"><div class="field"><label class="req" for="iName">Name</label><input id="iName" maxlength="80" value="${esc(c.full_name || '')}"></div>
           <div class="row2"><div class="field"><label for="iSex">Sex</label><select id="iSex"><option value="female" ${c.sex === 'female' ? 'selected' : ''}>Female</option><option value="male" ${c.sex === 'male' ? 'selected' : ''}>Male</option></select></div>
@@ -242,7 +250,7 @@
     };
     const erase = q('[data-erase]');
     if (erase) erase.onclick = async () => {
-      if (!(await FL.confirm(`Delete ${c.full_name} for good?`, 'The intake, every note, progress score, plan, report and file are deleted and can\'t be brought back. Use this when the patient asks you to delete their data.', 'Delete everything', true))) return;
+      if (!(await FL.confirm('Delete this record for good?', 'The intake, every note, progress score, plan, report and file are deleted and can\'t be brought back. Use this when the patient asks you to delete their data.', 'Delete everything', true))) return;
       try {
         await CL.eraseFiles(me.id, existing.id);
         const { data: rf } = await sb.storage.from('client-reports').list(`${me.id}/${existing.id}`, { limit: 100 });
@@ -275,14 +283,14 @@
     if (!id && !access.can_build) return FL.upsell('Patient records', 'Writing notes needs Premium or Coach AI.');
     const x = notes.find((n) => n.id === id) || { session_date: today(), kind: notes.length ? 'soap' : 'initial' };
     const last = notes[0];
-    const m = FL.modal({ title: id ? 'Edit note' : `New note — ${c.full_name}`, wide: true,
+    const m = FL.modal({ titleHtml: id ? esc('Edit note') : `New note — ${keep(c.full_name)}`, wide: true,
       body: `<div class="tl-form">
         <div class="row3"><div class="field"><label for="nDate" class="req">Date</label><input id="nDate" type="date" max="${today()}" value="${esc(x.session_date)}"></div>
           <div class="field"><label for="nKind">Type</label><select id="nKind">${Object.entries(NOTE_KINDS).map(([k, l]) => `<option value="${k}" ${x.kind === k ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></div>
           <div class="row2"><div class="field"><label for="nPain">Pain 0–10</label><input id="nPain" type="number" inputmode="decimal" min="0" max="10" step="0.5" value="${esc(x.pain ?? '')}"></div>
             <div class="field"><label for="nMin">Minutes</label><input id="nMin" type="number" inputmode="numeric" min="1" max="600" value="${esc(x.minutes ?? '')}"></div></div></div>
         ${SOAP.map(([k, s, l, ph]) => `<div class="field"><label for="n_${k}"><span class="pt-s">${s}</span> ${l}</label><textarea id="n_${k}" maxlength="4000" placeholder="${esc(ph)}" style="min-height:${k === 'subjective' || k === 'plan' ? 90 : 76}px">${esc(x[k] || '')}</textarea></div>`).join('')}
-        ${!id && last && last.plan ? `<button class="txt-btn" type="button" id="nCopy">${I('back', 13)} Copy the plan from ${esc(fmt(last.session_date))}</button>` : ''}
+        ${!id && last && last.plan ? `<button class="txt-btn" type="button" id="nCopy">${I('back', 13)} Copy the plan from ${keep(fmt(last.session_date))}</button>` : ''}
         <div class="err" id="nErr" hidden></div></div>`,
       foot: `${id ? '<button class="pill ghost left" type="button" data-del style="color:var(--danger-text)">Delete</button><span style="flex:1"></span>' : ''}<button class="pill ghost" type="button" data-no>Cancel</button><button class="pill solid" type="button" data-ok>Save note</button>` });
     const q = m.q, err = (t) => { const e = q('#nErr'); e.textContent = t; e.hidden = !t; };
@@ -339,7 +347,7 @@
         const better = !s.def.d || !diff ? '' : (s.def.d === 'up') === (diff > 0) ? 'good' : 'bad';
         const name = s.def.k === 'rom' ? `${s.label || 'Range of motion'}` : s.def.k === 'custom' ? (s.label || 'Result') : s.def.l;
         return `<section class="box pt-ser ${better}"><header><b>${esc(name)}</b><span>${s.pts.length} ${s.pts.length === 1 ? 'result' : 'results'}</span></header>
-          <div class="pt-ser-v"><b>${n1(last.v)}<small>${esc(unit)}</small></b>${s.pts.length > 1 ? `<span class="pt-chg ${better}">${diff > 0 ? '+' : diff < 0 ? '−' : ''}${n1(Math.abs(diff))} since ${esc(fmt(first.d, { day: 'numeric', month: 'short' }))}</span>` : `<span class="t-xs muted">${esc(fmt(last.d))}</span>`}</div>
+          <div class="pt-ser-v"><b>${n1(last.v)}<small>${esc(unit)}</small></b>${s.pts.length > 1 ? `<span class="pt-chg ${better}">${diff > 0 ? '+' : diff < 0 ? '−' : ''}${n1(Math.abs(diff))} since ${keep(fmt(first.d, { day: 'numeric', month: 'short' }))}</span>` : `<span class="t-xs muted">${esc(fmt(last.d))}</span>`}</div>
           ${spark(s.pts, s.def.d)}
           <details><summary>All results</summary><table class="tl-table"><tbody>${s.pts.slice().reverse().map((p) => `<tr><td>${esc(fmt(p.d))}</td><td>${n1(p.v)} ${esc(unit)}${p.note ? `<div class="t-xs muted">${esc(p.note)}</div>` : ''}</td><td>${p.fromNote ? '<span class="t-xs muted">from a note</span>' : `<button class="txt-btn" type="button" data-mdel="${p.id}">Delete</button>`}</td></tr>`).join('')}</tbody></table></details>
         </section>`; }).join('')}</div>` : `<div class="box box-pad tl-empty">No results yet. Record outcome measures — pain, range of motion, walk tests, strength, blood pressure, weight — at the first visit and at each review to show progress.</div>`}`;
@@ -352,7 +360,7 @@
   function measureForm() {
     const c = cur(); if (!c) return;
     if (!access.can_build) return FL.upsell('Patient records', 'Recording results needs Premium or Coach AI.');
-    const m = FL.modal({ title: `Add a result — ${c.full_name}`,
+    const m = FL.modal({ titleHtml: `Add a result — ${keep(c.full_name)}`,
       body: `<div class="tl-form">
         <div class="field"><label for="mKey">Measure</label><select id="mKey">${MEASURES.map(([k, l, u]) => `<option value="${k}">${esc(l)}${u ? ` (${esc(u)})` : ''}</option>`).join('')}</select></div>
         <div class="row2" id="mCustom" hidden><div class="field"><label for="mLabel" class="req">Name</label><input id="mLabel" maxlength="80" placeholder="e.g. Knee flexion — right"></div>
@@ -386,7 +394,7 @@
     const body = $('tabBody');
     body.innerHTML = `<div class="pt-bar"><label class="pill sm solid pt-up">${I('upload', 15)} Add a file<input type="file" id="fileIn" accept="application/pdf,image/jpeg,image/png,image/webp" hidden></label><span class="t-xs muted">Reports, scans, referral letters, signed consent forms · PDF or photo, up to 10 MB</span></div>
       ${files.length ? `<div class="box pt-files">${files.map((f) => `<div class="pt-file" data-name="${esc(f.name)}"><span class="pt-fi">${I(/\.pdf$/i.test(f.name) ? 'file' : 'image', 18)}</span>
-          <div><b>${esc(prettyName(f.name))}</b><span>${esc(fmt(f.created_at))}${f.metadata && f.metadata.size ? ` · ${Math.max(1, Math.round(f.metadata.size / 1024))} KB` : ''}</span></div>
+          <div><b>${esc(prettyName(f.name))}</b><span>${keep(fmt(f.created_at))}${f.metadata && f.metadata.size ? ` · ${Math.max(1, Math.round(f.metadata.size / 1024))} KB` : ''}</span></div>
           <button class="txt-btn" type="button" data-open>Open</button><button class="txt-btn" type="button" data-del>Delete</button></div>`).join('')}</div>` : `<div class="box box-pad tl-empty">No files yet.</div>`}`;
     $('fileIn').onchange = async () => {
       const f = $('fileIn').files[0]; if (!f) return;
@@ -427,17 +435,17 @@
         ...(c.height_cm || c.weight_kg ? [['Height · weight', [c.height_cm ? n1(c.height_cm) + ' cm' : '', c.weight_kg ? n1(c.weight_kg) + ' kg' : ''].filter(Boolean).join('  ·  ')]] : []),
         ...(c.complaint ? [['Main complaint', c.complaint]] : []), ...(c.history ? [['Medical history', c.history]] : []), ...(c.medications ? [['Medicines', c.medications]] : []),
         ...(c.allergies ? [['Allergies', allergyText(c.allergies)]] : []), ...((c.conditions || []).length ? [['Screening', c.conditions.map((k) => COND[k] || k).join(', ')]] : []),
-        ['Consent', c.health_consent_at ? `${CONSENT[c.consent_method] || 'Recorded'} · ${fmt(c.health_consent_at)}` : 'Not recorded']], { columnStyles: { 0: { cellWidth: 38, fontStyle: 'bold' } } });
+        ['Consent', c.health_consent_at ? `${CONSENT[c.consent_method] || 'Recorded'} · ${fmtEn(c.health_consent_at)}` : 'Not recorded']], { columnStyles: { 0: { cellWidth: 38, fontStyle: 'bold' } } });
       const sl = series();
       if (sl.length) {
         P.heading(ctx, 'Progress');
         P.table(ctx, ['Measure', 'First', 'Latest', 'Change'], sl.map((s) => { const f = s.pts[0], l = s.pts[s.pts.length - 1], u = s.def.k === 'rom' || s.def.k === 'custom' ? (s.unit || '') : s.def.u;
-          return [s.def.k === 'rom' || s.def.k === 'custom' ? (s.label || s.def.l) : s.def.l, `${n1(f.v)} ${u} (${fmt(f.d)})`, `${n1(l.v)} ${u} (${fmt(l.d)})`, s.pts.length > 1 ? `${l.v - f.v > 0 ? '+' : ''}${n1(l.v - f.v)} ${u}` : '—']; }));
+          return [s.def.k === 'rom' || s.def.k === 'custom' ? (s.label || s.def.l) : s.def.l, `${n1(f.v)} ${u} (${fmtEn(f.d)})`, `${n1(l.v)} ${u} (${fmtEn(l.d)})`, s.pts.length > 1 ? `${l.v - f.v > 0 ? '+' : ''}${n1(l.v - f.v)} ${u}` : '—']; }));
       }
       if (notes.length) {
         P.heading(ctx, 'Session notes', `${notes.length} ${notes.length === 1 ? 'note' : 'notes'}`);
         notes.slice().reverse().forEach((n) => {
-          P.paragraph(ctx, `${fmt(n.session_date, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })} — ${NOTE_KINDS[n.kind] || 'Note'}${n.pain != null ? ` · pain ${n1(n.pain)}/10` : ''}${n.minutes ? ` · ${n.minutes} min` : ''}`, { size: 10, bold: true, color: P.COLORS.INK });
+          P.paragraph(ctx, `${fmtEn(n.session_date, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })} — ${NOTE_KINDS[n.kind] || 'Note'}${n.pain != null ? ` · pain ${n1(n.pain)}/10` : ''}${n.minutes ? ` · ${n.minutes} min` : ''}`, { size: 10, bold: true, color: P.COLORS.INK });
           SOAP.filter(([k]) => n[k]).forEach(([k, s, l]) => P.paragraph(ctx, `${l}: ${n[k]}`, { indent: 3 }));
           ctx.y += 1.5;
         });

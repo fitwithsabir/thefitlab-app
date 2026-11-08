@@ -6,12 +6,12 @@
 <title>Handouts and letters for health professionals — The Fit Lab</title>
 <meta name="description" content="Make home exercise programmes, referral letters, exercise clearance requests, progress reports, attendance certificates and patient information sheets in a minute — print free, or download branded PDFs with Premium.">
 <script src="assets/theme.js?v=891b5cdc5d"></script>
-<script src="assets/i18n.js?v=e52fbfef46"></script>
+<script src="assets/i18n.js?v=cf2c5b19d2"></script>
 <link rel="icon" href="assets/favicon.png">
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="assets/styles.css?v=9ccf3156e5">
-<link rel="stylesheet" href="assets/tools.css?v=e2366ad476">
+<link rel="stylesheet" href="assets/tools.css?v=4ad01027d9">
 </head>
 <body data-page="tools">
 <div id="nav"></div>
@@ -41,7 +41,7 @@
     <section class="box ho-edit" id="editor" aria-label="Details"></section>
     <section class="ho-side">
       <div class="ho-actions" id="actions"></div>
-      <div class="ho-paper" id="paper" aria-label="Preview"></div>
+      <div class="ho-paper" id="paper" aria-label="Preview" translate="no"></div>
     </section>
   </div>
 </main>
@@ -178,9 +178,10 @@
     else if (doc === 'custom') h = `<div class="field"><label for="cTitle">Title</label><input id="cTitle" maxlength="120" value="${esc(CUSTOM.title)}" placeholder="e.g. After your session"></div>
         <div class="field"><label for="cBody">Text</label><textarea id="cBody" maxlength="6000" style="min-height:260px" placeholder="Write your advice. Start a line with ## for a heading and - for a bullet point.">${esc(CUSTOM.body)}</textarea>
         <span class="help">Start a line with <b>##</b> for a heading and <b>-</b> for a bullet point.</span></div>`;
-    else { const ho = handout(); h = `<p class="t-sm muted" style="margin-top:0">${esc(ho.intro)}</p>${area('note', 'Your note for this patient', { ph: 'Optional — anything specific to them, shown at the top', rows: 70 })}
+    else { const ho = handout(); h = `<p class="t-sm muted" style="margin-top:0" translate="no">${esc(ho.intro)}</p>${area('note', 'Your note for this patient', { ph: 'Optional — anything specific to them, shown at the top', rows: 70 })}
         <label class="check"><input type="checkbox" id="e_srcs" ${fv('nosrc') ? '' : 'checked'}><span>Show the sources at the end</span></label>`; }
-    $('editor').innerHTML = `<div class="box-pad">${h}</div>`;
+    const lang = (document.documentElement.getAttribute('lang') || 'en').slice(0, 2);
+    $('editor').innerHTML = `<div class="box-pad">${lang !== 'en' ? `<p class="help ho-en">${I('globe', 14)} Handouts and letters are made in English, so doctors and patients anywhere can read them.</p>` : ''}${h}</div>`;
     wireEditor();
   }
   const handout = () => HO.HANDOUTS.find((x) => 'h_' + x.id === doc);
@@ -207,14 +208,14 @@
         <div class="ho-libbar"><div class="tl-seg" role="radiogroup" aria-label="Library"><button type="button" data-src="rehab" class="${libSrc === 'rehab' ? 'on' : ''}">Rehab and home</button><button type="button" data-src="gym" class="${libSrc === 'gym' ? 'on' : ''}">Gym library</button></div>
           <input id="hQ" type="search" placeholder="Search exercises" value="${esc(libQ)}" aria-label="Search exercises"></div>
         <div class="tl-chips" id="hRegions"></div>
-        <div id="hLib" class="ho-libl"></div>
+        <div id="hLib" class="ho-libl" translate="no"></div>
       </div>
       <div class="field" style="margin-top:14px"><label for="hAdvice">Advice for the patient</label><textarea id="hAdvice" maxlength="1500" style="min-height:90px">${esc(HEP.advice)}</textarea></div>`;
   }
   function drawItems() {
     $('hCount').textContent = HEP.items.length ? `· ${HEP.items.length}` : '';
     $('hItems').innerHTML = HEP.items.length ? HEP.items.map((it, i) => { const x = exOf(it); return `<div class="ho-item" data-i="${i}">
-        <div class="ho-item-h"><b>${i + 1}. ${esc(x ? x.name : it.id)}</b><span><button class="icon-btn" type="button" data-up aria-label="Move up" ${i ? '' : 'disabled'}>${I('down', 15, 'style="transform:rotate(180deg)"')}</button><button class="icon-btn" type="button" data-dn aria-label="Move down" ${i < HEP.items.length - 1 ? '' : 'disabled'}>${I('down', 15)}</button><button class="icon-btn" type="button" data-rm aria-label="Remove">${I('close', 15)}</button></span></div>
+        <div class="ho-item-h"><b translate="no">${i + 1}. ${esc(x ? x.name : it.id)}</b><span><button class="icon-btn" type="button" data-up aria-label="Move up" ${i ? '' : 'disabled'}>${I('down', 15, 'style="transform:rotate(180deg)"')}</button><button class="icon-btn" type="button" data-dn aria-label="Move down" ${i < HEP.items.length - 1 ? '' : 'disabled'}>${I('down', 15)}</button><button class="icon-btn" type="button" data-rm aria-label="Remove">${I('close', 15)}</button></span></div>
         <div class="ho-item-f"><input data-f="dose" maxlength="60" value="${esc(it.dose)}" aria-label="Sets, reps and holds"><input data-f="note" maxlength="140" value="${esc(it.note || '')}" placeholder="Note — e.g. left leg only, pain-free range" aria-label="Note"></div></div>`; }).join('')
       : `<p class="t-sm muted">Add exercises from the library below.</p>`;
     $('hItems').querySelectorAll('.ho-item').forEach((row) => {

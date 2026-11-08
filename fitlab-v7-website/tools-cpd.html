@@ -6,12 +6,12 @@
 <title>CPD and licence tracker — The Fit Lab</title>
 <meta name="description" content="Free CPD and licence tracker for health and fitness professionals: log courses, workshops and conferences, keep certificates in one place, get reminders before a licence expires and download your CPD record as a PDF.">
 <script src="assets/theme.js?v=891b5cdc5d"></script>
-<script src="assets/i18n.js?v=e52fbfef46"></script>
+<script src="assets/i18n.js?v=cf2c5b19d2"></script>
 <link rel="icon" href="assets/favicon.png">
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="assets/styles.css?v=9ccf3156e5">
-<link rel="stylesheet" href="assets/tools.css?v=e2366ad476">
+<link rel="stylesheet" href="assets/tools.css?v=4ad01027d9">
 </head>
 <body data-page="tools">
 <div id="nav"></div>
@@ -60,7 +60,10 @@
   const today = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
   const D = (s) => s ? new Date(s + 'T00:00:00') : null;
   const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  const fmt = (s, opt = { day: 'numeric', month: 'short', year: 'numeric' }) => s ? D(s).toLocaleDateString('en-IN', opt) : '';
+  // dates on screen follow the chosen language; dates in the PDF and CSV stay in English
+  const fmt = (s, opt = { day: 'numeric', month: 'short', year: 'numeric' }) => s ? (window.FLI18N && FLI18N.date ? FLI18N.date(D(s), opt) : D(s).toLocaleDateString('en-IN', opt)) : '';
+  const fmtEn = (s, opt = { day: 'numeric', month: 'short', year: 'numeric' }) => s ? D(s).toLocaleDateString('en-IN', opt) : '';
+  const keep = (t) => `<span translate="no">${esc(t)}</span>`;  // a date or a name inside a sentence
   const daysTo = (s) => Math.round((D(s) - today()) / 86400000);
   const h1 = (n) => { const v = Math.round((+n || 0) * 10) / 10; return v.toLocaleString('en-IN'); };
   const must = (r) => { if (r && r.error) throw r.error; return r ? r.data : null; };
@@ -98,10 +101,10 @@
   function status(c) {
     if (!c.expiry_date) return { k: 'info', t: 'Doesn\'t expire' };
     const d = daysTo(c.expiry_date);
-    if (d < 0) return { k: 'bad', t: `Expired on ${fmt(c.expiry_date)}` };
+    if (d < 0) return { k: 'bad', h: `Expired on ${keep(fmt(c.expiry_date))}` };
     if (d === 0) return { k: 'bad', t: 'Expires today' };
-    if (d <= 30) return { k: 'warn', t: `Expires in ${d} day${d === 1 ? '' : 's'} · ${fmt(c.expiry_date)}` };
-    return { k: 'good', t: `Valid until ${fmt(c.expiry_date)}` };
+    if (d <= 30) return { k: 'warn', h: `Expires in ${d} day${d === 1 ? '' : 's'} · ${keep(fmt(c.expiry_date))}` };
+    return { k: 'good', h: `Valid until ${keep(fmt(c.expiry_date))}` };
   }
   const BADGE = { good: 'k-normal', warn: 'k-over', bad: 'k-obese1', info: 'k-info' };
   function drawLics() {
@@ -110,8 +113,8 @@
       const s = status(c), req = +c.cpd_required || 0, got = done(c), pct = req ? Math.min(100, got / req * 100) : 0;
       return `<div class="cpd-lic" data-id="${c.id}">
         <div class="cpd-lic-h"><div class="cpd-lic-n"><b>${esc(c.name)}</b><span>${esc(c.issuer)}${c.credential_id ? ` · ID ${esc(c.credential_id)}` : ''}</span></div>
-          <span class="tl-badge ${BADGE[s.k]}">${esc(s.t)}</span></div>
-        ${req ? `<div class="cpd-prog"><div class="cpd-bar"><i style="width:${pct}%"></i></div><span><b>${h1(got)} of ${h1(req)}</b> CPD hours for this renewal${since(c) ? ` · since ${fmt(since(c))}` : ''}${got >= req ? ' — done' : ''}</span></div>` : ''}
+          <span class="tl-badge ${BADGE[s.k]}">${s.h || esc(s.t)}</span></div>
+        ${req ? `<div class="cpd-prog"><div class="cpd-bar"><i style="width:${pct}%"></i></div><span><b>${h1(got)} of ${h1(req)}</b> CPD hours for this renewal${since(c) ? ` · since ${keep(fmt(since(c)))}` : ''}${got >= req ? ' — done' : ''}</span></div>` : ''}
         <div class="cpd-lic-a">
           ${c.expiry_date && c.renew_remind === false ? `<span class="t-xs muted">${I('bell', 13)} Reminders off</span>` : ''}
           <button class="txt-btn" type="button" data-edit>Edit</button>${c.expiry_date ? '<button class="txt-btn" type="button" data-renew>Renewed</button>' : ''}</div>
@@ -147,9 +150,10 @@
   }
   function renewLic(id) {
     const x = creds.find((c) => c.id === id); if (!x) return;
-    FL.form({ title: `Renewed: ${x.name}`, saveLabel: 'Save renewal', note: '',
+    FL.form({ title: 'Licence renewed', saveLabel: 'Save renewal', note: '',
       values: { expiry_date: '', cpd_from: iso(today()) },
       fields: [
+        { html: `<p class="t-sm" style="margin:0 0 12px"><b translate="no">${esc(x.name)}</b></p>` },
         { k: 'expiry_date', label: 'New expiry date', type: 'date', req: true },
         { k: 'cpd_from', label: 'Count CPD from', type: 'date', help: 'CPD logged from this date counts towards the next renewal.' }],
       onSave: async (v) => {
@@ -248,8 +252,8 @@
     const st = (v, unit, lbl, cls = '') => `<div class="tl-stat ${cls}"><b>${v}<small>${unit}</small></b><span>${lbl}</span></div>`;
     $('stats').innerHTML = st(h1(hrs), 'h', `CPD in ${y}`, 'hl') + st(thisYear.length, '', thisYear.length === 1 ? 'Activity this year' : 'Activities this year')
       + (!next ? st('—', '', 'No renewal dates yet') : daysTo(next.expiry_date) <= 99
-        ? st(daysTo(next.expiry_date), daysTo(next.expiry_date) === 1 ? 'day' : 'days', `Until ${esc(next.name)} expires`, daysTo(next.expiry_date) <= 30 ? 'bad' : '')
-        : st(esc(fmt(next.expiry_date, { month: 'short', year: 'numeric' })), '', `Next renewal — ${esc(next.name)}`))
+        ? st(daysTo(next.expiry_date), daysTo(next.expiry_date) === 1 ? 'day' : 'days', `Until ${keep(next.name)} expires`, daysTo(next.expiry_date) <= 30 ? 'bad' : '')
+        : st(esc(fmt(next.expiry_date, { month: 'short', year: 'numeric' })), '', `Next renewal — ${keep(next.name)}`))
       + st(creds.length, '', expired ? `Licences and certificates · ${expired} expired` : 'Licences and certificates', expired ? 'bad' : '');
   }
   function draw() { drawStats(); drawLics(); drawLog(); }
@@ -276,12 +280,12 @@
       const ctx = await P.start({ title: 'CPD record', subtitle: label(), coach: access.coach || { name: me.full_name, unique_id: me.unique_id } });
       if (creds.length) {
         P.heading(ctx, 'Licences and certificates');
-        P.table(ctx, ['Name', 'Issued by', 'Number', 'Expires', 'CPD this renewal'], creds.map((c) => [c.name, c.issuer, c.credential_id || '—', c.expiry_date ? fmt(c.expiry_date) : 'No expiry',
+        P.table(ctx, ['Name', 'Issued by', 'Number', 'Expires', 'CPD this renewal'], creds.map((c) => [c.name, c.issuer, c.credential_id || '—', c.expiry_date ? fmtEn(c.expiry_date) : 'No expiry',
           +c.cpd_required ? `${h1(done(c))} of ${h1(c.cpd_required)} h` : '—']), { columnStyles: { 4: { halign: 'right' } } });
       }
       const total = list.reduce((s, a) => s + (+a.hours || 0), 0);
       P.heading(ctx, 'CPD activities', `${h1(total)} hours · ${list.length} ${list.length === 1 ? 'activity' : 'activities'}`);
-      if (list.length) P.table(ctx, ['Date', 'Activity', 'Type', 'Provider', 'Hours'], list.map((a) => [fmt(a.activity_date), a.title + (a.notes ? `\n${a.notes}` : ''), KINDS[a.kind] || a.kind, a.provider || '—', h1(a.hours)]),
+      if (list.length) P.table(ctx, ['Date', 'Activity', 'Type', 'Provider', 'Hours'], list.map((a) => [fmtEn(a.activity_date), a.title + (a.notes ? `\n${a.notes}` : ''), KINDS[a.kind] || a.kind, a.provider || '—', h1(a.hours)]),
         { columnStyles: { 0: { cellWidth: 24 }, 2: { cellWidth: 30 }, 4: { halign: 'right', cellWidth: 16 } } });
       else P.paragraph(ctx, 'No CPD logged for this period.');
       const byKind = {}; list.forEach((a) => { byKind[a.kind] = (byKind[a.kind] || 0) + (+a.hours || 0); });

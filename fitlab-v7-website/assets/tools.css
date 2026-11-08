@@ -506,3 +506,4 @@ em.ok{color:var(--lime)} em.near{color:var(--warn)} em.off{color:var(--danger-te
   #nav,.bottombar{display:none !important}
 }
 .ho-libbar .tl-seg button{white-space:nowrap;padding:8px 14px}
+.ho-en{display:flex;gap:6px;align-items:flex-start;margin:0 0 12px}.ho-en svg{flex:none;margin-top:2px}

@@ -6,12 +6,12 @@
 <title>Health tools for physios, dietitians, doctors and yoga therapists — The Fit Lab</title>
 <meta name="description" content="Free clinical tools for health professionals: six-minute walk, Timed Up and Go, chair stand, sarcopenia, range of motion, back-pain red flags, eGFR, Indian Diabetes Risk Score, blood pressure, HbA1c, CKD protein, MUST, pregnancy weight gain, exercise screening, yoga cautions and a breathing pacer — each with its cut-offs and references.">
 <script src="assets/theme.js?v=891b5cdc5d"></script>
-<script src="assets/i18n.js?v=e52fbfef46"></script>
+<script src="assets/i18n.js?v=cf2c5b19d2"></script>
 <link rel="icon" href="assets/favicon.png">
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="assets/styles.css?v=9ccf3156e5">
-<link rel="stylesheet" href="assets/tools.css?v=e2366ad476">
+<link rel="stylesheet" href="assets/tools.css?v=4ad01027d9">
 </head>
 <body data-page="tools">
 <div id="nav"></div>
@@ -76,7 +76,7 @@
 
   <section class="box tl-refs" aria-labelledby="refsH">
     <div class="box-head"><h2 id="refsH">References</h2></div>
-    <ol class="box-pad" id="refs"></ol>
+    <ol class="box-pad" id="refs" translate="no"></ol>
     <p class="box-pad help" style="padding-top:0">These tools support a qualified professional's judgement. They are not a diagnosis on their own. Check every result against the patient's history, examination and local guidelines, and refer when in doubt.</p>
   </section>
 </main>
@@ -147,7 +147,7 @@
   const warn = (t) => `<div class="tl-warn">${I('flag', 15)}<span>${t}</span></div>`;
   const WORD = { age: 'age', w: 'weight', h: 'height', waist: 'waist' };
   const need = (p, ...keys) => { const miss = keys.filter((k) => !p[k]); if (!miss.length) return ''; return `<p class="t-sm muted hl-need">${I('help', 14)}<span>Add the patient's ${miss.map((k) => WORD[k]).join(', ').replace(/, ([^,]*)$/, ' and $1')} in Patient details.</span></p>`; };
-  const fmtDate = (d) => d.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+  const fmtDate = (d) => window.FLI18N && FLI18N.date ? FLI18N.date(d, { day: 'numeric', month: 'long', year: 'numeric' }) : d.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
 
   // ---------------------------------------------------------------- references, numbered in the order the tools on screen use them
   let order = [], refsDirty = false;
@@ -287,7 +287,7 @@
         const r = H.pregnancyGain(pre, p.h, nv(t, 'wk'), nv(t, 'now'), twins);
         if (twins && !r.total) return `<p class="t-sm">BMI before pregnancy <b>${f1(r.bmi)}</b> — ${esc(r.label.toLowerCase())}.</p>${verdict('info', 'No range set', 'There isn\'t enough evidence for a twin range when underweight — plan the gain with the obstetric team.')}`;
         const st = r.status ? { below: ['warn', 'Below the expected gain'], within: ['good', 'Within the expected gain'], above: ['warn', 'Above the expected gain'] }[r.status] : null;
-        return `<div class="tl-stats">${stat(f1(r.bmi), '', `BMI before pregnancy — ${esc(r.label.toLowerCase())}`)}${stat(`${f1(r.total[0])}–${f1(r.total[1])}`, 'kg', `Total gain to aim for${twins ? ' (twins)' : ''}${cite('iom2009')}`, 'hl')}${twins ? '' : stat(`${f2(r.rate[0])}–${f2(r.rate[1])}`, 'kg', 'A week in the 2nd and 3rd trimesters')}</div>
+        return `<div class="tl-stats">${stat(f1(r.bmi), '', `BMI before pregnancy — ${esc(r.label.toLowerCase())}`)}${stat(`${f1(r.total[0])}–${f1(r.total[1])}`, 'kg', `Total gain to aim for${twins ? ' (twins)' : ''}${cite('iom2009')}`, 'hl')}${twins ? '' : stat(`${f2(r.rate[0])}–${f2(r.rate[1])}`, 'kg', 'A week in the second and third trimesters')}</div>
           ${r.expected ? `<p class="t-sm">By week ${f0(r.week)}: about <b>${f1(r.expected[0])}–${f1(r.expected[1])} kg</b> gained.</p>` : ''}
           ${r.gained != null ? `<p class="t-sm">Gained so far: <b>${r.gained >= 0 ? '' : '−'}${f1(Math.abs(r.gained))} kg</b>.</p>` : ''}${st ? verdict(st[0], st[1]) : ''}`;
       },
@@ -361,7 +361,7 @@
 
     { id: 'bp', prof: ['doctor', 'physio', 'yoga'], icon: 'heart', title: 'Blood pressure', refs: ['ish2020', 'aha2017', 'acsm_gl'],
       form: (t) => `<div class="hl-in">${fNum(t, 's1', 'Systolic', { min: 50, max: 300, step: 1, ph: 'mmHg' })}${fNum(t, 'd1', 'Diastolic', { min: 30, max: 200, step: 1, ph: 'mmHg' })}
-        ${fNum(t, 's2', '2nd systolic', { min: 50, max: 300, step: 1, ph: 'optional' })}${fNum(t, 'd2', '2nd diastolic', { min: 30, max: 200, step: 1, ph: 'optional' })}</div>`,
+        ${fNum(t, 's2', 'Second systolic', { min: 50, max: 300, step: 1, ph: 'optional' })}${fNum(t, 'd2', 'Second diastolic', { min: 30, max: 200, step: 1, ph: 'optional' })}</div>`,
       out: (t) => {
         let s = nv(t, 's1'), d = nv(t, 'd1');
         if (!s || !d) return '<p class="t-sm muted">Enter a reading. Add a second one taken a minute later for an average.</p>';
