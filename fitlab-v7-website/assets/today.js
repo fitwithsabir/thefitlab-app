@@ -77,7 +77,7 @@
     const today = new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase();
     const top = cl[0];
     return `<div class="td td-c">
-      <div class="td-hd"><span class="td-eye">TODAY · ${esc(today)}</span><b>${cap(part())}, ${esc(first(me.full_name))}</b></div>
+      <div class="td-hd"><span class="td-eye">TODAY · ${esc(today)}</span><b>${cap(part())}, <span>${esc(first(me.full_name))}</span></b></div>
       <div class="box td-rings">
         <svg width="104" height="104" viewBox="0 0 100 100" aria-hidden="true">${ring(44, prof / 100, 'var(--fill)', .2)}${ring(33, c ? c.done / c.total : 0, 'var(--acc2)', .35)}${ring(22, third.frac, 'var(--bone)', .5)}</svg>
         <ul>

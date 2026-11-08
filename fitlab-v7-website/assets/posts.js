@@ -35,7 +35,7 @@
          ${long && !opts.expanded ? `<button class="morebtn" data-act="seemore" style="padding:0 16px 8px">…see more</button>` : ''}
          ${p.image_url ? `<img class="post-img" src="${esc(p.image_url)}" alt="Image shared by ${esc(a.full_name || '')}" loading="lazy" data-act="zoom">` : ''}`;
     return `<article class="box post" data-post="${p.id}" data-saved="${p.saved ? 1 : 0}">
-      ${p.status === 'hidden' ? `<div class="notice warn" style="margin:12px 16px 0;font-size:13px">${icon('eye', 18)}<span>Only you can see this post while the Academy team reviews it.</span></div>` : ''}
+      ${p.status === 'hidden' ? `<div class="notice warn" style="margin:12px 16px 0;font-size:13px">${icon('eye', 18)}<span>Only you can see this post while The Fit Lab team reviews it.</span></div>` : ''}
       <div class="post-head">
         ${p.page ? `<a href="${link}">${FL.pageLogo(p.page)}</a>
         <div class="who"><a href="${link}">${esc(p.page.name)}</a>${FL.tick(p.page.verified, 15)}

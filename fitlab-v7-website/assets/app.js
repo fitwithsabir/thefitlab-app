@@ -816,7 +816,7 @@
       <li>InMail is for jobs and hiring. Jobs must show their pay and can never ask applicants for a fee or deposit.</li></ul>
       <h4>How this is enforced</h4>
       <ul><li>Automatic checks block abusive, sexual and dating-style text before it is sent.</li>
-      <li>A serious breach, or three in 30 days, pauses messaging and posting until the Academy team reviews it.</li>
+      <li>A serious breach, or three in 30 days, pauses messaging and posting until The Fit Lab team reviews it.</li>
       <li>Anyone can report or block a member at any time. Members under 18 can't message or connect.</li>
       <li>Your courses and certificates are never affected by community decisions.</li></ul>`,
 
@@ -884,7 +884,7 @@
         this.busy(e.target, false);
         if (!r) return;
         m.close();
-        this.toast('Thanks — the Academy team will review this.', 'ok');
+        this.toast('Thanks — The Fit Lab team will review this.', 'ok');
         if (opts.onDone) opts.onDone();
       };
     },
@@ -1035,7 +1035,7 @@
         <b>${p.community_status === 'banned' ? 'Community access removed' : 'Community access paused for review'}</b><br>
         <span class="t-sm">${p.community_status === 'banned'
           ? 'You can no longer message, post or connect. Your courses and certificates are not affected.'
-          : 'Messaging, posting and connecting are paused while the Academy team reviews recent activity. Your courses are not affected.'}</span></div></div>`;
+          : 'Messaging, posting and connecting are paused while The Fit Lab team reviews recent activity. Your courses are not affected.'}</span></div></div>`;
     },
 
     // left-column mini profile (feed / network / notifications)

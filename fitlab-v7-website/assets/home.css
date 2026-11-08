@@ -487,3 +487,8 @@ body.home{overflow-x:hidden}
   .auth-card{max-width:none;border-radius:26px 26px 0 0;max-height:92dvh;padding:24px 20px calc(24px + env(safe-area-inset-bottom));animation:hmSheet .35s cubic-bezier(.2,.8,.2,1)}
 }
 @keyframes hmSheet{from{transform:translateY(100%)}}
+
+/* Hindi and Telugu words are longer: keep the top-bar buttons on one line on phones */
+@media (max-width: 480px) {
+  html[lang="hi"] .hm-acts .hm-btn, html[lang="te"] .hm-acts .hm-btn { white-space: nowrap; padding: 10px 13px; font-size: 13.5px; }
+}

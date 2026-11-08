@@ -6,10 +6,10 @@
 <title>Pages — The Fit Lab</title>
 <meta name="description" content="Gyms, studios, clinics, hospitals, academies and brands on The Fit Lab — follow them, see their jobs and the people who work there.">
 <script src="assets/theme.js?v=891b5cdc5d"></script>
-<script src="assets/i18n.js?v=5a53b6d0a1"></script>
+<script src="assets/i18n.js?v=5412802fc8"></script>
 <link rel="icon" href="assets/favicon.png">
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
-<link rel="stylesheet" href="assets/styles.css?v=30a90be14f">
+<link rel="stylesheet" href="assets/styles.css?v=9ccf3156e5">
 <style>
   .co-head .ph-body{padding-top:0}
   .co-logo-wrap{position:relative;display:inline-block}
@@ -47,8 +47,8 @@
 
 <script src="assets/vendor/supabase-2.118.0.js?v=8795eb1487"></script>
 <script src="config.js?v=e763b77801"></script>
-<script src="assets/app.js?v=3b8a32deaf"></script>
-<script src="assets/posts.js?v=fb1d8743cc"></script>
+<script src="assets/app.js?v=452711f1a3"></script>
+<script src="assets/posts.js?v=672466680c"></script>
 <script>
 (async () => {
   const $ = (id) => document.getElementById(id);
@@ -227,7 +227,7 @@
     function banners() {
       let h = '';
       if (FL.param('welcome') && isAdmin()) h += `<div class="notice">${I('sparkles', 20)}<div><b>Your page is live.</b><br><span class="t-sm">Add a logo and an About section, then post your first job or update. When you're ready, <a href="verification?page=${pg.page_id}">apply for the verified tick</a>.</span></div></div>`;
-      if (pg.status !== 'active') h += `<div class="notice bad">${I('shield', 20)}<div><b>This page is ${esc(pg.status)}</b><br><span class="t-sm">It's hidden from members while The Fit Lab team reviews it. Contact the Academy team if you think this is a mistake.</span></div></div>`;
+      if (pg.status !== 'active') h += `<div class="notice bad">${I('shield', 20)}<div><b>This page is ${esc(pg.status)}</b><br><span class="t-sm">It's hidden from members while The Fit Lab team reviews it. Contact The Fit Lab team if you think this is a mistake.</span></div></div>`;
       if (isAdmin() && !pg.verified) {
         const v = pg.admin && pg.admin.verification;
         const st = v ? ({ pending: 'Your request is in the review queue.', needs_info: 'The team asked for more information.', rejected: 'Your last request wasn\'t approved.', approved: 'Approved.' })[v.status] : 'Verified pages get up to 10 open jobs, rank higher in search, and earn applicants\' trust.';

@@ -24,11 +24,11 @@
   };
 
   // ---------------------------------------------------------------- languages
-  var VERSION = '2026-10-25a';            // built-in packs; bump when /i18n/*.json change
+  var VERSION = '2026-11-08b';            // built-in packs; bump when /i18n/*.json change
   var COMMON = ['en', 'hi', 'te', 'ur', 'ar'];
   // languages whose packs ship with the site (/i18n/<code>.json) — a language is added here once it is fully
   // translated and reviewed; until then it comes from the database like a download ("Being translated")
-  var BUILT = [];
+  var BUILT = ['hi', 'te'];
   var RTL = ['ar', 'ur', 'fa', 'he', 'ps', 'sd', 'ug', 'dv', 'ckb', 'yi', 'ks'];
   // suggestions by country (the five common languages are always shown too)
   var COUNTRY = {

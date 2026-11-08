@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Courses — The Fit Lab</title>
 <script src="assets/theme.js?v=891b5cdc5d"></script>
-<script src="assets/i18n.js?v=5a53b6d0a1"></script>
+<script src="assets/i18n.js?v=5412802fc8"></script>
 <link rel="icon" href="assets/favicon.png">
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
-<link rel="stylesheet" href="assets/styles.css?v=30a90be14f">
+<link rel="stylesheet" href="assets/styles.css?v=9ccf3156e5">
 <style>
   .chead{padding:22px 24px}
   .chead h1{margin:6px 0 4px;font:700 clamp(22px,3vw,30px)/1.2 var(--body);color:var(--bone)}
@@ -51,7 +51,7 @@
 
 <script src="assets/vendor/supabase-2.118.0.js?v=8795eb1487"></script>
 <script src="config.js?v=e763b77801"></script>
-<script src="assets/app.js?v=3b8a32deaf"></script>
+<script src="assets/app.js?v=452711f1a3"></script>
 <script src="assets/track.js?v=c458497b3e"></script>
 <script>
 (async () => {
@@ -108,13 +108,15 @@
     if (ee && examUnlocked(ee) && !s.allDone) return `<a class="pill solid lg" href="exam?course=${encodeURIComponent(c.slug)}">Take the certification exam</a>
       <span class="t-sm muted">${c.exam_question_count} questions · ${c.exam_seconds_per_question || 60}s each · pass ${c.pass_percentage}% · attempts ${s.used}/${c.max_attempts}</span>`;
     if (s.allDone) return `<a class="pill solid lg" href="exam?course=${encodeURIComponent(c.slug)}">Take the final exam</a>
-      <span class="t-sm muted">${c.exam_question_count} questions · ${c.exam_time_minutes} min · pass ${c.pass_percentage}% · attempts ${s.used}/${c.max_attempts}</span>`;
+      <span class="t-sm muted">${c.exam_question_count} questions · ${examMin(c)} min · pass ${c.pass_percentage}% · attempts ${s.used}/${c.max_attempts}</span>`;
     if (s.next) return `<a class="pill solid lg" href="lesson?course=${encodeURIComponent(c.slug)}&day=${s.next.day_number}">${s.doneCount ? 'Resume Day ' + s.next.day_number : 'Start Day 1'}</a>`;
     return `<span class="chip">New days are being published</span>`;
   }
 
   const price = (c) => Number(c.price_paise || 0);
   const rupees = (p) => FL.rs(p);
+  // the exam is timed per question (60 questions × 60 seconds = 60 minutes); the old total is only a fallback
+  const examMin = (c) => (c.exam_seconds_per_question ? Math.round(c.exam_question_count * c.exam_seconds_per_question / 60) : c.exam_time_minutes);
   // fix-44: direct certification has its own price (empty = the same as the course)
   const directPrice = (c) => Number(c.direct_price_paise ?? c.price_paise ?? 0);
   // the syllabus grouped into modules (chapters = the daily lessons)
@@ -219,7 +221,7 @@
         <p class="t-sm muted" style="margin:0 20px 8px">${(me.is_admin || me.is_owner) ? 'Admin view — every published day is open and timers are off.' : 'Completed days stay open to revise any time, with no reading timer. The next day unlocks when you finish the one before.'}</p>
         <div class="syl" id="syl"></div>
         <div class="syl-day ${(s.allDone || examUnlocked(e)) && !s.passed ? 'next' : 'locked'}" style="border-top:1px solid var(--line)">
-          <span class="syl-n">${FL.icon('award', 16)}</span><span class="meta"><b>Final exam</b><span>${c.exam_question_count} questions · ${c.exam_time_minutes} minutes · ${c.pass_percentage}% to pass</span></span>
+          <span class="syl-n">${FL.icon('award', 16)}</span><span class="meta"><b>Final exam</b><span>${c.exam_question_count} questions · ${examMin(c)} minutes · ${c.pass_percentage}% to pass</span></span>
           ${(s.allDone || examUnlocked(e)) && !s.passed && e ? `<a class="go" href="exam?course=${encodeURIComponent(c.slug)}">Start →</a>` : s.passed ? `<span class="go">Passed</span>` : `<span class="t-xs muted">${FL.icon('lock', 14)}</span>`}</div>
       </div>`;
     const syl = $('syl');

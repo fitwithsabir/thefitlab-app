@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Profile — The Fit Lab</title>
 <script src="assets/theme.js?v=891b5cdc5d"></script>
-<script src="assets/i18n.js?v=5a53b6d0a1"></script>
+<script src="assets/i18n.js?v=5412802fc8"></script>
 <link rel="icon" href="assets/favicon.png">
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
-<link rel="stylesheet" href="assets/styles.css?v=30a90be14f">
+<link rel="stylesheet" href="assets/styles.css?v=9ccf3156e5">
 <style>
   .acts-menu{position:relative}
   .add-sec{position:relative}
@@ -39,9 +39,9 @@
 
 <script src="assets/vendor/supabase-2.118.0.js?v=8795eb1487"></script>
 <script src="config.js?v=e763b77801"></script>
-<script src="assets/app.js?v=3b8a32deaf"></script>
+<script src="assets/app.js?v=452711f1a3"></script>
 <script src="assets/bookings.js?v=8175031af9"></script>
-<script src="assets/posts.js?v=fb1d8743cc"></script>
+<script src="assets/posts.js?v=672466680c"></script>
 <script>
 (async () => {
   const $ = (id) => document.getElementById(id);
@@ -119,7 +119,7 @@
         { k: 'place', label: 'Location', type: 'place' },
         { k: 'experience_level', label: 'Experience in health & fitness', type: 'select', options: [['', 'Select'], ['beginner', 'Beginner / aspiring coach'], ['1-3 years', '1–3 years'], ['3+ years', '3+ years']], half: true },
         { k: 'date_of_birth', label: 'Date of birth (private)', type: 'date', half: true },
-        { k: 'phone', label: 'Mobile (private — only the Academy sees it)', type: 'tel', max: 20, half: true },
+        { k: 'phone', label: 'Mobile (private — only The Fit Lab team sees it)', type: 'tel', max: 20, half: true },
         { k: 'open_to_work', label: 'Show #OpenToWork — I\'m looking for a role (green photo frame, and I appear in employers\' searches)', type: 'checkbox' },
         { k: 'hiring', label: 'Show #Hiring — I\'m recruiting for my team (purple photo frame)', type: 'checkbox' },
       ], onSave: async (v) => {
