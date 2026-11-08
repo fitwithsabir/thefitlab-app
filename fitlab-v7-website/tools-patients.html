@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="theme-color" content="#0b0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fit Lab">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="assets/styles.css?v=9ccf3156e5">
-<link rel="stylesheet" href="assets/tools.css?v=121c77d8d9">
+<link rel="stylesheet" href="assets/tools.css?v=e2366ad476">
 </head>
 <body data-page="tools">
 <div id="nav"></div>
@@ -24,6 +24,7 @@
       <a href="tools" data-tab="calc">Calculators</a>
       <a href="tools-health" data-tab="health">Health tools</a>
       <a href="tools-patients" class="on" data-tab="patients">Patients</a>
+      <a href="tools-handouts" data-tab="handouts">Handouts</a>
       <a href="tools-cpd" data-tab="cpd">CPD &amp; licences</a>
       <a href="tools-diet" data-tab="diet">Diet plans</a>
       <a href="tools-workout" data-tab="workout">Workout plans</a>
@@ -142,7 +143,7 @@
         <div class="pt-head-top"><button class="icon-btn pt-back" type="button" id="btnBack" aria-label="Back to the list">${I('back', 20)}</button>
           <div class="pt-who"><h2>${esc(c.full_name)}</h2><span>${meta.map(esc).join(' · ')}</span>
             <span class="pt-contact">${c.phone ? `<a href="tel:${esc(c.phone.replace(/[^\d+]/g, ''))}">${I('phone', 14)} ${esc(c.phone)}</a>` : ''}${c.email ? `<a href="mailto:${esc(c.email)}">${I('mail', 14)} ${esc(c.email)}</a>` : ''}</span></div>
-          <div class="pt-btns"><button class="pill sm ghost" type="button" id="btnPdf">${I('file', 14)} PDF</button><button class="pill sm" type="button" id="btnIntake">${I('edit', 14)} Intake</button></div></div>
+          <div class="pt-btns"><a class="pill sm ghost" href="tools-handouts?c=${c.id}&doc=l_referral">${I('mail', 14)} Letter</a><button class="pill sm ghost" type="button" id="btnPdf">${I('file', 14)} PDF</button><button class="pill sm" type="button" id="btnIntake">${I('edit', 14)} Intake</button></div></div>
         <div class="pt-intake">
           ${c.complaint ? `<div><em>Main complaint</em><p>${esc(c.complaint)}</p></div>` : ''}
           ${c.history ? `<div><em>Medical history</em><p>${esc(c.history)}</p></div>` : ''}
