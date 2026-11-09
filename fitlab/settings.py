@@ -100,6 +100,7 @@ WHITENOISE_ALLOW_ALL_ORIGINS = False  # only /.well-known/assetlinks.json allows
 WHITENOISE_MIMETYPES = {
     '.webmanifest': 'application/manifest+json',
     '.js': 'text/javascript',
+    '.xml': 'application/xml',
 }
 
 # ---- Security -----------------------------------------------------------------------------------

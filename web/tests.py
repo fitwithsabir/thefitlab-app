@@ -92,7 +92,7 @@ class PageTests(BuiltSiteTestCase):
 
     def test_missing_pages_are_404(self):
         for url in ('/nope', '/assets/', '/i18n/', '/nope.html', '/_headers', '/_redirects', '/README.md',
-                    '/../wrangler.jsonc', '/fitlab/settings.py'):
+                    '/../wrangler.jsonc', '/fitlab/settings.py', '/.assetsignore'):
             with self.subTest(url=url):
                 r = self.client.get(url)
                 self.assertEqual(r.status_code, 404)
@@ -165,14 +165,15 @@ class FileTests(BuiltSiteTestCase):
         self.assertEqual(r2.status_code, 304)
 
     def test_robots_and_sitemap(self):
-        for url in ('/robots.txt', '/sitemap.xml'):
-            with self.subTest(url=url):
-                self.assertEqual(self.client.get(url).status_code, 200)
+        self.assertEqual(self.client.get('/robots.txt').status_code, 200)
+        r = self.client.get('/sitemap.xml')
+        self.assertEqual((r.status_code, r['Content-Type']), (200, 'application/xml'))
 
     def test_pages_are_not_files(self):
         root = Path(settings.STATIC_ROOT)
         self.assertFalse(list(root.rglob('*.html')))
         self.assertFalse((root / '_headers').exists())
+        self.assertFalse((root / '.assetsignore').exists())
         self.assertTrue((root / '.well-known' / 'assetlinks.json').exists())
 
     def test_every_file_the_pages_load_exists(self):

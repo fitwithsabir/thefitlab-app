@@ -18,5 +18,5 @@ class SiteStaticFilesConfig(StaticFilesConfig):
     ignore_patterns = [
         'CVS', '*~', '.DS_Store', '.git', '.gitignore',
         '*.html',            # pages are served by web.views at clean addresses
-        '_headers', '_redirects', 'README.md',
+        '_headers', '_redirects', 'README.md', '.assetsignore',
     ]

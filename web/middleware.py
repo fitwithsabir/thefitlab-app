@@ -43,7 +43,7 @@ class SiteHeadersMiddleware:
 
 # Never served as files: pages are served at clean addresses by web.views (/jobs, not /jobs.html),
 # and these belong to the host, not the site.
-NOT_FILES = re.compile(r'\.html$|^/(?:_headers|_redirects|README\.md)$', re.IGNORECASE)
+NOT_FILES = re.compile(r'\.html$|^/(?:_headers|_redirects|README\.md|\.assetsignore)$', re.IGNORECASE)
 
 
 class SiteFilesMiddleware(WhiteNoiseMiddleware):
