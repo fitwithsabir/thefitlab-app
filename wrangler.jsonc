@@ -1,15 +1,15 @@
-// Cloudflare Workers (static assets) — hosts https://thefitlab.in
-// Cloudflare publishes this automatically on every push to main.
+// Cloudflare Workers (static assets) — the old host of https://thefitlab.in.
+// thefitlab.in is moving to the Python server on Render (render.yaml). Cloudflare still publishes
+// this folder on every push to main until the move is done.
+//
+// No "routes" here on purpose: Wrangler then leaves the domains as they are set in the Cloudflare
+// dashboard (it neither re-adds thefitlab.in after it is removed there, nor removes it before).
 // Clean addresses: /jobs serves jobs.html, and old /jobs.html links are sent to /jobs;
 // _redirects and _headers in fitlab-v7-website work the same way they did there.
 {
   "name": "thefitlab",
   "compatibility_date": "2026-10-01",
-  // thefitlab.in and www.thefitlab.in point at this Worker (Cloudflare creates the DNS records)
-  "routes": [
-    { "pattern": "thefitlab.in", "custom_domain": true },
-    { "pattern": "www.thefitlab.in", "custom_domain": true }
-  ],
+  "workers_dev": false,
   "assets": {
     "directory": "./fitlab-v7-website",
     "html_handling": "auto-trailing-slash"
