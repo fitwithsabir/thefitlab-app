@@ -1,0 +1,5 @@
+# The Fit Lab's Python server (Render installs these on every deploy)
+Django==5.2.19        # long-term support release, security fixes until April 2028
+whitenoise==6.12.0    # serves the site's files, compressed
+brotli==1.2.1         # smaller compressed copies (WhiteNoise makes them at build time)
+gunicorn==26.2.0      # runs the server on Render

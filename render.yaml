@@ -1,0 +1,23 @@
+# Render Blueprint for The Fit Lab's Python (Django) server.
+# Render → New → Blueprint → pick this repository; it reads this file and creates the service.
+# Every push to main deploys again (after the build and the health check pass).
+services:
+  - type: web
+    name: thefitlab
+    runtime: python
+    # Closest Render region to India. It can't be changed after the service is created.
+    region: singapore
+    # Paid instance: stays awake. ('free' sleeps after 15 idle minutes and takes about a minute
+    # to wake, so it isn't suitable for thefitlab.in.)
+    plan: 0.5c-512mb
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    startCommand: gunicorn fitlab.wsgi --worker-class gthread --threads 4 --access-logfile -
+    healthCheckPath: /healthz
+    autoDeployTrigger: commit
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.18
+      - key: WEB_CONCURRENCY      # gunicorn worker processes
+        value: 2
+      - key: SECRET_KEY
+        generateValue: true
